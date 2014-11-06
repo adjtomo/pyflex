@@ -15,7 +15,8 @@ from future.builtins import *  # NOQA
 
 
 class Config(object):
-    def __init__(self, min_period, max_period, c_0=1.0, c_1=1.5, c_2=0.0,
+    def __init__(self, min_period, max_period, stalta_base=0.07,
+                 c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0):
         """
         Configuration object for pyflex to have one place to store it and to
@@ -25,6 +26,8 @@ class Config(object):
         :type min_period: float
         :param max_period: Maximum period of the filtered data in seconds.
         :type max_period: float
+        :param stalta_base: Base water level on the STA/LTA functional
+        :type stalta_base: float
         :param c_0: Fine tuning constant for the window internal minima.
         :type c_0: float
         :param c_1: Fine tuning constant for too small window lengths.
@@ -42,6 +45,7 @@ class Config(object):
         """
         self.min_period = min_period
         self.max_period = min_period
+        self.stalta_base = stalta_base
         self.c_0 = c_0
         self.c_1 = c_1
         self.c_2 = c_2

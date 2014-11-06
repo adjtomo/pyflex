@@ -42,7 +42,8 @@ class WindowSelector(object):
         self.windows = []
 
     def select_windows(self):
-        self.stalta = sta_lta(np.abs(self.synthetic), self.observed.stats.dt,
+        self.stalta = sta_lta(np.abs(self.synthetic),
+                              self.observed.stats.delta,
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
         self.initial_window_selection()
@@ -64,8 +65,10 @@ class WindowSelector(object):
 
             for left, right in itertools.product(smaller_troughs,
                                                  larger_troughs):
-                self.windows.append(Window(left=left, right=right,
-                                           middle=peak))
+                self.windows.append(Window(
+                    left=left, right=right, center=peak,
+                    dt=self.observed.stats.delta,
+                    min_period=self.config.min_period))
 
     def filter_window_minima(self, win):
         """
@@ -90,9 +93,20 @@ class WindowSelector(object):
         samples, ...
         """
         if not isinstance(self.observed, obspy.Trace):
-            raise PyflexError("Observed data must be an ObsPy Trace object.")
+            # Also accept Stream objects.
+            if isinstance(self.observed, obspy.Stream) and \
+                len(self.observed) == 1:
+                self.observed = self.observed[0]
+            else:
+                raise PyflexError(
+                    "Observed data must be an ObsPy Trace object.")
         if not isinstance(self.synthetic, obspy.Trace):
-            raise PyflexError("Synthetic data must be an ObsPy Trace object.")
+            if isinstance(self.synthetic, obspy.Stream) and \
+                            len(self.synthetic) == 1:
+                self.synthetic = self.synthetic[0]
+            else:
+                raise PyflexError(
+                    "Synthetic data must be an ObsPy Trace object.")
 
         if self.observed.stats.npts != self.synthetic.stats.npts:
             raise PyflexError("Observed and synthetic data must have the same "
@@ -105,7 +119,10 @@ class WindowSelector(object):
             raise PyflexError("Observed and synthetic data must have the same "
                               "sampling rate.")
 
-        if self.observed.stats.starttime != self.stats.starttime:
+        # Make sure data and synthetics start within half a sample interval.
+        if abs(self.observed.stats.starttime -
+               self.synthetic.stats.starttime) > self.observed.stats.delta * \
+                0.5:
             raise PyflexError("Observed and synthetic data must have the same "
                               "starttime.")
 
@@ -115,7 +132,7 @@ class WindowSelector(object):
                           "is fairly large.")
 
         # Also check the components of the data to avoid silly mistakes of users.
-        if len(set(self.observed.stats.channel[-1].upper(),
-                   self.synthetic.stats.channel[-1].upper())) != 1:
+        if len(set([self.observed.stats.channel[-1].upper(),
+                    self.synthetic.stats.channel[-1].upper()])) != 1:
             warnings.warn("The orientation code of synthetic and observed data "
                           "is not equal.")

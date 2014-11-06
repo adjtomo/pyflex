@@ -74,3 +74,17 @@ class WindowSelector(object):
     def reject_windows_based_on_minimum_length(self, min_length):
         self.windows = list(itertools.filter(
             lambda x: (x.right - x.left) > min_length,  self.windows))
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+The same STA/LTA as used in Flexwin.
+
+:copyright:
+    Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+:license:
+    GNU General Public License, Version 3
+    (http://www.gnu.org/copyleft/gpl.html)
+"""
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+from future.builtins import *  # NOQA

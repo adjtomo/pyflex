@@ -53,6 +53,8 @@ class WindowSelector(object):
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
         self.reject_on_phase_separation()
+        self.curtail_length_of_windows()
+        self.reject_windows_based_on_minimum_length()
 
     def initial_window_selection(self):
         """
@@ -162,6 +164,38 @@ class WindowSelector(object):
             filter_phase_rejection, self.windows))
         logger.info("Single phase group rejection retained %i windows" %
                     len(self.windows))
+
+    def curtail_length_of_windows(self):
+        """
+        Curtail the window length. Equivalent to a call to
+        curtail_window_length() in the original flexwin code.
+        """
+        dt = self.observed.stats.delta
+        def curtail_window_length(win):
+            time_decay_left = self.config.min_period * self.config.c_4a / dt
+            time_decay_right = self.config.min_period * self.config.c_4b / dt
+            # Find all internal maxima.
+            internal_maxima = self.peaks[
+                (self.peaks >= win.left) & (self.peaks <= win.right) &
+                (self.peaks != win.center)]
+            if len(internal_maxima) < 2:
+                return win
+            i_left = internal_maxima[0]
+            i_right = internal_maxima[-1]
+
+            delta_left = i_left - win.left
+            delta_right = win.right - i_right
+
+            # check condition
+            if delta_left > time_decay_left:
+                logger.info("Curtailing left")
+                win.left = int(i_left - time_decay_left)
+            if delta_right > time_decay_right:
+                logger.info("Curtailing right")
+                win.right = int(i_right + time_decay_right)
+            return win
+
+        self.windows = [curtail_window_length(i) for i in self.windows]
 
     @property
     def minimum_window_length(self):

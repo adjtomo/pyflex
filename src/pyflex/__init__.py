@@ -45,5 +45,5 @@ logger.addHandler(ch)
 
 
 from .config import Config
-from .flexwin import select_windows
+from .flexwin import select_windows, plot_windows
 from .window_selector import WindowSelector

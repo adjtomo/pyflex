@@ -62,6 +62,8 @@ class WindowSelector(object):
         self.reject_based_on_data_fit_criteria()
         self.schedule_weighted_intervals()
 
+        return self.windows
+
     def initial_window_selection(self):
         """
         Find all possible windows. This is equivalent to the setup_M_L_R()

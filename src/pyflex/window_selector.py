@@ -29,11 +29,19 @@ class WindowSelector(object):
     def __init__(self, observed, synthetic, config):
         self.observed = observed
         self.synthetic = synthetic
+        self._sanity_checks()
+
+        # Copy to not modify the original data.
+        self.observed = self.observed.copy()
+        self.synthetic = self.synthetic.copy()
+        self.observed.data = np.ascontiguousarray(self.observed.data)
+        self.synthetic.data = np.ascontiguousarray(self.synthetic.data)
+
         self.config = config
 
         self.windows = []
 
-    def launch_selection(self):
+    def select_windows(self):
         self.stalta = sta_lta(np.abs(self.synthetic), self.observed.stats.dt,
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)

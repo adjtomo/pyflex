@@ -26,3 +26,8 @@ class PyflexWarning(UserWarning):
     Base class for all pyflex warnings.
     """
     pass
+
+
+from .config import Config
+from .flexwin import select_windows
+from .window_selector import WindowSelector

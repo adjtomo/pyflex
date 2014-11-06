@@ -30,4 +30,4 @@ def select_windows(observed, synthetic, config):
     :type config: :class:`~.config.Config`
     """
     ws = WindowSelector(observed=observed, synthetic=synthetic, config=config)
-    return ws.launch_selection()
+    return ws.select_windows()

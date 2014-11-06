@@ -20,7 +20,7 @@ import numpy as np
 import obspy
 import warnings
 
-from . import PyflexError, utils
+from . import PyflexError, utils, logger
 from .stalta import sta_lta
 from .window import Window
 
@@ -69,6 +69,9 @@ class WindowSelector(object):
                     left=left, right=right, center=peak,
                     dt=self.observed.stats.delta,
                     min_period=self.config.min_period))
+
+        logger.info("Initial window selection yielded %i possible windows." %
+                    len(self.windows))
 
     def filter_window_minima(self, win):
         """

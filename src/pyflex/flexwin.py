@@ -13,9 +13,13 @@ from __future__ import (absolute_import, division, print_function,
 from future.builtins import *  # NOQA
 
 import collections
+import numpy as np
 
+import obspy
 import obspy.signal
 import obspy.signal.trigger
+
+from . import PyflexError
 
 import warnings
 
@@ -59,4 +63,36 @@ def _sanity_checks(observed, synthetic):
     :param synthetic:
     :return:
     """
-    pass
+    if not isinstance(observed, obspy.Trace):
+        raise PyflexError("Observed data must be an ObsPy Trace object.")
+    if not isinstance(synthetic, obspy.Trace):
+        raise PyflexError("Synthetic data must be an ObsPy Trace object.")
+
+    if observed.stats.npts != synthetic.stats.npts:
+        raise PyflexError("Observed and synthetic data must have the same "
+                          "number of samples.")
+
+    sr1 = observed.stats.sampling_rate
+    sr2 = synthetic.stats.sampling_rate
+
+    if abs(sr1 - sr2) / sr1 >= 1E-5:
+        raise PyflexError("Observed and synthetic data must have the same "
+                          "sampling rate.")
+
+    if observed.stats.starttime != synthetic.stats.starttime:
+        raise PyflexError("Observed and synthetic data must have the same "
+                          "starttime.")
+
+    ptp = sorted([observed.data.ptp(), synthetic.data.ptp()])
+    if ptp[1] / ptp[0] >= 5:
+        warnings.warn("The amplitude difference between data and synthetic "
+                      "is fairly large.")
+
+    # Also check the components of the data to avoid silly mistakes of users.
+    if len(set(observed.stats.channel[-1].upper(),
+               synthetic.stats.channel[-1].upper())) != 1:
+        warnings.warn("The orientation code of synthetic and observed data "
+                      "is not equal.")
+
+    observed.data = np.ascontiguousarray(observed.data, dtype=np.float64)
+    synthetic.data = np.ascontiguousarray(synthetic.data, dtype=np.float64)

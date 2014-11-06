@@ -14,7 +14,9 @@ from future.builtins import *  # NOQA
 
 class PyflexError(Exception):
     """
-    Base class for all pyflex exceptions.
+    Base class for all pyflex exceptions. Will probably be used for all
+    exceptions to not overcomplicate things as the whole package is pretty
+    small.
     """
     pass
 

@@ -38,6 +38,12 @@ class Window(object):
         self.dt = dt
         self.min_period = min_period
 
+    def get_internal_indices(self, indices):
+        """
+        From a list of indices, return the ones inside this window.
+        """
+        return indices[(indices >= self.left) & (indices <= self.right)]
+
     @property
     def left(self):
         """

@@ -47,13 +47,16 @@ class WindowSelector(object):
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
 
-
+        # Perform all window selection steps.
         self.initial_window_selection()
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
         self.reject_on_phase_separation()
         self.curtail_length_of_windows()
+        self.remove_duplicates()
+        # Call once again as curtailing might change the length of some
+        # windows. Very cheap so can easily be called more than once.
         self.reject_windows_based_on_minimum_length()
 
     def initial_window_selection(self):
@@ -80,6 +83,20 @@ class WindowSelector(object):
 
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))
+
+    def remove_duplicates(self):
+        """
+        Filter to remove duplicate windows.
+        """
+        new_windows = {}
+        for window in self.windows:
+            tag = (window.left, window.right)
+            if tag not in new_windows:
+                new_windows[tag] = window
+        self.windows = sorted(new_windows.values(), key=lambda x: x.left)
+        logger.info("Removing duplicates retains %i windows." % len(
+            self.windows))
+
 
     def reject_on_minima_water_level(self):
         """

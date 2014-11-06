@@ -46,7 +46,12 @@ class WindowSelector(object):
                               self.observed.stats.delta,
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
+
+
         self.initial_window_selection()
+        self.reject_windows_based_on_minimum_length()
+        self.reject_on_minima_water_level()
+        self.reject_on_prominence_of_central_peak()
 
     def initial_window_selection(self):
         """
@@ -73,19 +78,60 @@ class WindowSelector(object):
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))
 
-    def filter_window_minima(self, win):
+    def reject_on_minima_water_level(self):
         """
         Filter function rejecting windows whose internal minima are below the
         water level of the windows peak. This is equivalent to the
         reject_on_water_level() function in flexwin.
         """
-        waterlevel_midpoint = self.config.c_0 * self.config.stalta_base
-        internal_minima = win.get_internal_indices(self.troughs)
-        return not np.any(self.stalta[internal_minima] <= waterlevel_midpoint)
+        def filter_window_minima(win):
+            waterlevel_midpoint = self.config.c_0 * self.config.stalta_base
+            internal_minima = win.get_internal_indices(self.troughs)
+            return not np.any(self.stalta[internal_minima] <=
+                              waterlevel_midpoint)
 
-    def reject_windows_based_on_minimum_length(self, min_length):
-        self.windows = list(itertools.filter(
-            lambda x: (x.right - x.left) > min_length,  self.windows))
+        self.windows = list(filter(filter_window_minima, self.windows))
+        logger.info("Water level rejection retained %i windows" %
+                    len(self.windows))
+
+    def reject_on_prominence_of_central_peak(self):
+        """
+        Equivalent to reject_on_prominence() in the original flexwin code.
+        """
+        def filter_windows_maximum_prominence(win):
+            smaller_troughs = self.troughs[self.troughs < win.center]
+            larger_troughs = self.troughs[self.troughs > win.center]
+
+            if not len(smaller_troughs) or not len(larger_troughs):
+                return False
+
+            left = self.stalta[smaller_troughs[-1]]
+            right = self.stalta[larger_troughs[0]]
+            center = self.stalta[win.center]
+            delta_left = center - left
+            delta_right = center - right
+
+            if (delta_left < self.config.c_2 * center) or \
+                    (delta_right < self.config.c_2 * center):
+                return False
+            return True
+
+        self.windows = list(filter(filter_windows_maximum_prominence,
+                                    self.windows))
+        logger.info("Prominence of central peak rejection retained "
+                    "%i windows." % len(self.windows))
+
+    @property
+    def minimum_window_length(self):
+        return self.config.c_1 * self.config.min_period / \
+            self.observed.stats.delta
+
+    def reject_windows_based_on_minimum_length(self):
+        self.windows = list(filter(
+            lambda x: (x.right - x.left) > self.minimum_window_length,
+            self.windows))
+        logger.info("Rejection based on minimum window length retained %i "
+                    "windows." % len(self.windows))
 
     def _sanity_checks(self):
         """

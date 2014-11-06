@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- encoding: utf8 -*-
 import glob
 import io
@@ -13,13 +14,12 @@ from setuptools import setup
 def read(*names, **kwargs):
     return io.open(
         join(dirname(__file__), *names),
-        encoding=kwargs.get("encoding", "utf8")
-    ).read()
+        encoding=kwargs.get("encoding", "utf8")).read()
 
 setup(
     name="pyflex",
     version="0.0.1a",
-    license="CeCILL License (version 2) ",
+    license='GNU General Public License, Version 3 (GPLv3)',
     description="Experimental Python Flexwin port",
     author="Lion Krischer, Federica Magnoni, Emanuele Casarotti, Alessia Maggi",
     author_email="krischer@geophysik.uni-muenchen.de",
@@ -30,7 +30,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     classifiers=[
-        # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
+        # complete classifier list:
+        # http://pypi.python.org/pypi?%3Aaction=list_classifiers
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "Operating System :: Unix",

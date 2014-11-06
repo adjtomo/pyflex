@@ -50,7 +50,7 @@ def schedule_weighted_intervals(I):
        whole operation is dominated by O(n log n)
     """
     # f_1 <= f_2 <= .. <= f_n
-    I.sort(lambda x, y: x.right - y.right)
+    I.sort(key=lambda x: x.right)
     p = compute_previous_intervals(I)
 
     # compute OPTs iteratively in O(n), here we use DP
@@ -72,6 +72,6 @@ def schedule_weighted_intervals(I):
     compute_solution(len(I) - 1)
 
     # resort, as our O is in reverse order (OPTIONAL)
-    O.sort(lambda x, y: x.finish - y.finish)
+    O.sort(key=lambda x: x.right)
 
     return O

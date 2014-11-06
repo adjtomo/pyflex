@@ -23,6 +23,7 @@ import warnings
 from . import PyflexError, utils, logger
 from .stalta import sta_lta
 from .window import Window
+from .interval_scheduling import schedule_weighted_intervals
 
 
 class WindowSelector(object):
@@ -58,6 +59,8 @@ class WindowSelector(object):
         # Call once again as curtailing might change the length of some
         # windows. Very cheap so can easily be called more than once.
         self.reject_windows_based_on_minimum_length()
+        self.reject_based_on_data_fit_criteria()
+        self.schedule_weighted_intervals()
 
     def initial_window_selection(self):
         """
@@ -97,6 +100,10 @@ class WindowSelector(object):
         logger.info("Removing duplicates retains %i windows." % len(
             self.windows))
 
+    def schedule_weighted_intervals(self):
+        self.windows = schedule_weighted_intervals(self.windows)
+        logger.info("Weighted interval schedule optimzation retained %i "
+                    "windows." % len(self.windows))
 
     def reject_on_minima_water_level(self):
         """
@@ -225,6 +232,33 @@ class WindowSelector(object):
             self.windows))
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))
+
+    def reject_based_on_data_fit_criteria(self):
+        """
+        Rejects windows based on similarity between data and synthetics.
+        """
+        # First calculate the criteria for all remaining windows.
+        for win in self.windows:
+            win.calc_criteria(self.observed.data, self.synthetic.data)
+
+        def reject_based_on_criteria(win):
+            tshift_min = self.config.tshift_reference - self.config.tshift_base
+            tshift_max = self.config.tshift_reference + self.config.tshift_base
+            dlnA_min = self.config.dlna_reference - self.config.dlna_base
+            dlnA_max = self.config.dlna_reference + self.config.dlna_base
+
+            if not (tshift_min < win.cc_shift *
+                    self.observed.stats.delta < tshift_max):
+                return False
+            if not (dlnA_min < win.dlnA < dlnA_max):
+                return False
+            if win.max_cc_value < self.config.cc_base:
+                return False
+            return True
+
+        self.windows = list(filter(reject_based_on_criteria, self.windows))
+        logger.info("Rejection based on data fit criteria retained %i windows."
+                    % len(self.windows))
 
     def _sanity_checks(self):
         """

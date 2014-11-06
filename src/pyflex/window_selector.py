@@ -52,6 +52,7 @@ class WindowSelector(object):
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
+        self.reject_on_phase_separation()
 
     def initial_window_selection(self):
         """
@@ -120,6 +121,47 @@ class WindowSelector(object):
                                     self.windows))
         logger.info("Prominence of central peak rejection retained "
                     "%i windows." % len(self.windows))
+
+    def reject_on_phase_separation(self):
+        """
+        Reject windows based on phase seperation. Equivalent to
+        reject_on_phase_separation() in the original flexwin code.
+        """
+        def filter_phase_rejection(win):
+            # Find the lowest minimum within the window.
+            internal_minima = self.troughs[
+                (self.troughs >= win.left) & (self.troughs <= win.right)]
+            stalta_min = self.stalta[internal_minima].min()
+            # find the height of the central maximum above this minimum value
+            d_stalta_center = self.stalta[win.center] - stalta_min
+            # Find all internal maxima.
+            internal_maxima = self.peaks[
+                (self.peaks >= win.left) & (self.peaks <= win.right) &
+                (self.peaks != win.center)]
+
+            for max_index in internal_maxima:
+                # find height of current maximum above lowest minimum
+                d_stalta = self.stalta[max_index] - stalta_min
+                # find scaled time between current maximum and central maximum
+                d_time = abs(win.center - max_index) * \
+                    self.observed.stats.delta / self.config.min_period
+                # find value of time decay function
+                if (d_time >= self.config.c_3b):
+                    f_time = np.exp(-((d_time - self.config.c_3b) /
+                                      self.config.c_3b) ** 2)
+                else:
+                    f_time = 1.0
+                # check condition
+                if d_stalta > (self.config.c_3a * d_stalta_center * f_time):
+                    break
+            else:
+                return True
+            return False
+
+        self.windows = list(itertools.ifilter(
+            filter_phase_rejection, self.windows))
+        logger.info("Single phase group rejection retained %i windows" %
+                    len(self.windows))
 
     @property
     def minimum_window_length(self):

@@ -13,6 +13,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
+import numpy as np
+
 
 class Window(object):
     """
@@ -81,3 +83,22 @@ class Window(object):
             .format(left=self.left, right=self.right, middle=self.middle,
                     max_cc_value=self.max_cc_value, cc_shift=self.cc_shift,
                     dlnA=self.dlnA))
+
+    def _xcorr_win(self, d, s):
+        cc = np.correlate(d, s, mode="full")
+        time_shift = cc.argmax() - len(d) + 1
+        # Normalized cross correlation.
+        max_cc_value = cc.max() / np.sqrt((s ** 2).sum() * (d ** 2).sum())
+        return max_cc_value, time_shift
+
+    def _dlnA_win(self, d, s):
+        return 0.5 * np.log10(np.sum(d ** 2) / np.sum(s ** 2))
+
+    def calc_criteria(self, d, s):
+        d = d[self.left: self.right + 1]
+        s = s[self.left: self.right + 1]
+        v, shift = self._xcorr_win(d, s)
+        dlnA = self._dlnA_win(d, s)
+        self.max_cc_value = v
+        self.cc_shift = shift
+        self.dlnA = dlnA

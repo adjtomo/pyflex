@@ -16,8 +16,6 @@ import collections
 import numpy as np
 
 import obspy
-import obspy.signal
-import obspy.signal.trigger
 
 from . import PyflexError
 
@@ -47,8 +45,6 @@ def select_windows(observed, synthetic, min_period, max_period):
     synthetic = synthetic.copy()
     _sanity_checks(observed, synthetic)
 
-    # STA/LTA of the synthetics
-    STA_LTA = obspy.signal.trigger.recSTALTA(synthetic, 100, 10)
 
 
 def _sanity_checks(observed, synthetic):

@@ -31,7 +31,33 @@ from .interval_scheduling import schedule_weighted_intervals
 
 
 class WindowSelector(object):
+    """
+    Low level window selector internally used by Pyflex.
+    """
     def __init__(self, observed, synthetic, config, event=None, station=None):
+        """
+        :param observed: The preprocessed, observed waveform.
+        :type observed: :class:`~obspy.core.trace.Trace` or single component
+            :class:`~obspy.core.stream.Stream`
+        :param observed: The preprocessed, synthetic waveform.
+        :type synthetic: :class:`~obspy.core.trace.Trace` or single component
+            :class:`~obspy.core.stream.Stream`
+        :param config: Configuration object.
+        :type config: :class:`~.config.Config`
+        :param event: The event information. Either a Pyflex Event object,
+            or an ObsPy Catalog or Event object. If not given this information
+            will be extracted from the data traces if either originates from a
+            SAC file.
+        :type event: A Pyflex :class:`~pyflex.Event` object,  an ObsPy
+            :class:`~obspy.core.event.Catalog` object, or an ObsPy
+            :class:`~obspy.core.event.Event` object
+        :param station: The station information. Either a Pyflex Station
+            object, or an ObsPy Inventory. If not given this information
+            will be extracted from the data traces if either originates from
+            a SAC file.
+        :type station: A Pyflex :class:`~pyflex.Station` object or an ObsPy
+            :class:`~obspy.station.inventory.Inventory` object
+        """
         self.observed = observed
         self.synthetic = synthetic
         self._sanity_checks()
@@ -122,6 +148,9 @@ class WindowSelector(object):
                             ftype)
 
     def select_windows(self):
+        """
+        Launch the window selection.
+        """
         logger.info("Calculating envelope of synthetics.")
         self.synthetic_envelope = envelope(self.synthetic.data)
         logger.info("Calculating STA/LTA.")
@@ -155,6 +184,10 @@ class WindowSelector(object):
         return self.windows
 
     def calculate_ttimes(self):
+        """
+        Calculate theoretical travel times. Only call if station and event
+        information is available!
+        """
         dist_in_deg = geodetics.locations2degrees(
             self.station.latitude, self.station.longitude,
             self.event.latitude, self.event.longitude)
@@ -168,6 +201,7 @@ class WindowSelector(object):
         Reject based on traveltimes. Will reject windows containing only
         data before a minimum period before the first arrival and windows
         only containing data after the minimum allowed surface wave speed.
+        Only call if station and event information is available!
         """
         dist_in_km = geodetics.calcVincentyInverse(
             self.station.latitude, self.station.longitude, self.event.latitude,
@@ -221,6 +255,9 @@ class WindowSelector(object):
             self.windows))
 
     def schedule_weighted_intervals(self):
+        """
+        Run the weighted interval scheduling.
+        """
         self.windows = schedule_weighted_intervals(self.windows)
         logger.info("Weighted interval schedule optimzation retained %i "
                     "windows." % len(self.windows))
@@ -344,10 +381,16 @@ class WindowSelector(object):
 
     @property
     def minimum_window_length(self):
+        """
+        Minimum acceptable window length.
+        """
         return self.config.c_1 * self.config.min_period / \
             self.observed.stats.delta
 
     def reject_windows_based_on_minimum_length(self):
+        """
+        Reject windows smaller than the minimal window length.
+        """
         self.windows = list(filter(
             lambda x: (x.right - x.left) >= self.minimum_window_length,
             self.windows))
@@ -436,6 +479,13 @@ class WindowSelector(object):
                           "data is not equal.")
 
     def plot(self, filename=None):
+        """
+        Plot the current state of the windows.
+
+        :param filename: If given, the plot will be written to this file,
+            otherwise the plot will be shown.
+        :type filename: str
+        """
         # Lazy imports to not import matplotlib all the time.
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle

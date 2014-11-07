@@ -17,8 +17,8 @@ from future.builtins import *  # NOQA
 from .window_selector import WindowSelector
 
 
-def select_windows(observed, synthetic, config, plot=False,
-                   plot_filename=None):
+def select_windows(observed, synthetic, config, event=None, station=None,
+                   plot=False, plot_filename=None):
     """
     Convenience function for picking windows.
 
@@ -30,7 +30,8 @@ def select_windows(observed, synthetic, config, plot=False,
     :param config: Configuration object.
     :type config: :class:`~.config.Config`
     """
-    ws = WindowSelector(observed=observed, synthetic=synthetic, config=config)
+    ws = WindowSelector(observed=observed, synthetic=synthetic, config=config,
+                        event=event, station=station)
     windows = ws.select_windows()
 
     if plot:

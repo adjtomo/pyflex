@@ -18,7 +18,9 @@ with standard_library.hooks():
 
 import numpy as np
 import obspy
+from obspy.core.util import geodetics
 from obspy.signal.filter import envelope
+from obspy.taup import getTravelTimes
 import warnings
 
 from . import PyflexError, utils, logger
@@ -28,10 +30,13 @@ from .interval_scheduling import schedule_weighted_intervals
 
 
 class WindowSelector(object):
-    def __init__(self, observed, synthetic, config):
+    def __init__(self, observed, synthetic, config, event=None, station=None):
         self.observed = observed
         self.synthetic = synthetic
         self._sanity_checks()
+
+        self.event = event
+        self.station = station
 
         # Copy to not modify the original data.
         self.observed = self.observed.copy()
@@ -41,6 +46,7 @@ class WindowSelector(object):
 
         self.config = config
 
+        self.ttimes = []
         self.windows = []
 
     def select_windows(self):
@@ -54,6 +60,14 @@ class WindowSelector(object):
 
         # Perform all window selection steps.
         self.initial_window_selection()
+        # Reject windows based on traveltime if event and station
+        # information is given. This will also fill self.ttimes.
+        if self.event and self.station:
+            self.calculate_ttimes()
+            self.reject_on_traveltimes()
+        else:
+            logger.info("No rejection based on traveltime possible. Event "
+                        "and/or station information is not available.")
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
@@ -67,6 +81,33 @@ class WindowSelector(object):
         self.schedule_weighted_intervals()
 
         return self.windows
+
+    def calculate_ttimes(self):
+        dist_in_deg = geodetics.locations2degrees(
+            self.station.latitude, self.station.longitude,
+            self.event.latitude, self.event.longitude)
+        tts = getTravelTimes(dist_in_deg, self.event.depth_in_m / 1000.0,
+                             model=self.config.earth_model)
+        self.ttimes = sorted(tts, key=lambda x: x["time"])
+        logger.info("Calculated travel times.")
+
+    def reject_on_traveltimes(self):
+        """
+        Reject based on traveltimes. Will reject windows containing only
+        data before a minimum period before the first arrival and windows
+        only containing data after the minimum allowed surface wave speed.
+        """
+        dist_in_km = geodetics.calcVincentyInverse(
+            self.station.latitude, self.station.longitude, self.event.latitude,
+            self.event.longitude)[0] / 1000.0
+
+        min_time = self.ttimes[0]["time"] - self.config.min_period
+        max_time = dist_in_km / self.config.min_surface_wave_velocity
+
+        self.windows = [win for win in self.windows
+                        if (win.end >= min_time) and (win.start <= max_time)]
+        logger.info("Rejection based on travel times retained %i windows." %
+                    len(self.windows))
 
     def initial_window_selection(self):
         """

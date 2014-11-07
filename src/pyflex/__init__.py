@@ -11,6 +11,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
+import collections
 import logging
 
 
@@ -28,6 +29,13 @@ class PyflexWarning(UserWarning):
     Base class for all pyflex warnings.
     """
     pass
+
+
+Event = collections.namedtuple("Event", ["latitude", "longitude",
+                                         "depth_in_m"])
+
+
+Station = collections.namedtuple("Station", ["latitude", "longitude"])
 
 
 # Setup the logger.

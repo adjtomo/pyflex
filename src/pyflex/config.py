@@ -13,13 +13,16 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
+from . import PyflexError
+
 
 class Config(object):
     def __init__(self, min_period, max_period, stalta_base=0.07,
                  tshift_base=10.0, tshift_reference=0.0, dlna_base=1.3,
-                 dlna_reference=0.0, cc_base=0.7,
-                 c_0=1.0, c_1=1.5, c_2=0.0,
-                 c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0):
+                 dlna_reference=0.0, cc_base=0.7, earth_model="ak135",
+                 min_surface_wave_velocity=3.0,
+                 c_0=1.0, c_1=1.5, c_2=0.0, c_3a=4.0, c_3b=2.5, c_4a=2.0,
+                 c_4b=6.0):
         """
         Configuration object for pyflex to have one place to store it and to
         give meaningful default values.
@@ -43,6 +46,14 @@ class Config(object):
         :type dlna_reference: float
         :param cc_base: Limit on CC for acceptable windows.
         :type cc_base: float
+        :param earth_model: The earth model used for the traveltime
+            calculations. Either ``"ak135"`` or ``"iasp91"``.
+        :type earth_model: str
+        :param min_surface_wave_velocity: The minimum surface wave velocity
+            in km/s. All windows containing data later then this velocity
+            will be rejected. Only used if station and event information is
+            available.
+        :type min_surface_wave_velocity: float
         :param c_0: Fine tuning constant for the window internal minima.
         :type c_0: float
         :param c_1: Fine tuning constant for too small window lengths.
@@ -66,6 +77,13 @@ class Config(object):
         self.dlna_base = dlna_base
         self.dlna_reference = dlna_reference
         self.cc_base = cc_base
+
+        if earth_model.lower() not in ("ak135", "iasp91"):
+            raise PyflexError("Earth model must either be 'ak135' or "
+                              "'iasp91'.")
+        self.earth_model = earth_model.lower()
+        self.min_surface_wave_velocity = min_surface_wave_velocity
+
         self.c_0 = c_0
         self.c_1 = c_1
         self.c_2 = c_2

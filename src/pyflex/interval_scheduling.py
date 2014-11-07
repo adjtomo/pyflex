@@ -40,6 +40,7 @@ def compute_previous_intervals(I):
 
     return p
 
+
 def schedule_weighted_intervals(I):
     """
     Use dynamic algorithm to schedule weighted intervals
@@ -62,6 +63,7 @@ def schedule_weighted_intervals(I):
 
     # given OPT and p, find actual solution intervals in O(n)
     O = []
+
     def compute_solution(j):
         if j >= 0:  # will halt on OPT[-1]
             if I[j].weight + OPT[p[j]] > OPT[j - 1]:

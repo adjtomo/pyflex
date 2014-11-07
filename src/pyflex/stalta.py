@@ -39,7 +39,6 @@ def sta_lta(data, dt, min_period):
     extended_syn += noise
     extended_syn[-len(data):] += data
 
-
     STA_LTA = np.zeros(len(data), dtype=np.float64)
 
     sta = 0.0

@@ -21,7 +21,8 @@ setup(
     version="0.0.1a",
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Experimental Python Flexwin port",
-    author="Lion Krischer, Federica Magnoni, Emanuele Casarotti, Alessia Maggi",
+    author=(
+        "Lion Krischer, Federica Magnoni, Emanuele Casarotti, Alessia Maggi"),
     author_email="krischer@geophysik.uni-muenchen.de",
     url="https://github.com/krischer/pyflex",
     packages=find_packages("src"),

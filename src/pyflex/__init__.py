@@ -52,6 +52,6 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-from .config import Config
-from .flexwin import select_windows
-from .window_selector import WindowSelector
+from .config import Config  # NOQA
+from .flexwin import select_windows  # NOQA
+from .window_selector import WindowSelector  # NOQA

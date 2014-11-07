@@ -19,7 +19,7 @@ import pyflex
 
 # Most generic way to get the data folder path.
 DATA = os.path.join(os.path.dirname(os.path.abspath(
-inspect.getfile(inspect.currentframe()))), "data")
+    inspect.getfile(inspect.currentframe()))), "data")
 
 
 def test_window_selection():

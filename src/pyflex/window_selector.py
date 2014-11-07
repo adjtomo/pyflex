@@ -81,7 +81,7 @@ class WindowSelector(object):
             # Workaround for ObsPy 0.9.2 Newer version have a get
             # coordiantes method...
             for network in self.station:
-                if network.code == network:
+                if network.code == net:
                     break
             else:
                 raise PyflexError("Could not find the network of the "
@@ -263,7 +263,7 @@ class WindowSelector(object):
             return True
 
         self.windows = list(filter(filter_windows_maximum_prominence,
-                                    self.windows))
+                                   self.windows))
         logger.info("Prominence of central peak rejection retained "
                     "%i windows." % len(self.windows))
 
@@ -314,6 +314,7 @@ class WindowSelector(object):
         curtail_window_length() in the original flexwin code.
         """
         dt = self.observed.stats.delta
+
         def curtail_window_length(win):
             time_decay_left = self.config.min_period * self.config.c_4a / dt
             time_decay_right = self.config.min_period * self.config.c_4b / dt
@@ -381,8 +382,8 @@ class WindowSelector(object):
 
     def _sanity_checks(self):
         """
-        Perform a number of basic sanity checks to assure the data is valid in a
-        certain sense.
+        Perform a number of basic sanity checks to assure the data is valid
+        in a certain sense.
 
         It checks the types of both, the starttime, sampling rate, number of
         samples, ...
@@ -390,14 +391,14 @@ class WindowSelector(object):
         if not isinstance(self.observed, obspy.Trace):
             # Also accept Stream objects.
             if isinstance(self.observed, obspy.Stream) and \
-                len(self.observed) == 1:
+                    len(self.observed) == 1:
                 self.observed = self.observed[0]
             else:
                 raise PyflexError(
                     "Observed data must be an ObsPy Trace object.")
         if not isinstance(self.synthetic, obspy.Trace):
             if isinstance(self.synthetic, obspy.Stream) and \
-                            len(self.synthetic) == 1:
+                    len(self.synthetic) == 1:
                 self.synthetic = self.synthetic[0]
             else:
                 raise PyflexError(
@@ -423,14 +424,15 @@ class WindowSelector(object):
 
         ptp = sorted([self.observed.data.ptp(), self.synthetic.data.ptp()])
         if ptp[1] / ptp[0] >= 5:
-            warnings.warn("The amplitude difference between data and synthetic "
-                          "is fairly large.")
+            warnings.warn("The amplitude difference between data and "
+                          "synthetic is fairly large.")
 
-        # Also check the components of the data to avoid silly mistakes of users.
+        # Also check the components of the data to avoid silly mistakes of
+        # users.
         if len(set([self.observed.stats.channel[-1].upper(),
                     self.synthetic.stats.channel[-1].upper()])) != 1:
-            warnings.warn("The orientation code of synthetic and observed data "
-                          "is not equal.")
+            warnings.warn("The orientation code of synthetic and observed "
+                          "data is not equal.")
 
     def plot(self, filename=None):
         # Lazy imports to not import matplotlib all the time.

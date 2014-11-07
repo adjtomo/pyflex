@@ -74,7 +74,7 @@ class Window(object):
         cross correlation coefficient.
         """
         return (self.right - self.left) * self.dt / self.min_period * \
-               self.max_cc_value
+            self.max_cc_value
 
     def __repr__(self):
         return (

@@ -78,9 +78,9 @@ class Window(object):
 
     def __repr__(self):
         return (
-            "Window(left={left}, right={right}, middle={middle}, "
+            "Window(left={left}, right={right}, center={center}, "
             "max_cc_value={max_cc_value}, cc_shift={cc_shift}, dlnA={dlnA})"
-            .format(left=self.left, right=self.right, middle=self.middle,
+            .format(left=self.left, right=self.right, center=self.center,
                     max_cc_value=self.max_cc_value, cc_shift=self.cc_shift,
                     dlnA=self.dlnA))
 

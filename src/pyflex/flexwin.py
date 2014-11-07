@@ -58,8 +58,18 @@ def plot_windows(observed, synthetic, config, filename=None):
 
     plt.plot(ws.observed.data, color="black")
     plt.plot(ws.synthetic.data, color="red")
-    plt.title("seismograms")
     plt.xlim(0, len(ws.observed.data))
+
+    ax = plt.gca()
+    ax.spines['right'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    plt.text(0.01, 0.99, 'seismograms', horizontalalignment='left',
+             verticalalignment='top', transform=ax.transAxes)
 
     for win in windows:
         re = Rectangle((win.left, plt.ylim()[0]), win.right - win.left,
@@ -70,13 +80,24 @@ def plot_windows(observed, synthetic, config, filename=None):
     plt.plot(ws.stalta, color="blue")
     plt.hlines(config.stalta_base, 0, len(ws.observed.data),
                linestyle="dashed", color="blue")
-    plt.title("STALTA")
     plt.xlim(0, len(ws.stalta))
+
+    ax = plt.gca()
+    ax.spines['right'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['top'].set_color('none')
+    ax.set_yticks([])
+    ax.xaxis.set_ticks_position('bottom')
+
+    plt.text(0.01, 0.99, 'STA/LTA', horizontalalignment='left',
+             verticalalignment='top', transform=ax.transAxes)
 
     for win in windows:
         re = Rectangle((win.left, plt.ylim()[0]), win.right - win.left,
                        plt.ylim()[1] - plt.ylim()[0], color="blue", alpha=0.3)
         plt.gca().add_patch(re)
+
+    plt.tight_layout()
 
     if filename is None:
         plt.show()

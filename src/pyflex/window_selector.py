@@ -316,3 +316,61 @@ class WindowSelector(object):
                     self.synthetic.stats.channel[-1].upper()])) != 1:
             warnings.warn("The orientation code of synthetic and observed data "
                           "is not equal.")
+
+    def plot(self, filename=None):
+        # Lazy imports to not import matplotlib all the time.
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Rectangle
+
+        plt.figure(figsize=(15, 5))
+        plt.subplot(211)
+
+        plt.plot(self.observed.data, color="black")
+        plt.plot(self.synthetic.data, color="red")
+        plt.xlim(0, len(self.observed.data))
+
+        ax = plt.gca()
+        ax.spines['right'].set_color('none')
+        ax.spines['left'].set_color('none')
+        ax.spines['top'].set_color('none')
+        ax.spines['bottom'].set_color('none')
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        plt.text(0.01, 0.99, 'seismograms', horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes)
+
+        for win in self.windows:
+            re = Rectangle((win.left, plt.ylim()[0]), win.right - win.left,
+                           plt.ylim()[1] - plt.ylim()[0], color="blue",
+                           alpha=0.3)
+            plt.gca().add_patch(re)
+
+        plt.subplot(212)
+        plt.plot(self.stalta, color="blue")
+        plt.hlines(self.config.stalta_base, 0, len(self.observed.data),
+                   linestyle="dashed", color="blue")
+        plt.xlim(0, len(self.stalta))
+
+        ax = plt.gca()
+        ax.spines['right'].set_color('none')
+        ax.spines['left'].set_color('none')
+        ax.spines['top'].set_color('none')
+        ax.set_yticks([])
+        ax.xaxis.set_ticks_position('bottom')
+
+        plt.text(0.01, 0.99, 'STA/LTA', horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes)
+
+        for win in self.windows:
+            re = Rectangle((win.left, plt.ylim()[0]), win.right - win.left,
+                           plt.ylim()[1] - plt.ylim()[0], color="blue",
+                           alpha=0.3)
+            plt.gca().add_patch(re)
+
+        plt.tight_layout()
+
+        if filename is None:
+            plt.show()
+        else:
+            plt.savefig(filename)

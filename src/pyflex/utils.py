@@ -62,7 +62,7 @@ def find_local_extrema(data):
                 break
         for i in itertools.count():
             this_idx = idx + i + 1
-            if this_idx > len(diff):
+            if this_idx >= len(diff):
                 break
             if diff[this_idx] < 0:
                 r_type = "maxima"

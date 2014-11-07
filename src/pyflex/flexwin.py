@@ -67,7 +67,9 @@ def plot_windows(observed, synthetic, config, filename=None):
         plt.gca().add_patch(re)
 
     plt.subplot(212)
-    plt.plot(ws.stalta, color="black")
+    plt.plot(ws.stalta, color="blue")
+    plt.hlines(config.stalta_base, 0, len(ws.observed.data),
+               linestyle="dashed", color="blue")
     plt.title("STALTA")
     plt.xlim(0, len(ws.stalta))
 
@@ -80,5 +82,3 @@ def plot_windows(observed, synthetic, config, filename=None):
         plt.show()
     else:
         plt.savefig(filename)
-
-    return windows

@@ -44,7 +44,7 @@ class Window(object):
         """
         From a list of indices, return the ones inside this window.
         """
-        return indices[(indices >= self.left) & (indices <= self.right)]
+        return indices[(indices > self.left) & (indices < self.right)]
 
     @property
     def left(self):

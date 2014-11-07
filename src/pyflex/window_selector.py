@@ -18,6 +18,7 @@ with standard_library.hooks():
 
 import numpy as np
 import obspy
+from obspy.signal.filter import envelope
 import warnings
 
 from . import PyflexError, utils, logger
@@ -43,7 +44,8 @@ class WindowSelector(object):
         self.windows = []
 
     def select_windows(self):
-        self.stalta = sta_lta(np.abs(self.synthetic),
+        self.synthetic_envelope = envelope(self.synthetic.data)
+        self.stalta = sta_lta(self.synthetic_envelope,
                               self.observed.stats.delta,
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
@@ -230,7 +232,7 @@ class WindowSelector(object):
 
     def reject_windows_based_on_minimum_length(self):
         self.windows = list(filter(
-            lambda x: (x.right - x.left) > self.minimum_window_length,
+            lambda x: (x.right - x.left) >= self.minimum_window_length,
             self.windows))
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))

@@ -121,21 +121,21 @@ hook into the logging facility.
 
 .. parsed-literal::
 
-    [2014-11-07 11:48:26,208] - pyflex - INFO: Extraced station information from observed SAC file.
-    [2014-11-07 11:48:26,209] - pyflex - INFO: Extraced event information from observed SAC file.
-    [2014-11-07 11:48:26,215] - pyflex - INFO: Calculating envelope of synthetics.
-    [2014-11-07 11:48:26,218] - pyflex - INFO: Calculating STA/LTA.
-    [2014-11-07 11:48:26,620] - pyflex - INFO: Initial window selection yielded 2721 possible windows.
-    [2014-11-07 11:48:26,622] - pyflex - INFO: Calculated travel times.
-    [2014-11-07 11:48:26,636] - pyflex - INFO: Rejection based on travel times retained 2694 windows.
-    [2014-11-07 11:48:26,679] - pyflex - INFO: Rejection based on minimum window length retained 2685 windows.
-    [2014-11-07 11:48:26,787] - pyflex - INFO: Water level rejection retained 37 windows
-    [2014-11-07 11:48:26,789] - pyflex - INFO: Prominence of central peak rejection retained 37 windows.
-    [2014-11-07 11:48:26,792] - pyflex - INFO: Single phase group rejection retained 17 windows
-    [2014-11-07 11:48:26,794] - pyflex - INFO: Removing duplicates retains 17 windows.
-    [2014-11-07 11:48:26,794] - pyflex - INFO: Rejection based on minimum window length retained 17 windows.
-    [2014-11-07 11:48:26,800] - pyflex - INFO: Rejection based on data fit criteria retained 17 windows.
-    [2014-11-07 11:48:26,802] - pyflex - INFO: Weighted interval schedule optimzation retained 10 windows.
+    [2014-11-07 11:52:56,447] - pyflex - INFO: Extraced station information from observed SAC file.
+    [2014-11-07 11:52:56,448] - pyflex - INFO: Extraced event information from observed SAC file.
+    [2014-11-07 11:52:56,451] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-07 11:52:56,453] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-07 11:52:56,750] - pyflex - INFO: Initial window selection yielded 2721 possible windows.
+    [2014-11-07 11:52:56,752] - pyflex - INFO: Calculated travel times.
+    [2014-11-07 11:52:56,761] - pyflex - INFO: Rejection based on travel times retained 2694 windows.
+    [2014-11-07 11:52:56,792] - pyflex - INFO: Rejection based on minimum window length retained 2685 windows.
+    [2014-11-07 11:52:56,881] - pyflex - INFO: Water level rejection retained 37 windows
+    [2014-11-07 11:52:56,882] - pyflex - INFO: Prominence of central peak rejection retained 37 windows.
+    [2014-11-07 11:52:56,886] - pyflex - INFO: Single phase group rejection retained 17 windows
+    [2014-11-07 11:52:56,887] - pyflex - INFO: Removing duplicates retains 17 windows.
+    [2014-11-07 11:52:56,887] - pyflex - INFO: Rejection based on minimum window length retained 17 windows.
+    [2014-11-07 11:52:56,893] - pyflex - INFO: Rejection based on data fit criteria retained 17 windows.
+    [2014-11-07 11:52:56,894] - pyflex - INFO: Weighted interval schedule optimzation retained 10 windows.
 
 
 API Documentation

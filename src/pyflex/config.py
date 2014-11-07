@@ -24,8 +24,11 @@ class Config(object):
                  c_0=1.0, c_1=1.5, c_2=0.0, c_3a=4.0, c_3b=2.5, c_4a=2.0,
                  c_4b=6.0):
         """
-        Configuration object for pyflex to have one place to store it and to
-        give meaningful default values.
+        Central configuration object for Pyflex.
+
+        This replaces the old PAR_FILEs and user functions. It has sensible
+        defaults for most values but you will probably want to adjust them
+        for your given application.
 
         :param min_period: Minimum period of the filtered data in seconds.
         :type min_period: float

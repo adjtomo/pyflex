@@ -1,0 +1,149 @@
+
+Pyflex
+======
+
+``Pyflex`` is a Python port of the ``FLEXWIN`` algorithm for
+automatically selecting windows for seismic tomography. For the most
+part it mimicks the calculations of the original ``FLEXWIN`` package;
+minor differences and their reasoning are detailed later.
+
+To give credit where credit is due, the original ``FLEXWIN`` program can
+be downloaded `here <http://geodynamics.org/cig/software/flexwin/>`_,
+the corresponding publication is
+
+    Maggi, A., Tape, C., Chen, M., Chao, D., & Tromp, J. (2009). **An
+    automated time-window selection algorithm for seismic tomography.**
+    *Geophysical Journal International*, 178(1), 257–281
+    `doi:10.1111/j.1365-246X.2009.04099.x <http://dx.doi.org/10.1111/j.1365-246X.2009.04099.x>`_
+
+Installation
+------------
+
+``Pyflex`` utilized `ObsPy <http://obspy.org>`_ (and some of its
+dependencies) for the processing and data handling. As a first step,
+please follow the `installation instructions of
+ObsPy <http://obspy.org>`_ for your given platform (we recommend the
+installation with `Anaconda <http://anaconda.de>`_ as it will most
+likely result in the least problems). ``Pyflex`` should work with Python
+version 2.6, 2.7, 3.3, and 3.4. To install it, best use ``pip``:
+
+::
+
+    $ pip install pyflex
+
+If you want the latest development version, or want to work on the code,
+you will have to install with the help of ``git``.
+
+::
+
+    $ git clone https://github.com/krischer/pyflex.git
+    $ cd pyflex
+    $ pip install -v -e .
+
+Tests
+-----
+
+To assure the installation is valid and everything works as expected,
+run the tests with
+
+::
+
+    $ python -m pyflex.tests
+
+Usage
+-----
+
+The first step is to import ObsPy and Pyflex.
+
+.. code:: python
+
+    import obspy
+    import pyflex
+``Pyflex`` excepts both observed and synthetic data to already be fully
+processed. An easy way to accomplish is with ObsPy. This example
+reproduces what the original ``FLEXWIN`` package does when a it also
+performs the filtering.
+
+.. code:: python
+
+    obs_data = obspy.read("../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC")
+    synth_data = obspy.read("../tests/data/ABKT.II.LHZ.semd.sac")
+    
+    obs_data.detrend("linear")
+    obs_data.taper(max_percentage=0.05, type="hann")
+    obs_data.filter("bandpass", freqmin=1.0 / 150.0, freqmax=1.0 / 50.0,
+                    corners=4, zerophase=True)
+    
+    synth_data.detrend("linear")
+    synth_data.taper(max_percentage=0.05, type="hann")
+    synth_data.filter("bandpass", freqmin=1.0 / 150.0, freqmax=1.0 / 50.0,
+                      corners=4, zerophase=True)
+                
+The configuration is encapsuled within a :class:`~pyflex.config.Config` object.
+                
+.. code:: python
+
+    config = pyflex.Config(
+        min_period=50.0,
+        max_period=150.0,
+        stalta_base=0.1,
+        tshift_base=15.0,
+        dlna_base=1.0,
+        cc_base=0.80,
+        c_0=0.7,
+        c_1=3.5,
+        c_2=0.0,
+        c_3a=1.0,
+        c_3b=2.0,
+        c_4a=3.0,
+        c_4b=10.0)
+    
+    windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+.. image:: index_files/index_5_0.png
+
+
+Logging
+-------
+
+By default, ``Pyflex`` is fairly quiet and will only raise Exceptions
+and warnings. If you want some more information about what is happening,
+hook into the logging facility.
+
+.. code:: python
+
+    import logging
+    logger = logging.getLogger("pyflex")
+    logger.setLevel(logging.DEBUG)
+    
+    windows = pyflex.select_windows(obs_data, synth_data, config)
+
+.. parsed-literal::
+
+    [2014-11-07 11:48:26,208] - pyflex - INFO: Extraced station information from observed SAC file.
+    [2014-11-07 11:48:26,209] - pyflex - INFO: Extraced event information from observed SAC file.
+    [2014-11-07 11:48:26,215] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-07 11:48:26,218] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-07 11:48:26,620] - pyflex - INFO: Initial window selection yielded 2721 possible windows.
+    [2014-11-07 11:48:26,622] - pyflex - INFO: Calculated travel times.
+    [2014-11-07 11:48:26,636] - pyflex - INFO: Rejection based on travel times retained 2694 windows.
+    [2014-11-07 11:48:26,679] - pyflex - INFO: Rejection based on minimum window length retained 2685 windows.
+    [2014-11-07 11:48:26,787] - pyflex - INFO: Water level rejection retained 37 windows
+    [2014-11-07 11:48:26,789] - pyflex - INFO: Prominence of central peak rejection retained 37 windows.
+    [2014-11-07 11:48:26,792] - pyflex - INFO: Single phase group rejection retained 17 windows
+    [2014-11-07 11:48:26,794] - pyflex - INFO: Removing duplicates retains 17 windows.
+    [2014-11-07 11:48:26,794] - pyflex - INFO: Rejection based on minimum window length retained 17 windows.
+    [2014-11-07 11:48:26,800] - pyflex - INFO: Rejection based on data fit criteria retained 17 windows.
+    [2014-11-07 11:48:26,802] - pyflex - INFO: Weighted interval schedule optimzation retained 10 windows.
+
+
+API Documentation
+=================
+
+Config
+------
+
+                
+.. autoclass:: pyflex.config.Config
+                

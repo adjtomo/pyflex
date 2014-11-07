@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Pyflex &mdash; Pyflex 0.0.1a documentation</title>
+    
+    <link rel="stylesheet" href="_static/readable.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1a',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Pyflex 0.0.1a documentation" href="#" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+  
+  
+  <div class="indexwrapper">
+  
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">Pyflex 0.0.1a documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pyflex">
+<h1>Pyflex<a class="headerlink" href="#pyflex" title="Permalink to this headline">¶</a></h1>
+<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> is a Python port of the <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm for
+automatically selecting windows for seismic tomography. For the most
+part it mimicks the calculations of the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> package;
+minor differences and their reasoning are detailed later.</p>
+<p>To give credit where credit is due, the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> program can
+be downloaded <a class="reference external" href="http://geodynamics.org/cig/software/flexwin/">here</a>,
+the corresponding publication is</p>
+<blockquote>
+<div>Maggi, A., Tape, C., Chen, M., Chao, D., &amp; Tromp, J. (2009). <strong>An
+automated time-window selection algorithm for seismic tomography.</strong>
+<em>Geophysical Journal International</em>, 178(1), 257–281
+<a class="reference external" href="http://dx.doi.org/10.1111/j.1365-246X.2009.04099.x">doi:10.1111/j.1365-246X.2009.04099.x</a></div></blockquote>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilized <a class="reference external" href="http://obspy.org">ObsPy</a> (and some of its
+dependencies) for the processing and data handling. As a first step,
+please follow the <a class="reference external" href="http://obspy.org">installation instructions of
+ObsPy</a> for your given platform (we recommend the
+installation with <a class="reference external" href="http://anaconda.de">Anaconda</a> as it will most
+likely result in the least problems). <tt class="docutils literal"><span class="pre">Pyflex</span></tt> should work with Python
+version 2.6, 2.7, 3.3, and 3.4. To install it, best use <tt class="docutils literal"><span class="pre">pip</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ pip install pyflex
+</pre></div>
+</div>
+<p>If you want the latest development version, or want to work on the code,
+you will have to install with the help of <tt class="docutils literal"><span class="pre">git</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre>$ git clone https://github.com/krischer/pyflex.git
+$ cd pyflex
+$ pip install -v -e .
+</pre></div>
+</div>
+</div>
+<div class="section" id="tests">
+<h2>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h2>
+<p>To assure the installation is valid and everything works as expected,
+run the tests with</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python -m pyflex.tests
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>The first step is to import ObsPy and Pyflex.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">pyflex</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> excepts both observed and synthetic data to already be fully
+processed. An easy way to accomplish is with ObsPy. This example
+reproduces what the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> package does when a it also
+performs the filtering.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">obs_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC&quot;</span><span class="p">)</span>
+<span class="n">synth_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../tests/data/ABKT.II.LHZ.semd.sac&quot;</span><span class="p">)</span>
+
+<span class="n">obs_data</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&quot;linear&quot;</span><span class="p">)</span>
+<span class="n">obs_data</span><span class="o">.</span><span class="n">taper</span><span class="p">(</span><span class="n">max_percentage</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;hann&quot;</span><span class="p">)</span>
+<span class="n">obs_data</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&quot;bandpass&quot;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">150.0</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">50.0</span><span class="p">,</span>
+                <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zerophase</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="n">synth_data</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&quot;linear&quot;</span><span class="p">)</span>
+<span class="n">synth_data</span><span class="o">.</span><span class="n">taper</span><span class="p">(</span><span class="n">max_percentage</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;hann&quot;</span><span class="p">)</span>
+<span class="n">synth_data</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&quot;bandpass&quot;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">150.0</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">50.0</span><span class="p">,</span>
+                  <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zerophase</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The configuration is encapsuled within a <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a> object.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">config</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+    <span class="n">min_period</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
+    <span class="n">max_period</span><span class="o">=</span><span class="mf">150.0</span><span class="p">,</span>
+    <span class="n">stalta_base</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">tshift_base</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span>
+    <span class="n">dlna_base</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">cc_base</span><span class="o">=</span><span class="mf">0.80</span><span class="p">,</span>
+    <span class="n">c_0</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">c_1</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span>
+    <span class="n">c_2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">c_3a</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">c_3b</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">c_4a</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">c_4b</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>
+
+<span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/index_5_0.png" src="_images/index_5_0.png" />
+</div>
+<div class="section" id="logging">
+<h2>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h2>
+<p>By default, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is fairly quiet and will only raise Exceptions
+and warnings. If you want some more information about what is happening,
+hook into the logging facility.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&quot;pyflex&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+<span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>[2014-11-07 11:48:26,208] - pyflex - INFO: Extraced station information from observed SAC file.
+[2014-11-07 11:48:26,209] - pyflex - INFO: Extraced event information from observed SAC file.
+[2014-11-07 11:48:26,215] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-11-07 11:48:26,218] - pyflex - INFO: Calculating STA/LTA.
+[2014-11-07 11:48:26,620] - pyflex - INFO: Initial window selection yielded 2721 possible windows.
+[2014-11-07 11:48:26,622] - pyflex - INFO: Calculated travel times.
+[2014-11-07 11:48:26,636] - pyflex - INFO: Rejection based on travel times retained 2694 windows.
+[2014-11-07 11:48:26,679] - pyflex - INFO: Rejection based on minimum window length retained 2685 windows.
+[2014-11-07 11:48:26,787] - pyflex - INFO: Water level rejection retained 37 windows
+[2014-11-07 11:48:26,789] - pyflex - INFO: Prominence of central peak rejection retained 37 windows.
+[2014-11-07 11:48:26,792] - pyflex - INFO: Single phase group rejection retained 17 windows
+[2014-11-07 11:48:26,794] - pyflex - INFO: Removing duplicates retains 17 windows.
+[2014-11-07 11:48:26,794] - pyflex - INFO: Rejection based on minimum window length retained 17 windows.
+[2014-11-07 11:48:26,800] - pyflex - INFO: Rejection based on data fit criteria retained 17 windows.
+[2014-11-07 11:48:26,802] - pyflex - INFO: Weighted interval schedule optimzation retained 10 windows.
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="api-documentation">
+<h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="config">
+<h2>Config<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyflex.config.Config">
+<em class="property">class </em><tt class="descclassname">pyflex.config.</tt><tt class="descname">Config</tt><big>(</big><em>min_period</em>, <em>max_period</em>, <em>stalta_base=0.07</em>, <em>tshift_base=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_base=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_base=0.7</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em><big>)</big><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Central configuration object for Pyflex.</p>
+<p>This replaces the old PAR_FILEs and user functions. It has sensible
+defaults for most values but you will probably want to adjust them
+for your given application.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>min_period</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimum period of the filtered data in seconds.</li>
+<li><strong>max_period</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum period of the filtered data in seconds.</li>
+<li><strong>stalta_base</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Base water level on the STA/LTA functional</li>
+<li><strong>tshift_base</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum allowable time shift relative to the
+reference.</li>
+<li><strong>tshift_reference</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Allows a systematic shift of the CC time
+shift.</li>
+<li><strong>dlna_base</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum allowable amplitude measurement relative
+to the refernce.</li>
+<li><strong>dlna_reference</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Reference DLNA level. Allows a systematic shift.</li>
+<li><strong>cc_base</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Limit on CC for acceptable windows.</li>
+<li><strong>earth_model</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The earth model used for the traveltime
+calculations. Either <tt class="docutils literal"><span class="pre">&quot;ak135&quot;</span></tt> or <tt class="docutils literal"><span class="pre">&quot;iasp91&quot;</span></tt>.</li>
+<li><strong>min_surface_wave_velocity</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The minimum surface wave velocity
+in km/s. All windows containing data later then this velocity
+will be rejected. Only used if station and event information is
+available.</li>
+<li><strong>c_0</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for the window internal minima.</li>
+<li><strong>c_1</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for too small window lengths.</li>
+<li><strong>c_2</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for the maxima prominence rejection.</li>
+<li><strong>c_3a</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for the separation height.</li>
+<li><strong>c_3b</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for the separation time.</li>
+<li><strong>c_4a</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for curtail on the left.</li>
+<li><strong>c_4b</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for curtail on the right.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Pyflex</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#tests">Tests</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#logging">Logging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api-documentation">API Documentation</a><ul>
+<li><a class="reference internal" href="#config">Config</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation index</a><ul>
+  </ul></li>
+</ul>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="footer">
+    &copy; Copyright 2014, Lion Krischer, Alessi Maggi.
+    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+  </div>
+  
+  </div>
+  
+  </body>
+</html>

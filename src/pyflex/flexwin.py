@@ -20,7 +20,7 @@ from .window_selector import WindowSelector
 def select_windows(observed, synthetic, config, event=None, station=None,
                    plot=False, plot_filename=None):
     """
-    Convenience function for picking windows.
+    Convenience function for selecting windows.
 
     :param observed: A trace with the observed data.
     :type observed: :class:`~obspy.core.trace.Trace`

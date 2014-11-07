@@ -113,12 +113,12 @@ class WindowSelector(object):
                 return
             if not self.station:
                 self.station = Station(latitude=values[3], longitude=values[4])
-                logger.info("Extraced station information from %s SAC file."
+                logger.info("Extracted station information from %s SAC file."
                             % ftype)
             if not self.event:
                 self.event = Event(latitude=values[0], longitude=values[1],
                                    depth_in_m=values[2] * 1000.0)
-                logger.info("Extraced event information from %s SAC file." %
+                logger.info("Extracted event information from %s SAC file." %
                             ftype)
 
     def select_windows(self):

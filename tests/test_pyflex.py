@@ -50,3 +50,19 @@ def test_window_selection():
 
     windows = pyflex.select_windows(obs_data, synth_data, config)
     assert len(windows)
+
+
+def test_windows_time_calculations():
+    """
+    Tests time calculation for the windows.
+    """
+    start = obspy.UTCDateTime(2012, 1, 1)
+    win = pyflex.window.Window(left=10, right=20, center=15,
+                               time_of_first_sample=start, dt=0.5,
+                               min_period=10.0)
+    assert win.left == 10
+    assert win.right == 20
+    assert win.absolute_starttime == start + 5
+    assert win.relative_starttime == 5.0
+    assert win.absolute_endtime == start + 10
+    assert win.relative_endtime == 10.0

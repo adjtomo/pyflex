@@ -200,6 +200,7 @@ class WindowSelector(object):
                                                  larger_troughs):
                 self.windows.append(Window(
                     left=left, right=right, center=peak,
+                    time_of_first_sample=self.synthetic.stats.starttime,
                     dt=self.observed.stats.delta,
                     min_period=self.config.min_period))
 
@@ -232,7 +233,7 @@ class WindowSelector(object):
         """
         def filter_window_minima(win):
             waterlevel_midpoint = self.config.c_0 * self.config.stalta_base
-            internal_minima = win.get_internal_indices(self.troughs)
+            internal_minima = win._get_internal_indices(self.troughs)
             return not np.any(self.stalta[internal_minima] <=
                               waterlevel_midpoint)
 
@@ -359,7 +360,7 @@ class WindowSelector(object):
         """
         # First calculate the criteria for all remaining windows.
         for win in self.windows:
-            win.calc_criteria(self.observed.data, self.synthetic.data)
+            win._calc_criteria(self.observed.data, self.synthetic.data)
 
         def reject_based_on_criteria(win):
             tshift_min = self.config.tshift_reference - self.config.tshift_base

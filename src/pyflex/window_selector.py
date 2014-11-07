@@ -18,12 +18,13 @@ with standard_library.hooks():
 
 import numpy as np
 import obspy
+import obspy.station
 from obspy.core.util import geodetics
 from obspy.signal.filter import envelope
 from obspy.taup import getTravelTimes
 import warnings
 
-from . import PyflexError, utils, logger
+from . import PyflexError, utils, logger, Event, Station
 from .stalta import sta_lta
 from .window import Window
 from .interval_scheduling import schedule_weighted_intervals
@@ -37,6 +38,7 @@ class WindowSelector(object):
 
         self.event = event
         self.station = station
+        self._parse_event_and_station()
 
         # Copy to not modify the original data.
         self.observed = self.observed.copy()
@@ -48,6 +50,76 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+
+    def _parse_event_and_station(self):
+        """
+        Parse the event and station information.
+        """
+        # Parse the event.
+        if self.event and not isinstance(self.event, Event):
+            # It might be an ObsPy event catalog.
+            if isinstance(self.event, obspy.core.Catalog):
+                if len(self.event) != 1:
+                    raise PyflexError("The event catalog must contain "
+                                      "exactly one event.")
+                self.event = self.event[0]
+            # It might be an ObsPy event object.
+            if isinstance(self.event, obspy.core.Event):
+                if not self.event.origins:
+                    raise PyflexError("Event does not contain an origin.")
+                origin = self.event.preferred_origin() or self.event.origins[0]
+                self.event = Event(latitude=origin.latitude,
+                                   longitude=origin.longitude,
+                                   depth_in_m=origin.depth)
+            else:
+                raise PyflexError("Could not parse the event. Unknown type.")
+
+        # Parse the station information if it is an obspy inventory object.
+        if isinstance(self.station, obspy.station.Inventory):
+            net = self.observed.stats.network
+            sta = self.observed.stats.station
+            # Workaround for ObsPy 0.9.2 Newer version have a get
+            # coordiantes method...
+            for network in self.station:
+                if network.code == network:
+                    break
+            else:
+                raise PyflexError("Could not find the network of the "
+                                  "observed data in the inventory object.")
+            for station in network:
+                if station.code == sta:
+                    break
+            else:
+                raise PyflexError("Could not find the station of the "
+                                  "observed data in the inventory object.")
+            self.station = Station(latitude=station.latitude,
+                                   longitude=station.longitude)
+
+        # Last resort, if either is not set, and the observed or synthetics
+        # are sac files, get the information from there.
+        if not self.station or not self.event:
+            if hasattr(self.observed.stats, "sac"):
+                tr = self.observed
+                ftype = "observed"
+            elif hasattr(self.synthetic.stats, "sac"):
+                tr = self.synthetic
+                ftype = "synthetic"
+            else:
+                return
+            sac = tr.stats.sac
+            values = (sac.evla, sac.evlo, sac.evdp, sac.stla, sac.stlo)
+            # Invalid value in sac.
+            if -12345.0 in values:
+                return
+            if not self.station:
+                self.station = Station(latitude=values[3], longitude=values[4])
+                logger.info("Extraced station information from %s SAC file."
+                            % ftype)
+            if not self.event:
+                self.event = Event(latitude=values[0], longitude=values[1],
+                                   depth_in_m=values[2] * 1000.0)
+                logger.info("Extraced event information from %s SAC file." %
+                            ftype)
 
     def select_windows(self):
         logger.info("Calculating envelope of synthetics.")
@@ -105,7 +177,7 @@ class WindowSelector(object):
         max_time = dist_in_km / self.config.min_surface_wave_velocity
 
         self.windows = [win for win in self.windows
-                        if (win.end >= min_time) and (win.start <= max_time)]
+                        if (win.right >= min_time) and (win.left <= max_time)]
         logger.info("Rejection based on travel times retained %i windows." %
                     len(self.windows))
 

@@ -44,7 +44,9 @@ class WindowSelector(object):
         self.windows = []
 
     def select_windows(self):
+        logger.info("Calculating envelope of synthetics.")
         self.synthetic_envelope = envelope(self.synthetic.data)
+        logger.info("Calculating STA/LTA.")
         self.stalta = sta_lta(self.synthetic_envelope,
                               self.observed.stats.delta,
                               self.config.min_period)

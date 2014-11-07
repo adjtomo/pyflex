@@ -48,12 +48,12 @@ setup(
         "Topic :: Utilities",
     ],
     keywords=[
-        # eg: "keyword1", "keyword2", "keyword3",
+        "seismology", "flexwin", "science", "tomography", "inversion"
     ],
     install_requires=[
-        "obspy"
+        "obspy", "flake8", "pytest", "future"
     ],
     extras_require={
-        # eg: 'rst': ["docutils>=0.11"],
+        "docs": ["sphinx", "ipython", "runipy"]
     }
 )

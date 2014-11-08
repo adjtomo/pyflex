@@ -338,11 +338,18 @@ class WindowSelector(object):
     def remove_duplicates(self):
         """
         Filter to remove duplicate windows based on left and right bounds.
+
+        This function will also change the middle to actually be in the
+        center of the window. This should result in better results for the
+        following stages as lots of thresholds are evaluated at the center
+        of a window.
         """
         new_windows = {}
         for window in self.windows:
             tag = (window.left, window.right)
             if tag not in new_windows:
+                window.center = \
+                    int(window.left + (window.right - window.left) / 2.0)
                 new_windows[tag] = window
         self.windows = sorted(new_windows.values(), key=lambda x: x.left)
         logger.info("Removing duplicates retains %i windows." % len(

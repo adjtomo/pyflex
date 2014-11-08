@@ -24,7 +24,7 @@ from obspy.signal.filter import envelope
 from obspy.taup import getTravelTimes
 import warnings
 
-from . import PyflexError, utils, logger, Event, Station
+from . import PyflexError, PyflexWarning, utils, logger, Event, Station
 from .stalta import sta_lta
 from .window import Window
 from .interval_scheduling import schedule_weighted_intervals
@@ -170,6 +170,8 @@ class WindowSelector(object):
         else:
             logger.info("No rejection based on traveltime possible. Event "
                         "and/or station information is not available.")
+        if self.config.check_global_data_quality:
+            self.check_data_quality()
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
@@ -183,6 +185,54 @@ class WindowSelector(object):
         self.schedule_weighted_intervals()
 
         return self.windows
+
+    def check_data_quality(self):
+        """
+        Checks the data quality by estimating signal to noise ratios.
+        """
+        if self.config.noise_end_index is None:
+            if not self.ttimes:
+                raise PyflexError(
+                    "Cannot check data quality as the noise end index is not "
+                    "given and station and/or event information is not "
+                    "available so the theoretical arrival times cannot be "
+                    "calculated.")
+            self.config.noise_end_index = \
+                self.ttimes[0]["time"] - self.config.min_period
+        if self.config.signal_start_index is None:
+            self.config.signal_start_index = self.config.noise_end_index
+
+        noise = self.observed.data[self.config.noise_start_index:
+                                   self.config.noise_end_index]
+        signal = self.observed.data[self.config.signal_start_index:
+                                    self.config.signal_end_index]
+
+        noise_int = np.sum(noise ** 2) / len(noise)
+        noise_amp = np.abs(noise).max()
+        signal_int = np.sum(signal ** 2) / len(signal)
+        signal_amp = np.abs(signal).max()
+
+        # Calculate ratios.
+        snr_int = signal_int / noise_int
+        snr_amp = signal_amp / noise_amp
+
+        if snr_int < self.config.snr_integrate_base:
+            msg = ("Whole waveform rejected as the integrated signal to "
+                   "noise ratio (%f) is above the threshold (%f)." %
+                   (snr_int, self.config.snr_integrate_base))
+            logger.warn(msg)
+            warnings.warn(msg, PyflexWarning)
+            return False
+
+        if snr_amp < self.config.snr_max_base:
+            msg = ("Whole waveform rejected as the signal to noise amplitude "
+                   "ratio (%f) is above the threshold (%f)." % (
+                       snr_amp, self.config.snr_max_base))
+            logger.warn(msg)
+            warnings.warn(msg, PyflexWarning)
+            return False
+
+        return True
 
     def calculate_ttimes(self):
         """

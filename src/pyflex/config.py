@@ -26,7 +26,8 @@ class Config(object):
                  cc_acceptance_level=0.7, earth_model="ak135",
                  min_surface_wave_velocity=3.0, c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
-                 noise_start_index=0, noise_end_index=None,
+                 check_global_data_quality=False, snr_integrate_base=3.5,
+                 snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
                  signal_start_index=None, signal_end_index=-1):
         """
         Central configuration object for Pyflex.
@@ -114,6 +115,21 @@ class Config(object):
             with emergent start/stops and/or codas.
         :type c_4b: float
 
+        :param check_global_data_quality: Determines whether or not to check
+            the signal to noise ratio of the whole observed waveform. If
+            True, no windows will be selected if the signal to noise ratio
+            is above the thresholds.
+        :param snr_integrate_base: Minimal SNR ratio. If the squared sum of
+            the signal normalized by its length over the squared sum of the
+            noise normalized by its length is smaller then this value,
+            no windows will be chosen for the waveforms. Only used if
+            ``check_global_data_quality`` is ``True``.
+        :type snr_integrate_base: float
+        :param snr_max_base: Minimal amplitude SNR ratio. If the maximum
+            amplitude of the signal over the maximum amplitude of the noise
+            is smaller than this value no windows will be chosen for the
+            waveforms. Only used if  ``check_global_data_quality`` is ``True``.
+        :type snr_max_base: float
         :param noise_start_index: Index in the observed data where noise
             starts for the signal to noise calculations.
         :type noise_start_index: int
@@ -154,6 +170,9 @@ class Config(object):
         self.c_4a = c_4a
         self.c_4b = c_4b
 
+        self.check_global_data_quality = check_global_data_quality
+        self.snr_integrate_base = snr_integrate_base
+        self.snr_max_base = snr_max_base
         self.noise_start_index = noise_start_index
         self.noise_end_index = noise_end_index
         self.signal_start_index = noise_start_index

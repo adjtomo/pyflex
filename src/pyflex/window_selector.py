@@ -183,6 +183,7 @@ class WindowSelector(object):
         # Call once again as curtailing might change the length of some
         # windows. Very cheap so can easily be called more than once.
         self.reject_windows_based_on_minimum_length()
+        self.reject_based_on_signal_to_noise_ratio()
         self.reject_based_on_data_fit_criteria()
         self.schedule_weighted_intervals()
 
@@ -199,11 +200,37 @@ class WindowSelector(object):
                             "event and/or station information is not given "
                             "and thus the theoretical arrival times cannot "
                             "be calculated")
-                return
-            self.config.noise_end_index = \
-                self.ttimes[0]["time"] - self.config.min_period
+            else:
+                self.config.noise_end_index = \
+                    self.ttimes[0]["time"] - self.config.min_period
         if self.config.signal_start_index is None:
             self.config.signal_start_index = self.config.noise_end_index
+
+    def reject_based_on_signal_to_noise_ratio(self):
+        """
+        Rejects windows based on their signal to noise amplitude ratio.
+        """
+        if self.config.noise_end_index is None:
+            logger.warn("Cannot reject windows based on their signal to "
+                        "noise ratio. Please give station and event "
+                        "information or information about the temporal range "
+                        "of the noise.")
+            return
+
+        noise = self.observed.data[self.config.noise_start_index:
+                                   self.config.noise_end_index]
+        noise_amp = np.abs(noise).max()
+
+        def filter_window_noise(win):
+            win_signal = self.observed.data[win.left: win.right]
+            win_noise_amp = np.abs(win_signal).max() / noise_amp
+            if win_noise_amp < self.config.s2n_limit[win.center]:
+                return False
+            return True
+
+        self.windows = list(filter(filter_window_noise, self.windows))
+        logger.info("SN amplitude ratio window rejection retained %i windows" %
+                    len(self.windows))
 
     def check_data_quality(self):
         """
@@ -310,7 +337,7 @@ class WindowSelector(object):
 
     def remove_duplicates(self):
         """
-        Filter to remove duplicate windows.
+        Filter to remove duplicate windows based on left and right bounds.
         """
         new_windows = {}
         for window in self.windows:

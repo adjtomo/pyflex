@@ -23,7 +23,7 @@ class Config(object):
     def __init__(self, min_period, max_period, stalta_waterlevel=0.07,
                  tshift_acceptance_level=10.0, tshift_reference=0.0,
                  dlna_acceptance_level=1.3, dlna_reference=0.0,
-                 cc_acceptance_level=0.7, earth_model="ak135",
+                 cc_acceptance_level=0.7, s2n_limit=1.5, earth_model="ak135",
                  min_surface_wave_velocity=3.0, c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
                  check_global_data_quality=False, snr_integrate_base=3.5,
@@ -70,6 +70,13 @@ class Config(object):
             per window. Can be either a single value or an array with the
             same number of samples as the data.
         :type cc_acceptance_level: float or :class:`numpy.ndarray`
+
+        :param s2n_limit: Limit of the signal to noise ratio per window. If
+            the maximum amplitude of the window over the maximum amplitude
+            of the global noise of the waveforms is smaller than this
+            window, then it will be rejected. Can be either a single value
+            or an array with the same number of samples as the data.
+        :type s2n_limit: float or :class:`numpy.ndarray`
 
         :param earth_model: The earth model used for the traveltime
             calculations. Either ``"ak135"`` or ``"iasp91"``.
@@ -155,6 +162,7 @@ class Config(object):
         self.dlna_acceptance_level = dlna_acceptance_level
         self.dlna_reference = dlna_reference
         self.cc_acceptance_level = cc_acceptance_level
+        self.s2n_limit = s2n_limit
 
         if earth_model.lower() not in ("ak135", "iasp91"):
             raise PyflexError("Earth model must either be 'ak135' or "
@@ -184,7 +192,8 @@ class Config(object):
         called during initialization as the array length is not yet known.
         """
         attributes = ("stalta_waterlevel", "tshift_acceptance_level",
-                      "dlna_acceptance_level", "cc_acceptance_level")
+                      "dlna_acceptance_level", "cc_acceptance_level",
+                      "s2n_limit")
         for name in attributes:
             attr = getattr(self, name)
 

@@ -170,6 +170,8 @@ class WindowSelector(object):
         else:
             logger.info("No rejection based on traveltime possible. Event "
                         "and/or station information is not available.")
+
+        self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:
             self.check_data_quality()
         self.reject_windows_based_on_minimum_length()
@@ -186,21 +188,33 @@ class WindowSelector(object):
 
         return self.windows
 
+    def determine_signal_and_noise_indices(self):
+        """
+        Calculate the time range of the noise and the signal respectively if
+        not yet specified by the user.
+        """
+        if self.config.noise_end_index is None:
+            if not self.ttimes:
+                logger.warn("Cannot calculate the end of the noise as "
+                            "event and/or station information is not given "
+                            "and thus the theoretical arrival times cannot "
+                            "be calculated")
+                return
+            self.config.noise_end_index = \
+                self.ttimes[0]["time"] - self.config.min_period
+        if self.config.signal_start_index is None:
+            self.config.signal_start_index = self.config.noise_end_index
+
     def check_data_quality(self):
         """
         Checks the data quality by estimating signal to noise ratios.
         """
         if self.config.noise_end_index is None:
-            if not self.ttimes:
-                raise PyflexError(
-                    "Cannot check data quality as the noise end index is not "
-                    "given and station and/or event information is not "
-                    "available so the theoretical arrival times cannot be "
-                    "calculated.")
-            self.config.noise_end_index = \
-                self.ttimes[0]["time"] - self.config.min_period
-        if self.config.signal_start_index is None:
-            self.config.signal_start_index = self.config.noise_end_index
+            raise PyflexError(
+                "Cannot check data quality as the noise end index is not "
+                "given and station and/or event information is not "
+                "available so the theoretical arrival times cannot be "
+                "calculated.")
 
         noise = self.observed.data[self.config.noise_start_index:
                                    self.config.noise_end_index]

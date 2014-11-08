@@ -25,7 +25,9 @@ class Config(object):
                  dlna_acceptance_level=1.3, dlna_reference=0.0,
                  cc_acceptance_level=0.7, earth_model="ak135",
                  min_surface_wave_velocity=3.0, c_0=1.0, c_1=1.5, c_2=0.0,
-                 c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0):
+                 c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
+                 noise_start_index=0, noise_end_index=None,
+                 signal_start_index=None, signal_end_index=-1):
         """
         Central configuration object for Pyflex.
 
@@ -111,6 +113,22 @@ class Config(object):
         :param c_4b: Fine tuning constant for curtailing windows on the right
             with emergent start/stops and/or codas.
         :type c_4b: float
+
+        :param noise_start_index: Index in the observed data where noise
+            starts for the signal to noise calculations.
+        :type noise_start_index: int
+        :param noise_end_index: Index in the observed data where noise
+            ends for the signal to noise calculations. Will be set to the
+            time of the first theoretical arrival minus the minimum period
+            if not set and event and station information is available.
+        :type noise_end_index: int
+        :param signal_start_index: Index where the signal starts for the signal
+            to noise calculations. Will be set to to the noise end index if
+            not given.
+        :type signal_start_index: int
+        :param signal_end_index: Index where the signal ends for the signal
+            to noise calculations.
+        :type signal_end_index: int
         """
         self.min_period = min_period
         self.max_period = min_period
@@ -135,6 +153,11 @@ class Config(object):
         self.c_3b = c_3b
         self.c_4a = c_4a
         self.c_4b = c_4b
+
+        self.noise_start_index = noise_start_index
+        self.noise_end_index = noise_end_index
+        self.signal_start_index = noise_start_index
+        self.signal_end_index = noise_end_index
 
     def _convert_to_array(self, npts):
         """

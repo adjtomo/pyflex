@@ -45,7 +45,8 @@ def test_window_selection():
 
     config = pyflex.Config(
         min_period=50.0, max_period=150.0,
-        stalta_base=0.1, tshift_base=15.0, dlna_base=1.0, cc_base=0.80,
+        stalta_waterlevel=0.1, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
         c_0=0.7, c_1=3.5, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
 
     windows = pyflex.select_windows(obs_data, synth_data, config)

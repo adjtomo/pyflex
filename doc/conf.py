@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Pyflex'
-copyright = u'2014, Lion Krischer, Alessi Maggi'
+copyright = u'2014, Lion Krischer'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -207,7 +207,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'Pyflex.tex', u'Pyflex Documentation',
-   u'Lion Krischer, Federica Magnoni, Emanuele Casarotti, Alessi Maggi', 'manual'),
+   u'Lion Krischer', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -237,7 +237,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'pyflex', u'Pyflex Documentation',
-     [u'Lion Krischer, Federica Magnoni, Emanuele Casarotti, Alessi Maggi'], 1)
+     [u'Lion Krischer'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -251,7 +251,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'Pyflex', u'Pyflex Documentation',
-   u'Lion Krischer, Federica Magnoni, Emanuele Casarotti, Alessi Maggi', 'Pyflex', 'One line description of project.',
+   u'Lion Krischer', 'Pyflex', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -267,9 +267,8 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-
-# Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('http://docs.python.org/', None),
-    'obspy': ('http://docs.obspy.org/', None)
+    'obspy': ('http://docs.obspy.org/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None)
 }

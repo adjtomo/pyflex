@@ -73,6 +73,7 @@ class WindowSelector(object):
         self.synthetic.data = np.ascontiguousarray(self.synthetic.data)
 
         self.config = config
+        self.config._convert_to_array(npts=self.observed.stats.npts)
 
         self.ttimes = []
         self.windows = []
@@ -225,7 +226,7 @@ class WindowSelector(object):
             if peak <= self.troughs[0] or peak >= self.troughs[-1]:
                 continue
             # only continue if this maximum is above the water level
-            if self.stalta[peak] <= self.config.stalta_base:
+            if self.stalta[peak] <= self.config.stalta_waterlevel[peak]:
                 continue
             smaller_troughs = self.troughs[self.troughs < peak]
             larger_troughs = self.troughs[self.troughs > peak]
@@ -269,7 +270,8 @@ class WindowSelector(object):
         reject_on_water_level() function in flexwin.
         """
         def filter_window_minima(win):
-            waterlevel_midpoint = self.config.c_0 * self.config.stalta_base
+            waterlevel_midpoint = \
+                self.config.c_0 * self.config.stalta_waterlevel[win.center]
             internal_minima = win._get_internal_indices(self.troughs)
             return not np.any(self.stalta[internal_minima] <=
                               waterlevel_midpoint)
@@ -282,6 +284,11 @@ class WindowSelector(object):
         """
         Equivalent to reject_on_prominence() in the original flexwin code.
         """
+        # The fine tuning constant is often set to 0. Nothing to do in this
+        # case as all windows will then pass the criteria by definition.
+        if not self.config.c_2:
+            return self.windows
+
         def filter_windows_maximum_prominence(win):
             smaller_troughs = self.troughs[self.troughs < win.center]
             larger_troughs = self.troughs[self.troughs > win.center]
@@ -328,7 +335,10 @@ class WindowSelector(object):
                 # find scaled time between current maximum and central maximum
                 d_time = abs(win.center - max_index) * \
                     self.observed.stats.delta / self.config.min_period
-                # find value of time decay function
+                # find value of time decay function.
+                # The paper has a square root in the numinator of the
+                # exponent as well. Not the case here as it is not the case
+                # in the original flexwin code.
                 if (d_time >= self.config.c_3b):
                     f_time = np.exp(-((d_time - self.config.c_3b) /
                                       self.config.c_3b) ** 2)
@@ -406,17 +416,21 @@ class WindowSelector(object):
             win._calc_criteria(self.observed.data, self.synthetic.data)
 
         def reject_based_on_criteria(win):
-            tshift_min = self.config.tshift_reference - self.config.tshift_base
-            tshift_max = self.config.tshift_reference + self.config.tshift_base
-            dlnA_min = self.config.dlna_reference - self.config.dlna_base
-            dlnA_max = self.config.dlna_reference + self.config.dlna_base
+            tshift_min = self.config.tshift_reference - \
+                self.config.tshift_acceptance_level[win.center]
+            tshift_max = self.config.tshift_reference + \
+                self.config.tshift_acceptance_level[win.center]
+            dlnA_min = self.config.dlna_reference - \
+                self.config.dlna_acceptance_level[win.center]
+            dlnA_max = self.config.dlna_reference + \
+                self.config.dlna_acceptance_level[win.center]
 
             if not (tshift_min < win.cc_shift *
                     self.observed.stats.delta < tshift_max):
                 return False
             if not (dlnA_min < win.dlnA < dlnA_max):
                 return False
-            if win.max_cc_value < self.config.cc_base:
+            if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
                 return False
             return True
 
@@ -516,8 +530,8 @@ class WindowSelector(object):
 
         plt.subplot(212)
         plt.plot(self.stalta, color="blue")
-        plt.hlines(self.config.stalta_base, 0, len(self.observed.data),
-                   linestyle="dashed", color="blue")
+        plt.plot(self.config.stalta_waterlevel, linestyle="dashed",
+                 color="blue")
         plt.xlim(0, len(self.stalta))
 
         ax = plt.gca()

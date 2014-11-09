@@ -42,18 +42,12 @@ def find_local_extrema(data):
     maxima = []
     minima = []
 
-    used_points = []
     # Go over each flats position and check if its a maxima/minima.
     for idx in flats:
-        if idx in used_points:
-            continue
-        used_points.append(idx)
         l_type = "left"
         r_type = "right"
         for i in itertools.count():
             this_idx = idx - i - 1
-            if this_idx < 0:
-                break
             if diff[this_idx] < 0:
                 l_type = "minima"
                 break

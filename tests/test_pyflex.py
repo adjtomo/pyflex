@@ -71,6 +71,11 @@ def test_window_selection():
                   0.093674448597561411, -0.11885913254077075,
                   -0.63865703707265198]))
 
+    # Assert the phases of the first window.
+    assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \
+        [u'PKPdf', u'PKSdf', u'PKiKP', u'PP', u'SKPdf', u'SKiKP', u'pPKPdf',
+         u'pPKiKP', u'sPKPdf', u'sPKiKP']
+
 
 def test_cc_config_setting():
     """
@@ -144,3 +149,10 @@ def test_runs_without_event_information(recwarn):
     assert w.category == pyflex.PyflexWarning
     assert "Event and/or station information is not available".lower() in \
         str(w.message).lower()
+
+    # No phases should be attached as they cannot be calculated.
+    phases = []
+    for win in windows:
+        phases.extend(win.phase_arrivals)
+
+    assert phases == []

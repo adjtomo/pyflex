@@ -196,7 +196,13 @@ class WindowSelector(object):
         self.reject_windows_based_on_minimum_length()
         self.reject_based_on_signal_to_noise_ratio()
         self.reject_based_on_data_fit_criteria()
-        self.schedule_weighted_intervals()
+
+        if self.config.resolution_strategy == "interval_scheduling":
+            self.schedule_weighted_intervals()
+        elif self.config.resolution_strategy == "merge":
+            self.merge_windows()
+        else:
+            raise NotImplementedError
 
         if self.ttimes:
             self.attach_phase_arrivals_to_windows()
@@ -213,6 +219,29 @@ class WindowSelector(object):
             right = win.relative_endtime - offset
             win.phase_arrivals = [
                 _i for _i in self.ttimes if left <= _i["time"] <= right]
+
+    def merge_windows(self):
+        """
+        Merge overlapping windows. Will also recalculate the data fit criteria.
+        """
+        # Sort by starttime.
+        self.windows = sorted(self.windows, key=lambda x: x.left)
+        windows = [self.windows.pop(0)]
+        for right_win in self.windows:
+            left_win = windows[-1]
+            if (left_win.right + 1) < right_win.left:
+                windows.append(right_win)
+                continue
+            left_win.right = right_win.right
+        self.windows = windows
+
+        for win in self.windows:
+            # Recenter windows
+            win.center = int(win.left + (win.right - win.left) / 2.0)
+            # Recalculate criteria.
+            win._calc_criteria(self.observed.data, self.synthetic.data)
+        logger.info("Merging windows resulted in %i windows."  %
+                    len(self.windows))
 
     def determine_signal_and_noise_indices(self):
         """

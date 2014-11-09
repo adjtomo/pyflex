@@ -29,7 +29,8 @@ class Config(object):
                  check_global_data_quality=False, snr_integrate_base=3.5,
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
                  signal_start_index=None, signal_end_index=-1,
-                 window_weight_fct=None):
+                 window_weight_fct=None,
+                 resolution_strategy="interval_scheduling"):
         """
         Central configuration object for Pyflex.
 
@@ -158,6 +159,13 @@ class Config(object):
             specific window as a single number. Directly passed to the
             :class:`~pyflex.window.Window` 's initialization function.
         :type window_weight_fct: function
+
+        :param resolution_strategy: Strategy used to resolve overlaps.
+            Possibilities are ``"interval_scheduling"`` and ``"merge"``.
+            Interval scheduling will chose the optimal subset of
+            non-overlapping windows. Merging will simply merge overlapping
+            windows.
+        :type resolution_strategy: str
         """
         self.min_period = min_period
         self.max_period = min_period
@@ -193,6 +201,12 @@ class Config(object):
         self.signal_end_index = noise_end_index
 
         self.window_weight_fct = window_weight_fct
+
+        if resolution_strategy.lower() not in ["interval_scheduling", "merge"]:
+            raise PyflexError(
+                "Invalid resolution strategy. Choose either "
+                "'interval_scheduling' or 'merge'.")
+        self.resolution_strategy = resolution_strategy.lower()
 
     def _convert_to_array(self, npts):
         """

@@ -636,16 +636,23 @@ class WindowSelector(object):
         ax.set_xticks([])
         ax.set_yticks([])
 
-        plt.text(0.01, 0.99, 'seismograms', horizontalalignment='left',
+        plt.text(0.01, 0.99, 'Seismograms', horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)
 
+        buf = 0.003 * (plt.xlim()[1] - plt.xlim()[0])
         for win in self.windows:
             l = win.relative_starttime - offset
             r = win.relative_endtime - offset
             re = Rectangle((l, plt.ylim()[0]), r - l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
-                           alpha=0.3)
+                           alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
+            plt.text(l + buf, plt.ylim()[1],
+                     "CC=%.2f\ndT=%.2f\ndA=%.2f" %
+                     (win.max_cc_value, win.cc_shift, win.dlnA),
+                     horizontalalignment="left",
+                     verticalalignment="top", rotation="vertical",
+                     size="small", multialignment="right")
 
         plt.subplot(212)
         plt.plot(times, self.stalta, color="blue")
@@ -669,7 +676,7 @@ class WindowSelector(object):
             r = win.relative_endtime - offset
             re = Rectangle((l, plt.ylim()[0]), r - l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
-                           alpha=0.3)
+                           alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
 
         plt.tight_layout()

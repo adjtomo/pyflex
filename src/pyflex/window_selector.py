@@ -177,8 +177,10 @@ class WindowSelector(object):
             self.calculate_ttimes()
             self.reject_on_traveltimes()
         else:
-            logger.info("No rejection based on traveltime possible. Event "
-                        "and/or station information is not available.")
+            msg = "No rejection based on traveltime possible. Event and/or " \
+                  "station information is not available."
+            logger.warn(msg)
+            warnings.warn(msg, PyflexWarning)
 
         self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:

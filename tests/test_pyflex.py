@@ -70,3 +70,77 @@ def test_window_selection():
                   -0.19276977567364437, 0.18556340842688038,
                   0.093674448597561411, -0.11885913254077075,
                   -0.63865703707265198]))
+
+
+def test_cc_config_setting():
+    """
+    Make sure setting the CC threshold does something.
+    """
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.95,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
+
+    windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
+    assert np.all(np.array([_i.max_cc_value for _i in windows]) >= 0.95)
+
+
+def test_custom_weight_function():
+    """
+    Test the custom weight function. Set the weight of every window with a
+    CC of smaller then 95 to 0.0.
+    """
+    def weight_function(win):
+        if win.max_cc_value < 0.95:
+            return 0.0
+        else:
+            return 10.0
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        window_weight_fct=weight_function)
+
+    windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
+    assert np.all(np.array([_i.max_cc_value for _i in windows]) >= 0.95)
+
+    # Not setting it will result in the default value.
+    config.window_weight_fct = None
+    windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
+    assert False == \
+        np.all(np.array([_i.max_cc_value for _i in windows]) >= 0.95)
+
+
+def test_runs_without_event_information(recwarn):
+    """
+    Make sure it runs without event information. Some things will not work
+    but it will at least not crash.
+    """
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
+
+    obs = OBS_DATA[0].copy()
+    syn = SYNTH_DATA[0].copy()
+
+    # Remove the sac header information.
+    del obs.stats.sac
+    del syn.stats.sac
+
+    recwarn.clear()
+    windows = pyflex.select_windows(obs, syn, config)
+
+    # This will actually result in a bunch more windows as before. So it
+    # is always a good idea to specify the event and station information!
+    assert len(windows) == 12
+
+    assert len(recwarn.list) == 1
+    w = recwarn.list[0]
+    assert w.category == pyflex.PyflexWarning
+    assert "Event and/or station information is not available".lower() in \
+        str(w.message).lower()

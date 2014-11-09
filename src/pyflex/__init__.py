@@ -32,7 +32,7 @@ class PyflexWarning(UserWarning):
 
 
 Event = collections.namedtuple("Event", ["latitude", "longitude",
-                                         "depth_in_m"])
+                                         "depth_in_m", "origin_time"])
 
 
 Station = collections.namedtuple("Station", ["latitude", "longitude"])

@@ -97,7 +97,8 @@ class WindowSelector(object):
                 origin = self.event.preferred_origin() or self.event.origins[0]
                 self.event = Event(latitude=origin.latitude,
                                    longitude=origin.longitude,
-                                   depth_in_m=origin.depth)
+                                   depth_in_m=origin.depth,
+                                   origin_time=origin.time)
             else:
                 raise PyflexError("Could not parse the event. Unknown type.")
 
@@ -134,7 +135,7 @@ class WindowSelector(object):
             else:
                 return
             sac = tr.stats.sac
-            values = (sac.evla, sac.evlo, sac.evdp, sac.stla, sac.stlo)
+            values = (sac.evla, sac.evlo, sac.evdp, sac.stla, sac.stlo, sac.b)
             # Invalid value in sac.
             if -12345.0 in values:
                 return
@@ -143,14 +144,16 @@ class WindowSelector(object):
                 logger.info("Extracted station information from %s SAC file."
                             % ftype)
             if not self.event:
-                self.event = Event(latitude=values[0], longitude=values[1],
-                                   depth_in_m=values[2] * 1000.0)
+                self.event = Event(
+                    latitude=values[0], longitude=values[1],
+                    depth_in_m=values[2] * 1000.0,
+                    origin_time=self.observed.stats.starttime - values[5])
                 logger.info("Extracted event information from %s SAC file." %
                             ftype)
 
-    def select_windows(self):
+    def calculate_preliminiaries(self):
         """
-        Launch the window selection.
+        Calculates the envelope, STA/LTA and the finds the local extrema.
         """
         logger.info("Calculating envelope of synthetics.")
         self.synthetic_envelope = envelope(self.synthetic.data)
@@ -159,6 +162,12 @@ class WindowSelector(object):
                               self.observed.stats.delta,
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
+
+    def select_windows(self):
+        """
+        Launch the window selection.
+        """
+        self.calculate_preliminiaries()
 
         # Perform all window selection steps.
         self.initial_window_selection()
@@ -202,7 +211,7 @@ class WindowSelector(object):
                             "be calculated")
             else:
                 self.config.noise_end_index = \
-                    self.ttimes[0]["time"] - self.config.min_period
+                    int(self.ttimes[0]["time"] - self.config.min_period)
         if self.config.signal_start_index is None:
             self.config.signal_start_index = self.config.noise_end_index
 
@@ -604,12 +613,20 @@ class WindowSelector(object):
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle
 
+        # Use an offset to have the seconds since the event as the time axis.
+        if self.event:
+            offset = self.event.origin_time - self.observed.stats.starttime
+        else:
+            offset = 0
+
         plt.figure(figsize=(15, 5))
         plt.subplot(211)
 
-        plt.plot(self.observed.data, color="black")
-        plt.plot(self.synthetic.data, color="red")
-        plt.xlim(0, len(self.observed.data))
+        times = self.observed.times() - offset
+
+        plt.plot(times, self.observed.data, color="black")
+        plt.plot(times, self.synthetic.data, color="red")
+        plt.xlim(times[0], times[-1])
 
         ax = plt.gca()
         ax.spines['right'].set_color('none')
@@ -623,16 +640,19 @@ class WindowSelector(object):
                  verticalalignment='top', transform=ax.transAxes)
 
         for win in self.windows:
-            re = Rectangle((win.left, plt.ylim()[0]), win.right - win.left,
+            l = win.relative_starttime - offset
+            r = win.relative_endtime - offset
+            re = Rectangle((l, plt.ylim()[0]), r - l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=0.3)
             plt.gca().add_patch(re)
 
         plt.subplot(212)
-        plt.plot(self.stalta, color="blue")
-        plt.plot(self.config.stalta_waterlevel, linestyle="dashed",
+        plt.plot(times, self.stalta, color="blue")
+        plt.plot(times, self.config.stalta_waterlevel, linestyle="dashed",
                  color="blue")
-        plt.xlim(0, len(self.stalta))
+        plt.xlim(times[0], times[-1])
+        plt.xlabel("Time [s]")
 
         ax = plt.gca()
         ax.spines['right'].set_color('none')
@@ -645,7 +665,9 @@ class WindowSelector(object):
                  verticalalignment='top', transform=ax.transAxes)
 
         for win in self.windows:
-            re = Rectangle((win.left, plt.ylim()[0]), win.right - win.left,
+            l = win.relative_starttime - offset
+            r = win.relative_endtime - offset
+            re = Rectangle((l, plt.ylim()[0]), r - l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=0.3)
             plt.gca().add_patch(re)

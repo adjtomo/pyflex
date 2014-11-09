@@ -620,10 +620,34 @@ class WindowSelector(object):
             offset = 0
 
         plt.figure(figsize=(15, 5))
-        plt.subplot(211)
+
+        plt.axes([0.025, 0.92, 0.95, 0.07])
 
         times = self.observed.times() - offset
 
+        # Plot theoretical arrivals.
+        ax = plt.gca()
+        ax.spines['right'].set_color('none')
+        ax.spines['left'].set_color('none')
+        ax.spines['top'].set_color('none')
+        ax.spines['bottom'].set_color('none')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlim(times[0], times[-1])
+
+        for tt in self.ttimes:
+            if tt["phase_name"].lower().startswith("p"):
+                color = "#008c28"
+            else:
+                color = "#950000"
+            # Don't need an offset as the time axis corresponds to time
+            # since event.
+            plt.vlines(tt["time"], plt.ylim()[0], plt.ylim()[1], color=color)
+
+        plt.text(0.01, 0.92, 'Phase Arrivals', horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes)
+
+        plt.axes([0.025, 0.51, 0.95, 0.4])
         plt.plot(times, self.observed.data, color="black")
         plt.plot(times, self.synthetic.data, color="red")
         plt.xlim(times[0], times[-1])
@@ -654,7 +678,7 @@ class WindowSelector(object):
                      verticalalignment="top", rotation="vertical",
                      size="small", multialignment="right")
 
-        plt.subplot(212)
+        plt.axes([0.025, 0.1, 0.95, 0.4])
         plt.plot(times, self.stalta, color="blue")
         plt.plot(times, self.config.stalta_waterlevel, linestyle="dashed",
                  color="blue")
@@ -681,8 +705,6 @@ class WindowSelector(object):
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
-
-        plt.tight_layout()
 
         if filename is None:
             plt.show()

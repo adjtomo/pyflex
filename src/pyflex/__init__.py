@@ -17,7 +17,7 @@ import logging
 
 class PyflexError(Exception):
     """
-    Base class for all pyflex exceptions. Will probably be used for all
+    Base class for all Pyflex exceptions. Will probably be used for all
     exceptions to not overcomplicate things as the whole package is pretty
     small.
     """
@@ -26,7 +26,7 @@ class PyflexError(Exception):
 
 class PyflexWarning(UserWarning):
     """
-    Base class for all pyflex warnings.
+    Base class for all Pyflex warnings.
     """
     pass
 

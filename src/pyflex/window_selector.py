@@ -85,13 +85,13 @@ class WindowSelector(object):
         # Parse the event.
         if self.event and not isinstance(self.event, Event):
             # It might be an ObsPy event catalog.
-            if isinstance(self.event, obspy.core.Catalog):
+            if isinstance(self.event, obspy.core.event.Catalog):
                 if len(self.event) != 1:
                     raise PyflexError("The event catalog must contain "
                                       "exactly one event.")
                 self.event = self.event[0]
             # It might be an ObsPy event object.
-            if isinstance(self.event, obspy.core.Event):
+            if isinstance(self.event, obspy.core.event.Event):
                 if not self.event.origins:
                     raise PyflexError("Event does not contain an origin.")
                 origin = self.event.preferred_origin() or self.event.origins[0]

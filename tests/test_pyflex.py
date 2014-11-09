@@ -156,3 +156,43 @@ def test_runs_without_event_information(recwarn):
         phases.extend(win.phase_arrivals)
 
     assert phases == []
+
+
+def test_event_information_extraction():
+    """
+    Event information can either be passed or read from sac files.
+    """
+    config = pyflex.Config(min_period=50.0, max_period=150.0)
+
+    # If not passed, it is read from sac files, if available.
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    assert abs(ws.event.latitude - -3.77) <= 1E-5
+    assert abs(ws.event.longitude - -77.07) <= 1E-5
+    assert abs(ws.event.depth_in_m - 112800.00305) <= 1E-5
+    assert ws.event.origin_time == \
+        obspy.UTCDateTime(1995, 5, 2, 6, 6, 13, 900000)
+
+    # If it passed, the passed event will be used.
+    ev = pyflex.Event(1, 2, 3, obspy.UTCDateTime(2012, 1, 1))
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config,
+                                               event=ev)
+    assert ws.event == ev
+
+    # Alternatively, an ObsPy Catalog or Event object can be passed which
+    # opens the gate to more complex workflows.
+    cat = obspy.readEvents()
+    cat.events = cat.events[:1]
+    event = cat[0]
+
+    ev = pyflex.Event(event.origins[0].latitude, event.origins[0].longitude,
+                      event.origins[0].depth, event.origins[0].time)
+
+    # Test catalog.
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config,
+                                               event=cat)
+    assert ws.event == ev
+
+    # Test event.
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config,
+                                               event=cat[0])
+    assert ws.event == ev

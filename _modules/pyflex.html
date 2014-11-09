@@ -67,22 +67,22 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 
 
-<span class="k">class</span> <span class="nc">PyflexError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<div class="viewcode-block" id="PyflexError"><a class="viewcode-back" href="../index.html#pyflex.PyflexError">[docs]</a><span class="k">class</span> <span class="nc">PyflexError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Base class for all pyflex exceptions. Will probably be used for all</span>
+<span class="sd">    Base class for all Pyflex exceptions. Will probably be used for all</span>
 <span class="sd">    exceptions to not overcomplicate things as the whole package is pretty</span>
 <span class="sd">    small.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
 
-
-<span class="k">class</span> <span class="nc">PyflexWarning</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+</div>
+<div class="viewcode-block" id="PyflexWarning"><a class="viewcode-back" href="../index.html#pyflex.PyflexWarning">[docs]</a><span class="k">class</span> <span class="nc">PyflexWarning</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Base class for all pyflex warnings.</span>
+<span class="sd">    Base class for all Pyflex warnings.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">pass</span>
 
-
+</div>
 <span class="n">Event</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s">&quot;Event&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s">&quot;latitude&quot;</span><span class="p">,</span> <span class="s">&quot;longitude&quot;</span><span class="p">,</span>
                                          <span class="s">&quot;depth_in_m&quot;</span><span class="p">,</span> <span class="s">&quot;origin_time&quot;</span><span class="p">])</span>
 

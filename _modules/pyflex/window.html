@@ -77,8 +77,18 @@
                  <span class="s">&quot;cc_shift&quot;</span><span class="p">,</span> <span class="s">&quot;dlnA&quot;</span><span class="p">,</span> <span class="s">&quot;dt&quot;</span><span class="p">,</span> <span class="s">&quot;min_win_period&quot;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">time_of_first_sample</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span>
-                 <span class="n">min_period</span><span class="p">):</span>
+                 <span class="n">min_period</span><span class="p">,</span> <span class="n">weight_function</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The optional ``weight_function`` parameter can be used to customize</span>
+<span class="sd">        the weight of the window. Its single parameter is an instance of the</span>
+<span class="sd">        window. The following example will create a window function that</span>
+<span class="sd">        does exactly the same as the default weighting function.</span>
+
+<span class="sd">        &gt;&gt;&gt; def weight_function(win):</span>
+<span class="sd">        ...     return ((win.right - win.left) * win.dt / win.min_period *</span>
+<span class="sd">        ...         win.max_cc_value)</span>
+
+
 <span class="sd">        :param left: The array index of the left bound of the window.</span>
 <span class="sd">        :type left: int</span>
 <span class="sd">        :param right: The array index of the right bound of the window.</span>
@@ -93,6 +103,9 @@
 <span class="sd">        :type dt: float</span>
 <span class="sd">        :param min_period: The minimum period in seconds.</span>
 <span class="sd">        :type min_period: float</span>
+<span class="sd">        :param weight_function: Function determining the window weight. The</span>
+<span class="sd">            only argument of the function is a window instance.</span>
+<span class="sd">        :type weight_function: function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="n">left</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">right</span>
@@ -103,12 +116,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dlnA</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_period</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_arrivals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_function</span> <span class="o">=</span> <span class="n">weight_function</span>
 
     <span class="k">def</span> <span class="nf">_get_internal_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        From a list of indices, return the ones inside this window excluding</span>
 <span class="sd">        the borders..</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">indices</span><span class="p">[(</span><span class="n">indices</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">indices</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)]</span>
 
     <span class="nd">@property</span>
@@ -161,10 +177,12 @@
 <div class="viewcode-block" id="Window.weight"><a class="viewcode-back" href="../../index.html#pyflex.window.Window.weight">[docs]</a>    <span class="k">def</span> <span class="nf">weight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The weight of the window used for the weighted interval scheduling.</span>
-
-<span class="sd">        The weight is window lengths in number of minimum period times the</span>
-<span class="sd">        cross correlation coefficient.</span>
+<span class="sd">        Either calls a potentially passed window weight function or defaults</span>
+<span class="sd">        to the window length in number of minimum periods times the cross</span>
+<span class="sd">        correlation coefficient.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_function</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_function</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span> <span class="o">*</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">max_cc_value</span>
 </div>

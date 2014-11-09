@@ -104,9 +104,9 @@ Observed and synthetic waveforms can be passed as either ObsPy :class:`~obspy.co
 Windows
 -------
 
-It returns a sorted list of windows which can then be used in further
-applications.
-
+                
+It returns a sorted list of :class:`~pyflex.window.Window` objects which can then be used in further applications.
+                
 .. code:: python
 
     import pprint
@@ -120,11 +120,17 @@ applications.
 
 
 Each window contains a number of properties that can be used to
-calculate absolute and relative times for the specific window.
+calculate absolute and relative times for the specific window. ``left``
+and ``right`` specify the boundary indices of a window,
+``absolute_starttime`` and ``absolute_endtime`` are the absolute times
+of a window's bounds as ObsPy UTCDateTime objects, and
+``relative_starttime`` and ``relative_endtime`` are the bounds of a
+window in seconds since the first sample of the data arrays (not
+necessarily identical to the event origin time!).
 
 .. code:: python
 
-    win = windows[0]
+    win = windows[4]
     print("Indices: %s - %s" % (win.left, win.right))
     print("Absolute times: %s - %s" % (win.absolute_starttime, win.absolute_endtime))
     print("Relative times in seconds: %s - %s" % (win.relative_starttime,
@@ -132,9 +138,36 @@ calculate absolute and relative times for the specific window.
 
 .. parsed-literal::
 
-    Indices: 1551 - 1985
-    Absolute times: 1995-05-02T06:23:44.500006Z - 1995-05-02T06:30:58.500006Z
-    Relative times in seconds: 1551.0 - 1985.0
+    Indices: 3353 - 3609
+    Absolute times: 1995-05-02T06:53:46.500006Z - 1995-05-02T06:58:02.500006Z
+    Relative times in seconds: 3353.0 - 3609.0
+
+
+A window furthermore contains a list of phases theoretically arriving
+within the window. Take care that the times here are in seconds since
+the event origin.
+
+.. code:: python
+
+    win.phase_arrivals
+
+
+
+.. parsed-literal::
+
+    [{'d2T/dD2': -0.008985511,
+      'dT/dD': -3.7036695,
+      'dT/dh': -0.21970677,
+      'phase_name': "S'S'ac",
+      'take-off angle': 8.7734709,
+      'time': 3049.9629},
+     {'d2T/dD2': -0.21710481,
+      'dT/dD': -1.9104689,
+      'dT/dh': -0.22161883,
+      'phase_name': "S'S'df",
+      'take-off angle': 4.5126305,
+      'time': 3091.7417}]
+
 
 
 Logging
@@ -154,28 +187,50 @@ channels.
     logger.setLevel(logging.DEBUG)
     
     windows = pyflex.select_windows(obs_data, synth_data, config)
+    
+    sorted([_i["phase_name"] for _i in windows[0].phase_arrivals])
 
 .. parsed-literal::
 
-    [2014-11-09 13:26:28,640] - pyflex - INFO: Extracted station information from observed SAC file.
-    [2014-11-09 13:26:28,640] - pyflex - INFO: Extracted event information from observed SAC file.
-    [2014-11-09 13:26:28,644] - pyflex - INFO: Calculating envelope of synthetics.
-    [2014-11-09 13:26:28,646] - pyflex - INFO: Calculating STA/LTA.
-    [2014-11-09 13:26:28,969] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-    [2014-11-09 13:26:28,970] - pyflex - INFO: Calculated travel times.
-    [2014-11-09 13:26:28,981] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
-    [2014-11-09 13:26:29,018] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
-    [2014-11-09 13:26:29,131] - pyflex - INFO: Water level rejection retained 39 windows
-    [2014-11-09 13:26:29,134] - pyflex - INFO: Single phase group rejection retained 14 windows
-    [2014-11-09 13:26:29,135] - pyflex - INFO: Removing duplicates retains 14 windows.
-    [2014-11-09 13:26:29,135] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
-    [2014-11-09 13:26:29,136] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
-    [2014-11-09 13:26:29,140] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
-    [2014-11-09 13:26:29,141] - pyflex - INFO: Weighted interval schedule optimzation retained 7 windows.
+    [2014-11-09 22:59:16,355] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2014-11-09 22:59:16,356] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2014-11-09 22:59:16,361] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-09 22:59:16,363] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-09 22:59:16,699] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+    [2014-11-09 22:59:16,701] - pyflex - INFO: Calculated travel times.
+    [2014-11-09 22:59:16,712] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
+    [2014-11-09 22:59:16,750] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
+    [2014-11-09 22:59:16,874] - pyflex - INFO: Water level rejection retained 39 windows
+    [2014-11-09 22:59:16,877] - pyflex - INFO: Single phase group rejection retained 14 windows
+    [2014-11-09 22:59:16,878] - pyflex - INFO: Removing duplicates retains 14 windows.
+    [2014-11-09 22:59:16,879] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+    [2014-11-09 22:59:16,879] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
+    [2014-11-09 22:59:16,884] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
+    [2014-11-09 22:59:16,885] - pyflex - INFO: Weighted interval schedule optimzation retained 7 windows.
+
+
+
+
+.. parsed-literal::
+
+    ['PKPdf',
+     'PKSdf',
+     'PKiKP',
+     'PP',
+     'SKPdf',
+     'SKiKP',
+     'pPKPdf',
+     'pPKiKP',
+     'sPKPdf',
+     'sPKiKP']
+
 
 
 API Documentation
 =================
+
+This section documents the most used functions and classes. For more
+details you can always have a look at the code.
 
 Config Object
 -------------
@@ -212,6 +267,16 @@ cleaner workflow).
 .. autoclass:: pyflex.Event
 
 .. autoclass:: pyflex.Station
+                
+Exceptions and Warnings
+-----------------------
+
+Right now error handling is very simple and handled by these two types.
+
+                
+.. autoclass:: pyflex.PyflexError
+
+.. autoclass:: pyflex.PyflexWarning
                 
 Low-level WindowSelector Class
 ------------------------------

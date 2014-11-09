@@ -138,13 +138,13 @@
         <span class="c"># Parse the event.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">Event</span><span class="p">):</span>
             <span class="c"># It might be an ObsPy event catalog.</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Catalog</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="p">):</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;The event catalog must contain &quot;</span>
                                       <span class="s">&quot;exactly one event.&quot;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="c"># It might be an ObsPy event object.</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Event does not contain an origin.&quot;</span><span class="p">)</span>
                 <span class="n">origin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -230,8 +230,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">calculate_ttimes</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">reject_on_traveltimes</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;No rejection based on traveltime possible. Event &quot;</span>
-                        <span class="s">&quot;and/or station information is not available.&quot;</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;No rejection based on traveltime possible. Event and/or &quot;</span> \
+                  <span class="s">&quot;station information is not available.&quot;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">PyflexWarning</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">determine_signal_and_noise_indices</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">check_global_data_quality</span><span class="p">:</span>
@@ -249,7 +251,21 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">reject_based_on_data_fit_criteria</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">schedule_weighted_intervals</span><span class="p">()</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attach_phase_arrivals_to_windows</span><span class="p">()</span>
+
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.attach_phase_arrivals_to_windows"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.attach_phase_arrivals_to_windows">[docs]</a>    <span class="k">def</span> <span class="nf">attach_phase_arrivals_to_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Attaches the theoretical phase arrivals to the windows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origin_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+        <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">relative_starttime</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">relative_endtime</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">win</span><span class="o">.</span><span class="n">phase_arrivals</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">_i</span> <span class="k">for</span> <span class="n">_i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span> <span class="k">if</span> <span class="n">left</span> <span class="o">&lt;=</span> <span class="n">_i</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">right</span><span class="p">]</span>
 </div>
 <div class="viewcode-block" id="WindowSelector.determine_signal_and_noise_indices"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.determine_signal_and_noise_indices">[docs]</a>    <span class="k">def</span> <span class="nf">determine_signal_and_noise_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -392,7 +408,8 @@
                     <span class="n">left</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">right</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">peak</span><span class="p">,</span>
                     <span class="n">time_of_first_sample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span>
                     <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
-                    <span class="n">min_period</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">))</span>
+                    <span class="n">min_period</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">,</span>
+                    <span class="n">weight_function</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">window_weight_fct</span><span class="p">))</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Initial window selection yielded </span><span class="si">%i</span><span class="s"> possible windows.&quot;</span> <span class="o">%</span>
                     <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
@@ -673,10 +690,34 @@
             <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.92</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">])</span>
 
         <span class="n">times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">times</span><span class="p">()</span> <span class="o">-</span> <span class="n">offset</span>
 
+        <span class="c"># Plot theoretical arrivals.</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;right&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;left&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;top&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;bottom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">tt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tt</span><span class="p">[</span><span class="s">&quot;phase_name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;p&quot;</span><span class="p">):</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="s">&quot;#008c28&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="s">&quot;#950000&quot;</span>
+            <span class="c"># Don&#39;t need an offset as the time axis corresponds to time</span>
+            <span class="c"># since event.</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">tt</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">],</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.92</span><span class="p">,</span> <span class="s">&#39;Phase Arrivals&#39;</span><span class="p">,</span> <span class="n">horizontalalignment</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">,</span>
+                 <span class="n">verticalalignment</span><span class="o">=</span><span class="s">&#39;top&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.51</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">])</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;black&quot;</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;red&quot;</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
@@ -707,7 +748,7 @@
                      <span class="n">verticalalignment</span><span class="o">=</span><span class="s">&quot;top&quot;</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="s">&quot;vertical&quot;</span><span class="p">,</span>
                      <span class="n">size</span><span class="o">=</span><span class="s">&quot;small&quot;</span><span class="p">,</span> <span class="n">multialignment</span><span class="o">=</span><span class="s">&quot;right&quot;</span><span class="p">)</span>
 
-        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">])</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">stalta_waterlevel</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&quot;dashed&quot;</span><span class="p">,</span>
                  <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">)</span>
@@ -734,8 +775,6 @@
                            <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">,</span>
                            <span class="n">alpha</span><span class="o">=</span><span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">)</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">re</span><span class="p">)</span>
-
-        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>

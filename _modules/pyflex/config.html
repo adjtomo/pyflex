@@ -81,7 +81,8 @@
                  <span class="n">c_3a</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">c_3b</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">c_4a</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">c_4b</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span>
                  <span class="n">check_global_data_quality</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">snr_integrate_base</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span>
                  <span class="n">snr_max_base</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">noise_start_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">noise_end_index</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">signal_start_index</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">signal_end_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+                 <span class="n">signal_start_index</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">signal_end_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">window_weight_fct</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Central configuration object for Pyflex.</span>
 
@@ -205,6 +206,11 @@
 <span class="sd">        :param signal_end_index: Index where the signal ends for the signal</span>
 <span class="sd">            to noise calculations.</span>
 <span class="sd">        :type signal_end_index: int</span>
+
+<span class="sd">        :param window_weight_fct: A function returning the weight for a</span>
+<span class="sd">            specific window as a single number. Directly passed to the</span>
+<span class="sd">            :class:`~pyflex.window.Window` &#39;s initialization function.</span>
+<span class="sd">        :type window_weight_fct: function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span> <span class="o">=</span> <span class="n">min_period</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_period</span> <span class="o">=</span> <span class="n">min_period</span>
@@ -238,6 +244,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="o">=</span> <span class="n">noise_end_index</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">signal_start_index</span> <span class="o">=</span> <span class="n">noise_start_index</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">signal_end_index</span> <span class="o">=</span> <span class="n">noise_end_index</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_weight_fct</span> <span class="o">=</span> <span class="n">window_weight_fct</span>
 
     <span class="k">def</span> <span class="nf">_convert_to_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npts</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

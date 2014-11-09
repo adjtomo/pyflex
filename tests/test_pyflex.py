@@ -12,6 +12,9 @@ Run with pytest.
     (http://www.gnu.org/copyleft/gpl.html)
 """
 import inspect
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.testing.compare import compare_images as mpl_compare_images
 import numpy as np
 import obspy
 import os
@@ -21,6 +24,9 @@ import pyflex
 # Most generic way to get the data folder path.
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe()))), "data")
+
+# Baseline images for the plotting test.
+IMAGE_DIR = os.path.join(os.path.dirname(DATA_DIR), "baseline_images")
 
 # Prepare data to be able to use it in all tests.
 OBS_DATA = obspy.read(os.path.join(
@@ -36,6 +42,52 @@ SYNTH_DATA.detrend("linear")
 SYNTH_DATA.taper(max_percentage=0.05, type="hann")
 SYNTH_DATA.filter("bandpass", freqmin=1.0 / 150.0, freqmax=1.0 / 50.0,
                   corners=4, zerophase=True)
+
+
+def reset_matplotlib():
+    """
+    Reset matplotlib to a common default.
+    """
+    # Set all default values.
+    mpl.rcdefaults()
+    # Force agg backend.
+    plt.switch_backend('agg')
+    # These settings must be hardcoded for running the comparision tests and
+    # are not necessarily the default values.
+    mpl.rcParams['font.family'] = 'Bitstream Vera Sans'
+    mpl.rcParams['text.hinting'] = False
+    # Not available for all matplotlib versions.
+    try:
+        mpl.rcParams['text.hinting_factor'] = 8
+    except KeyError:
+        pass
+    import locale
+    locale.setlocale(locale.LC_ALL, str('en_US.UTF-8'))
+
+
+def images_are_identical(image_name, temp_dir, dpi=None):
+    """
+    Partially copied from ObsPy. Used to check images for equality.
+    """
+    image_name += os.path.extsep + "png"
+    expected = os.path.join(IMAGE_DIR, image_name)
+    actual = os.path.join(temp_dir, image_name)
+
+    if dpi:
+        plt.savefig(actual, dpi=dpi)
+    else:
+        plt.savefig(actual)
+    plt.close()
+
+    assert os.path.exists(expected)
+    assert os.path.exists(actual)
+
+    # Use a reasonably high tolerance to get around difference with different
+    # freetype and possibly agg versions. matplotlib uses a tolerance of 13.
+    result = mpl_compare_images(expected, actual, 5, in_decorator=True)
+    if result is not None:
+        print result
+    assert result is None
 
 
 def test_window_selection():
@@ -238,3 +290,16 @@ def test_run_with_data_quality_checks():
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
     # The data in this case is so good that nothing should have changed.
     assert len(windows) == 7
+
+
+def test_window_plotting(tmpdir):
+    reset_matplotlib()
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
+
+    pyflex.select_windows(OBS_DATA, SYNTH_DATA, config, plot=True)
+    images_are_identical("picked_windows", str(tmpdir))

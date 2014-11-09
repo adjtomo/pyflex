@@ -1,0 +1,785 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyflex.window_selector &mdash; Pyflex 0.0.1a documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/readable.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1a',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Pyflex 0.0.1a documentation" href="../../index.html" />
+    <link rel="up" title="pyflex" href="../pyflex.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+  
+  
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../index.html">Pyflex 0.0.1a documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../pyflex.html" accesskey="U">pyflex</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyflex.window_selector</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Class managing the actual window selection process.</span>
+
+<span class="sd">:copyright:</span>
+<span class="sd">    Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014</span>
+<span class="sd">:license:</span>
+<span class="sd">    GNU General Public License, Version 3</span>
+<span class="sd">    (http://www.gnu.org/copyleft/gpl.html)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span>
+                        <span class="n">unicode_literals</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">future.builtins</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># NOQA</span>
+<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
+<span class="k">with</span> <span class="n">standard_library</span><span class="o">.</span><span class="n">hooks</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">obspy.station</span>
+<span class="kn">from</span> <span class="nn">obspy.core.util</span> <span class="kn">import</span> <span class="n">geodetics</span>
+<span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">envelope</span>
+<span class="kn">from</span> <span class="nn">obspy.taup</span> <span class="kn">import</span> <span class="n">getTravelTimes</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">PyflexError</span><span class="p">,</span> <span class="n">PyflexWarning</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">Station</span>
+<span class="kn">from</span> <span class="nn">.stalta</span> <span class="kn">import</span> <span class="n">sta_lta</span>
+<span class="kn">from</span> <span class="nn">.window</span> <span class="kn">import</span> <span class="n">Window</span>
+<span class="kn">from</span> <span class="nn">.interval_scheduling</span> <span class="kn">import</span> <span class="n">schedule_weighted_intervals</span>
+
+
+<div class="viewcode-block" id="WindowSelector"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector">[docs]</a><span class="k">class</span> <span class="nc">WindowSelector</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Low level window selector internally used by Pyflex.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">synthetic</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param observed: The preprocessed, observed waveform.</span>
+<span class="sd">        :type observed: :class:`~obspy.core.trace.Trace` or single component</span>
+<span class="sd">            :class:`~obspy.core.stream.Stream`</span>
+<span class="sd">        :param observed: The preprocessed, synthetic waveform.</span>
+<span class="sd">        :type synthetic: :class:`~obspy.core.trace.Trace` or single component</span>
+<span class="sd">            :class:`~obspy.core.stream.Stream`</span>
+<span class="sd">        :param config: Configuration object.</span>
+<span class="sd">        :type config: :class:`~.config.Config`</span>
+<span class="sd">        :param event: The event information. Either a Pyflex Event object,</span>
+<span class="sd">            or an ObsPy Catalog or Event object. If not given this information</span>
+<span class="sd">            will be extracted from the data traces if either originates from a</span>
+<span class="sd">            SAC file.</span>
+<span class="sd">        :type event: A Pyflex :class:`~pyflex.Event` object,  an ObsPy</span>
+<span class="sd">            :class:`~obspy.core.event.Catalog` object, or an ObsPy</span>
+<span class="sd">            :class:`~obspy.core.event.Event` object</span>
+<span class="sd">        :param station: The station information. Either a Pyflex Station</span>
+<span class="sd">            object, or an ObsPy Inventory. If not given this information</span>
+<span class="sd">            will be extracted from the data traces if either originates from</span>
+<span class="sd">            a SAC file.</span>
+<span class="sd">        :type station: A Pyflex :class:`~pyflex.Station` object or an ObsPy</span>
+<span class="sd">            :class:`~obspy.station.inventory.Inventory` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observed</span> <span class="o">=</span> <span class="n">observed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span> <span class="o">=</span> <span class="n">synthetic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sanity_checks</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">event</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">station</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parse_event_and_station</span><span class="p">()</span>
+
+        <span class="c"># Copy to not modify the original data.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">_convert_to_array</span><span class="p">(</span><span class="n">npts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">_parse_event_and_station</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse the event and station information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Parse the event.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">Event</span><span class="p">):</span>
+            <span class="c"># It might be an ObsPy event catalog.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Catalog</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;The event catalog must contain &quot;</span>
+                                      <span class="s">&quot;exactly one event.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c"># It might be an ObsPy event object.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Event does not contain an origin.&quot;</span><span class="p">)</span>
+                <span class="n">origin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                                   <span class="n">longitude</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+                                   <span class="n">depth_in_m</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span>
+                                   <span class="n">origin_time</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Could not parse the event. Unknown type.&quot;</span><span class="p">)</span>
+
+        <span class="c"># Parse the station information if it is an obspy inventory object.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">Inventory</span><span class="p">):</span>
+            <span class="n">net</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span>
+            <span class="n">sta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span>
+            <span class="c"># Workaround for ObsPy 0.9.2 Newer version have a get</span>
+            <span class="c"># coordiantes method...</span>
+            <span class="k">for</span> <span class="n">network</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">network</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">net</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Could not find the network of the &quot;</span>
+                                  <span class="s">&quot;observed data in the inventory object.&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">network</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">station</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">sta</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Could not find the station of the &quot;</span>
+                                  <span class="s">&quot;observed data in the inventory object.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                                   <span class="n">longitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+
+        <span class="c"># Last resort, if either is not set, and the observed or synthetics</span>
+        <span class="c"># are sac files, get the information from there.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="s">&quot;sac&quot;</span><span class="p">):</span>
+                <span class="n">tr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span>
+                <span class="n">ftype</span> <span class="o">=</span> <span class="s">&quot;observed&quot;</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="s">&quot;sac&quot;</span><span class="p">):</span>
+                <span class="n">tr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span>
+                <span class="n">ftype</span> <span class="o">=</span> <span class="s">&quot;synthetic&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">sac</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sac</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">sac</span><span class="o">.</span><span class="n">evla</span><span class="p">,</span> <span class="n">sac</span><span class="o">.</span><span class="n">evlo</span><span class="p">,</span> <span class="n">sac</span><span class="o">.</span><span class="n">evdp</span><span class="p">,</span> <span class="n">sac</span><span class="o">.</span><span class="n">stla</span><span class="p">,</span> <span class="n">sac</span><span class="o">.</span><span class="n">stlo</span><span class="p">,</span> <span class="n">sac</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+            <span class="c"># Invalid value in sac.</span>
+            <span class="k">if</span> <span class="o">-</span><span class="mf">12345.0</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">longitude</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Extracted station information from </span><span class="si">%s</span><span class="s"> SAC file.&quot;</span>
+                            <span class="o">%</span> <span class="n">ftype</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span>
+                    <span class="n">latitude</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">longitude</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">depth_in_m</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1000.0</span><span class="p">,</span>
+                    <span class="n">origin_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="n">values</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Extracted event information from </span><span class="si">%s</span><span class="s"> SAC file.&quot;</span> <span class="o">%</span>
+                            <span class="n">ftype</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WindowSelector.calculate_preliminiaries"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.calculate_preliminiaries">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_preliminiaries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the envelope, STA/LTA and the finds the local extrema.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Calculating envelope of synthetics.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synthetic_envelope</span> <span class="o">=</span> <span class="n">envelope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Calculating STA/LTA.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span> <span class="o">=</span> <span class="n">sta_lta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic_envelope</span><span class="p">,</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">find_local_extrema</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.select_windows"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.select_windows">[docs]</a>    <span class="k">def</span> <span class="nf">select_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Launch the window selection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculate_preliminiaries</span><span class="p">()</span>
+
+        <span class="c"># Perform all window selection steps.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_window_selection</span><span class="p">()</span>
+        <span class="c"># Reject windows based on traveltime if event and station</span>
+        <span class="c"># information is given. This will also fill self.ttimes.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_ttimes</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reject_on_traveltimes</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;No rejection based on traveltime possible. Event &quot;</span>
+                        <span class="s">&quot;and/or station information is not available.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">determine_signal_and_noise_indices</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">check_global_data_quality</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_data_quality</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_windows_based_on_minimum_length</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_on_minima_water_level</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_on_prominence_of_central_peak</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_on_phase_separation</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curtail_length_of_windows</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_duplicates</span><span class="p">()</span>
+        <span class="c"># Call once again as curtailing might change the length of some</span>
+        <span class="c"># windows. Very cheap so can easily be called more than once.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_windows_based_on_minimum_length</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_based_on_signal_to_noise_ratio</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reject_based_on_data_fit_criteria</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schedule_weighted_intervals</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.determine_signal_and_noise_indices"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.determine_signal_and_noise_indices">[docs]</a>    <span class="k">def</span> <span class="nf">determine_signal_and_noise_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the time range of the noise and the signal respectively if</span>
+<span class="sd">        not yet specified by the user.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Cannot calculate the end of the noise as &quot;</span>
+                            <span class="s">&quot;event and/or station information is not given &quot;</span>
+                            <span class="s">&quot;and thus the theoretical arrival times cannot &quot;</span>
+                            <span class="s">&quot;be calculated&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="o">=</span> \
+                    <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&quot;time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">signal_start_index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">signal_start_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_based_on_signal_to_noise_ratio"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_based_on_signal_to_noise_ratio">[docs]</a>    <span class="k">def</span> <span class="nf">reject_based_on_signal_to_noise_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rejects windows based on their signal to noise amplitude ratio.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Cannot reject windows based on their signal to &quot;</span>
+                        <span class="s">&quot;noise ratio. Please give station and event &quot;</span>
+                        <span class="s">&quot;information or information about the temporal range &quot;</span>
+                        <span class="s">&quot;of the noise.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_start_index</span><span class="p">:</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span><span class="p">]</span>
+        <span class="n">noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">filter_window_noise</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+            <span class="n">win_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">:</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">]</span>
+            <span class="n">win_noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">win_signal</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="n">noise_amp</span>
+            <span class="k">if</span> <span class="n">win_noise_amp</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">s2n_limit</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">filter_window_noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;SN amplitude ratio window rejection retained </span><span class="si">%i</span><span class="s"> windows&quot;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.check_data_quality"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.check_data_quality">[docs]</a>    <span class="k">def</span> <span class="nf">check_data_quality</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks the data quality by estimating signal to noise ratios.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                <span class="s">&quot;Cannot check data quality as the noise end index is not &quot;</span>
+                <span class="s">&quot;given and station and/or event information is not &quot;</span>
+                <span class="s">&quot;available so the theoretical arrival times cannot be &quot;</span>
+                <span class="s">&quot;calculated.&quot;</span><span class="p">)</span>
+
+        <span class="n">noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_start_index</span><span class="p">:</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span><span class="p">]</span>
+        <span class="n">signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">signal_start_index</span><span class="p">:</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">signal_end_index</span><span class="p">]</span>
+
+        <span class="n">noise_int</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">noise</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span>
+        <span class="n">noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">signal_int</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">signal</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">signal</span><span class="p">)</span>
+        <span class="n">signal_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">signal</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="c"># Calculate ratios.</span>
+        <span class="n">snr_int</span> <span class="o">=</span> <span class="n">signal_int</span> <span class="o">/</span> <span class="n">noise_int</span>
+        <span class="n">snr_amp</span> <span class="o">=</span> <span class="n">signal_amp</span> <span class="o">/</span> <span class="n">noise_amp</span>
+
+        <span class="k">if</span> <span class="n">snr_int</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">snr_integrate_base</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Whole waveform rejected as the integrated signal to &quot;</span>
+                   <span class="s">&quot;noise ratio (</span><span class="si">%f</span><span class="s">) is above the threshold (</span><span class="si">%f</span><span class="s">).&quot;</span> <span class="o">%</span>
+                   <span class="p">(</span><span class="n">snr_int</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">snr_integrate_base</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">PyflexWarning</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="n">snr_amp</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">snr_max_base</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Whole waveform rejected as the signal to noise amplitude &quot;</span>
+                   <span class="s">&quot;ratio (</span><span class="si">%f</span><span class="s">) is above the threshold (</span><span class="si">%f</span><span class="s">).&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                       <span class="n">snr_amp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">snr_max_base</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">PyflexWarning</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Global SNR checks passed. Integrated SNR: </span><span class="si">%f</span><span class="s">, Amplitude &quot;</span>
+                    <span class="s">&quot;SNR: </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">snr_int</span><span class="p">,</span> <span class="n">snr_amp</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.calculate_ttimes"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.calculate_ttimes">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_ttimes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate theoretical travel times. Only call if station and event</span>
+<span class="sd">        information is available!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dist_in_deg</span> <span class="o">=</span> <span class="n">geodetics</span><span class="o">.</span><span class="n">locations2degrees</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+        <span class="n">tts</span> <span class="o">=</span> <span class="n">getTravelTimes</span><span class="p">(</span><span class="n">dist_in_deg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">depth_in_m</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">,</span>
+                             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">earth_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">])</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Calculated travel times.&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_on_traveltimes"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_on_traveltimes">[docs]</a>    <span class="k">def</span> <span class="nf">reject_on_traveltimes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reject based on traveltimes. Will reject windows containing only</span>
+<span class="sd">        data before a minimum period before the first arrival and windows</span>
+<span class="sd">        only containing data after the minimum allowed surface wave speed.</span>
+<span class="sd">        Only call if station and event information is available!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dist_in_km</span> <span class="o">=</span> <span class="n">geodetics</span><span class="o">.</span><span class="n">calcVincentyInverse</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">longitude</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.0</span>
+
+        <span class="n">min_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&quot;time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span>
+        <span class="n">max_time</span> <span class="o">=</span> <span class="n">dist_in_km</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_surface_wave_velocity</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="n">win</span> <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">right</span> <span class="o">&gt;=</span> <span class="n">min_time</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">left</span> <span class="o">&lt;=</span> <span class="n">max_time</span><span class="p">)]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Rejection based on travel times retained </span><span class="si">%i</span><span class="s"> windows.&quot;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.initial_window_selection"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.initial_window_selection">[docs]</a>    <span class="k">def</span> <span class="nf">initial_window_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find all possible windows. This is equivalent to the setup_M_L_R()</span>
+<span class="sd">        function in flexwin.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">:</span>
+            <span class="c"># only continue if there are available minima on either side</span>
+            <span class="k">if</span> <span class="n">peak</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">peak</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="c"># only continue if this maximum is above the water level</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">peak</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">stalta_waterlevel</span><span class="p">[</span><span class="n">peak</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">smaller_troughs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&lt;</span> <span class="n">peak</span><span class="p">]</span>
+            <span class="n">larger_troughs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&gt;</span> <span class="n">peak</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">smaller_troughs</span><span class="p">,</span>
+                                                 <span class="n">larger_troughs</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Window</span><span class="p">(</span>
+                    <span class="n">left</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">right</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">peak</span><span class="p">,</span>
+                    <span class="n">time_of_first_sample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span>
+                    <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+                    <span class="n">min_period</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Initial window selection yielded </span><span class="si">%i</span><span class="s"> possible windows.&quot;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.remove_duplicates"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.remove_duplicates">[docs]</a>    <span class="k">def</span> <span class="nf">remove_duplicates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filter to remove duplicate windows based on left and right bounds.</span>
+
+<span class="sd">        This function will also change the middle to actually be in the</span>
+<span class="sd">        center of the window. This should result in better results for the</span>
+<span class="sd">        following stages as lots of thresholds are evaluated at the center</span>
+<span class="sd">        of a window.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_windows</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">window</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="n">window</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">window</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">new_windows</span><span class="p">:</span>
+                <span class="n">window</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> \
+                    <span class="nb">int</span><span class="p">(</span><span class="n">window</span><span class="o">.</span><span class="n">left</span> <span class="o">+</span> <span class="p">(</span><span class="n">window</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="n">window</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+                <span class="n">new_windows</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">new_windows</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Removing duplicates retains </span><span class="si">%i</span><span class="s"> windows.&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.schedule_weighted_intervals"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.schedule_weighted_intervals">[docs]</a>    <span class="k">def</span> <span class="nf">schedule_weighted_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the weighted interval scheduling.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="n">schedule_weighted_intervals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Weighted interval schedule optimzation retained </span><span class="si">%i</span><span class="s"> &quot;</span>
+                    <span class="s">&quot;windows.&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_on_minima_water_level"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_on_minima_water_level">[docs]</a>    <span class="k">def</span> <span class="nf">reject_on_minima_water_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filter function rejecting windows whose internal minima are below the</span>
+<span class="sd">        water level of the windows peak. This is equivalent to the</span>
+<span class="sd">        reject_on_water_level() function in flexwin.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">filter_window_minima</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+            <span class="n">waterlevel_midpoint</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">stalta_waterlevel</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+            <span class="n">internal_minima</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">_get_internal_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">internal_minima</span><span class="p">]</span> <span class="o">&lt;=</span>
+                              <span class="n">waterlevel_midpoint</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">filter_window_minima</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Water level rejection retained </span><span class="si">%i</span><span class="s"> windows&quot;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_on_prominence_of_central_peak"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_on_prominence_of_central_peak">[docs]</a>    <span class="k">def</span> <span class="nf">reject_on_prominence_of_central_peak</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Equivalent to reject_on_prominence() in the original flexwin code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># The fine tuning constant is often set to 0. Nothing to do in this</span>
+        <span class="c"># case as all windows will then pass the criteria by definition.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span>
+
+        <span class="k">def</span> <span class="nf">filter_windows_maximum_prominence</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+            <span class="n">smaller_troughs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&lt;</span> <span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+            <span class="n">larger_troughs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&gt;</span> <span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">smaller_troughs</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">larger_troughs</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">smaller_troughs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">larger_troughs</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+            <span class="n">delta_left</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="n">left</span>
+            <span class="n">delta_right</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="n">right</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">delta_left</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_2</span> <span class="o">*</span> <span class="n">center</span><span class="p">)</span> <span class="ow">or</span> \
+                    <span class="p">(</span><span class="n">delta_right</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_2</span> <span class="o">*</span> <span class="n">center</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">filter_windows_maximum_prominence</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Prominence of central peak rejection retained &quot;</span>
+                    <span class="s">&quot;</span><span class="si">%i</span><span class="s"> windows.&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_on_phase_separation"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_on_phase_separation">[docs]</a>    <span class="k">def</span> <span class="nf">reject_on_phase_separation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reject windows based on phase seperation. Equivalent to</span>
+<span class="sd">        reject_on_phase_separation() in the original flexwin code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">filter_phase_rejection</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+            <span class="c"># Find the lowest minimum within the window.</span>
+            <span class="n">internal_minima</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&gt;=</span> <span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&lt;=</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">)]</span>
+            <span class="n">stalta_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">internal_minima</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="c"># find the height of the central maximum above this minimum value</span>
+            <span class="n">d_stalta_center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span> <span class="o">-</span> <span class="n">stalta_min</span>
+            <span class="c"># Find all internal maxima.</span>
+            <span class="n">internal_maxima</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">[</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">&gt;=</span> <span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">&lt;=</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">)</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">!=</span> <span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">)]</span>
+
+            <span class="k">for</span> <span class="n">max_index</span> <span class="ow">in</span> <span class="n">internal_maxima</span><span class="p">:</span>
+                <span class="c"># find height of current maximum above lowest minimum</span>
+                <span class="n">d_stalta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">[</span><span class="n">max_index</span><span class="p">]</span> <span class="o">-</span> <span class="n">stalta_min</span>
+                <span class="c"># find scaled time between current maximum and central maximum</span>
+                <span class="n">d_time</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">center</span> <span class="o">-</span> <span class="n">max_index</span><span class="p">)</span> <span class="o">*</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span>
+                <span class="c"># find value of time decay function.</span>
+                <span class="c"># The paper has a square root in the numinator of the</span>
+                <span class="c"># exponent as well. Not the case here as it is not the case</span>
+                <span class="c"># in the original flexwin code.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">d_time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_3b</span><span class="p">):</span>
+                    <span class="n">f_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">d_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_3b</span><span class="p">)</span> <span class="o">/</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_3b</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">f_time</span> <span class="o">=</span> <span class="mf">1.0</span>
+                <span class="c"># check condition</span>
+                <span class="k">if</span> <span class="n">d_stalta</span> <span class="o">&gt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_3a</span> <span class="o">*</span> <span class="n">d_stalta_center</span> <span class="o">*</span> <span class="n">f_time</span><span class="p">):</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">ifilter</span><span class="p">(</span>
+            <span class="n">filter_phase_rejection</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Single phase group rejection retained </span><span class="si">%i</span><span class="s"> windows&quot;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.curtail_length_of_windows"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.curtail_length_of_windows">[docs]</a>    <span class="k">def</span> <span class="nf">curtail_length_of_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Curtail the window length. Equivalent to a call to</span>
+<span class="sd">        curtail_window_length() in the original flexwin code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span>
+
+        <span class="k">def</span> <span class="nf">curtail_window_length</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+            <span class="n">time_decay_left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_4a</span> <span class="o">/</span> <span class="n">dt</span>
+            <span class="n">time_decay_right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_4b</span> <span class="o">/</span> <span class="n">dt</span>
+            <span class="c"># Find all internal maxima.</span>
+            <span class="n">internal_maxima</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">[</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">&gt;=</span> <span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">&lt;=</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">)</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">!=</span> <span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">internal_maxima</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">win</span>
+            <span class="n">i_left</span> <span class="o">=</span> <span class="n">internal_maxima</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">i_right</span> <span class="o">=</span> <span class="n">internal_maxima</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">delta_left</span> <span class="o">=</span> <span class="n">i_left</span> <span class="o">-</span> <span class="n">win</span><span class="o">.</span><span class="n">left</span>
+            <span class="n">delta_right</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="n">i_right</span>
+
+            <span class="c"># check condition</span>
+            <span class="k">if</span> <span class="n">delta_left</span> <span class="o">&gt;</span> <span class="n">time_decay_left</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Curtailing left&quot;</span><span class="p">)</span>
+                <span class="n">win</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i_left</span> <span class="o">-</span> <span class="n">time_decay_left</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">delta_right</span> <span class="o">&gt;</span> <span class="n">time_decay_right</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Curtailing right&quot;</span><span class="p">)</span>
+                <span class="n">win</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i_right</span> <span class="o">+</span> <span class="n">time_decay_right</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">win</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="n">curtail_window_length</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">]</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="WindowSelector.minimum_window_length"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.minimum_window_length">[docs]</a>    <span class="k">def</span> <span class="nf">minimum_window_length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Minimum acceptable window length.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">c_1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span> <span class="o">/</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_windows_based_on_minimum_length"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_windows_based_on_minimum_length">[docs]</a>    <span class="k">def</span> <span class="nf">reject_windows_based_on_minimum_length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reject windows smaller than the minimal window length.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum_window_length</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Rejection based on minimum window length retained </span><span class="si">%i</span><span class="s"> &quot;</span>
+                    <span class="s">&quot;windows.&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.reject_based_on_data_fit_criteria"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.reject_based_on_data_fit_criteria">[docs]</a>    <span class="k">def</span> <span class="nf">reject_based_on_data_fit_criteria</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rejects windows based on similarity between data and synthetics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># First calculate the criteria for all remaining windows.</span>
+        <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="n">win</span><span class="o">.</span><span class="n">_calc_criteria</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">reject_based_on_criteria</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+            <span class="n">tshift_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tshift_reference</span> <span class="o">-</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tshift_acceptance_level</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+            <span class="n">tshift_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tshift_reference</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tshift_acceptance_level</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+            <span class="n">dlnA_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dlna_reference</span> <span class="o">-</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dlna_acceptance_level</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+            <span class="n">dlnA_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dlna_reference</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dlna_acceptance_level</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">tshift_min</span> <span class="o">&lt;</span> <span class="n">win</span><span class="o">.</span><span class="n">cc_shift</span> <span class="o">*</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span> <span class="o">&lt;</span> <span class="n">tshift_max</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">dlnA_min</span> <span class="o">&lt;</span> <span class="n">win</span><span class="o">.</span><span class="n">dlnA</span> <span class="o">&lt;</span> <span class="n">dlnA_max</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">cc_acceptance_level</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">reject_based_on_criteria</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Rejection based on data fit criteria retained </span><span class="si">%i</span><span class="s"> windows.&quot;</span>
+                    <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
+    <span class="k">def</span> <span class="nf">_sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform a number of basic sanity checks to assure the data is valid</span>
+<span class="sd">        in a certain sense.</span>
+
+<span class="sd">        It checks the types of both, the starttime, sampling rate, number of</span>
+<span class="sd">        samples, ...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">):</span>
+            <span class="c"># Also accept Stream objects.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span> <span class="ow">and</span> \
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">observed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                    <span class="s">&quot;Observed data must be an ObsPy Trace object.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span> <span class="ow">and</span> \
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                    <span class="s">&quot;Synthetic data must be an ObsPy Trace object.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Observed and synthetic data must have the same &quot;</span>
+                              <span class="s">&quot;number of samples.&quot;</span><span class="p">)</span>
+
+        <span class="n">sr1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+        <span class="n">sr2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sr1</span> <span class="o">-</span> <span class="n">sr2</span><span class="p">)</span> <span class="o">/</span> <span class="n">sr1</span> <span class="o">&gt;=</span> <span class="mf">1E-5</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Observed and synthetic data must have the same &quot;</span>
+                              <span class="s">&quot;sampling rate.&quot;</span><span class="p">)</span>
+
+        <span class="c"># Make sure data and synthetics start within half a sample interval.</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span>
+               <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span> <span class="o">*</span> \
+                <span class="mf">0.5</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Observed and synthetic data must have the same &quot;</span>
+                              <span class="s">&quot;starttime.&quot;</span><span class="p">)</span>
+
+        <span class="n">ptp</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptp</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptp</span><span class="p">()])</span>
+        <span class="k">if</span> <span class="n">ptp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">ptp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;The amplitude difference between data and &quot;</span>
+                          <span class="s">&quot;synthetic is fairly large.&quot;</span><span class="p">)</span>
+
+        <span class="c"># Also check the components of the data to avoid silly mistakes of</span>
+        <span class="c"># users.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()]))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;The orientation code of synthetic and observed &quot;</span>
+                          <span class="s">&quot;data is not equal.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WindowSelector.plot"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot the current state of the windows.</span>
+
+<span class="sd">        :param filename: If given, the plot will be written to this file,</span>
+<span class="sd">            otherwise the plot will be shown.</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Lazy imports to not import matplotlib all the time.</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+        <span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Rectangle</span>
+
+        <span class="c"># Use an offset to have the seconds since the event as the time axis.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origin_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+
+        <span class="n">times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">times</span><span class="p">()</span> <span class="o">-</span> <span class="n">offset</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;black&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;red&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;right&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;left&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;top&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;bottom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="s">&#39;Seismograms&#39;</span><span class="p">,</span> <span class="n">horizontalalignment</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">,</span>
+                 <span class="n">verticalalignment</span><span class="o">=</span><span class="s">&#39;top&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="n">buf</span> <span class="o">=</span> <span class="mf">0.003</span> <span class="o">*</span> <span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">relative_starttime</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">relative_endtime</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">re</span> <span class="o">=</span> <span class="n">Rectangle</span><span class="p">((</span><span class="n">l</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">r</span> <span class="o">-</span> <span class="n">l</span><span class="p">,</span>
+                           <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">,</span>
+                           <span class="n">alpha</span><span class="o">=</span><span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">re</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">l</span> <span class="o">+</span> <span class="n">buf</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
+                     <span class="s">&quot;CC=</span><span class="si">%.2f</span><span class="se">\n</span><span class="s">dT=</span><span class="si">%.2f</span><span class="se">\n</span><span class="s">dA=</span><span class="si">%.2f</span><span class="s">&quot;</span> <span class="o">%</span>
+                     <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span><span class="p">,</span> <span class="n">win</span><span class="o">.</span><span class="n">cc_shift</span><span class="p">,</span> <span class="n">win</span><span class="o">.</span><span class="n">dlnA</span><span class="p">),</span>
+                     <span class="n">horizontalalignment</span><span class="o">=</span><span class="s">&quot;left&quot;</span><span class="p">,</span>
+                     <span class="n">verticalalignment</span><span class="o">=</span><span class="s">&quot;top&quot;</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="s">&quot;vertical&quot;</span><span class="p">,</span>
+                     <span class="n">size</span><span class="o">=</span><span class="s">&quot;small&quot;</span><span class="p">,</span> <span class="n">multialignment</span><span class="o">=</span><span class="s">&quot;right&quot;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">stalta_waterlevel</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&quot;dashed&quot;</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;Time [s] since event&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;Time [s]&quot;</span><span class="p">)</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;right&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;left&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s">&#39;top&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticks_position</span><span class="p">(</span><span class="s">&#39;bottom&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="s">&#39;STA/LTA&#39;</span><span class="p">,</span> <span class="n">horizontalalignment</span><span class="o">=</span><span class="s">&#39;left&#39;</span><span class="p">,</span>
+                 <span class="n">verticalalignment</span><span class="o">=</span><span class="s">&#39;top&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">relative_starttime</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">win</span><span class="o">.</span><span class="n">relative_endtime</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">re</span> <span class="o">=</span> <span class="n">Rectangle</span><span class="p">((</span><span class="n">l</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">r</span> <span class="o">-</span> <span class="n">l</span><span class="p">,</span>
+                           <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;blue&quot;</span><span class="p">,</span>
+                           <span class="n">alpha</span><span class="o">=</span><span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">re</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.svg" alt="Logo"/>
+            </a></p><h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation index</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../pyflex.html">pyflex</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="footer">
+    &copy; Copyright 2014, Lion Krischer.
+    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+  </div>
+  
+  </body>
+</html>

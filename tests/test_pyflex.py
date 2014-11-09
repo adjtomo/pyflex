@@ -114,14 +114,15 @@ def test_window_selection():
         np.array([_i.max_cc_value for _i in windows]),
         np.array([0.95740629373181685, 0.96646803651993862, 0.9633571597878805,
                   0.98249546895396034, 0.96838753962768898,
-                  0.88501979275369003, 0.82529382012185848]))
+                  0.88501979275369003, 0.82529382012185848]), rtol=1E-4)
+
     assert [_i.cc_shift for _i in windows] == [-3, 0, -5, -5, -6, 4, -9]
     np.testing.assert_allclose(
         np.array([_i.dlnA for _i in windows]),
         np.array([0.074690084388978839, 0.12807961376836777,
                   -0.19276977567364437, 0.18556340842688038,
                   0.093674448597561411, -0.11885913254077075,
-                  -0.63865703707265198]))
+                  -0.63865703707265198]), rtol=1E-4)
 
     # Assert the phases of the first window.
     assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \

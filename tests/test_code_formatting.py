@@ -15,14 +15,9 @@ import flake8.engine
 import flake8.main
 import inspect
 import os
-import warnings
 
 
 def test_flake8():
-    if flake8.__version__ <= "2":
-        msg = ("Module was designed to be tested with flake8 >= 2.0. "
-               "Please update.")
-        warnings.warn(msg)
     test_dir = os.path.dirname(os.path.abspath(inspect.getfile(
         inspect.currentframe())))
     pyflex_dir = os.path.dirname(test_dir)
@@ -31,9 +26,6 @@ def test_flake8():
     ignore_paths = [
         os.path.join(pyflex_dir, "doc"),
         os.path.join(pyflex_dir, ".git")]
-    ignore_files = []
-    ignore_files = [os.path.join(pyflex_dir, _i) for _i in ignore_files]
-
     files = []
     for dirpath, _, filenames in os.walk(pyflex_dir):
         ignore = False
@@ -49,8 +41,6 @@ def test_flake8():
             continue
         for py_file in filenames:
             full_path = os.path.join(dirpath, py_file)
-            if full_path in ignore_files:
-                continue
             files.append(full_path)
 
     # Get the style checker with the default style.

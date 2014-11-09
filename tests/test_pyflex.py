@@ -222,3 +222,19 @@ def test_station_information_extraction():
     ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config,
                                                station=inv)
     assert ws.station == pyflex.Station(1.0, 2.0)
+
+
+def test_run_with_data_quality_checks():
+    """
+    Run with data quality checks.
+    """
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        check_global_data_quality=True)
+
+    windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
+    # The data in this case is so good that nothing should have changed.
+    assert len(windows) == 7

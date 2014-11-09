@@ -240,7 +240,7 @@ class WindowSelector(object):
             win.center = int(win.left + (win.right - win.left) / 2.0)
             # Recalculate criteria.
             win._calc_criteria(self.observed.data, self.synthetic.data)
-        logger.info("Merging windows resulted in %i windows."  %
+        logger.info("Merging windows resulted in %i windows." %
                     len(self.windows))
 
     def determine_signal_and_noise_indices(self):

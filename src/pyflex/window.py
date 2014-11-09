@@ -24,8 +24,18 @@ class Window(object):
                  "cc_shift", "dlnA", "dt", "min_win_period"]
 
     def __init__(self, left, right, center, time_of_first_sample, dt,
-                 min_period):
+                 min_period, weight_function=None):
         """
+        The optional ``weight_function`` parameter can be used to customize
+        the weight of the window. Its single parameter is an instance of the
+        window. The following example will create a window function that
+        does exactly the same as the default weighting function.
+
+        >>> def weight_function(win):
+        ...     return ((win.right - win.left) * win.dt / win.min_period *
+        ...         win.max_cc_value)
+
+
         :param left: The array index of the left bound of the window.
         :type left: int
         :param right: The array index of the right bound of the window.
@@ -40,6 +50,9 @@ class Window(object):
         :type dt: float
         :param min_period: The minimum period in seconds.
         :type min_period: float
+        :param weight_function: Function determining the window weight. The
+            only argument of the function is a window instance.
+        :type weight_function: function
         """
         self.left = left
         self.right = right
@@ -51,12 +64,14 @@ class Window(object):
         self.dt = float(dt)
         self.min_period = float(min_period)
         self.phase_arrivals = []
+        self.weight_function = weight_function
 
     def _get_internal_indices(self, indices):
         """
         From a list of indices, return the ones inside this window excluding
         the borders..
         """
+        indices = np.array(indices)
         return indices[(indices > self.left) & (indices < self.right)]
 
     @property
@@ -109,10 +124,12 @@ class Window(object):
     def weight(self):
         """
         The weight of the window used for the weighted interval scheduling.
-
-        The weight is window lengths in number of minimum period times the
-        cross correlation coefficient.
+        Either calls a potentially passed window weight function or defaults
+        to the window length in number of minimum periods times the cross
+        correlation coefficient.
         """
+        if self.weight_function:
+            return self.weight_function(self)
         return (self.right - self.left) * self.dt / self.min_period * \
             self.max_cc_value
 

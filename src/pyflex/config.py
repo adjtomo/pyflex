@@ -28,7 +28,8 @@ class Config(object):
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
                  check_global_data_quality=False, snr_integrate_base=3.5,
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
-                 signal_start_index=None, signal_end_index=-1):
+                 signal_start_index=None, signal_end_index=-1,
+                 window_weight_fct=None):
         """
         Central configuration object for Pyflex.
 
@@ -152,6 +153,11 @@ class Config(object):
         :param signal_end_index: Index where the signal ends for the signal
             to noise calculations.
         :type signal_end_index: int
+
+        :param window_weight_fct: A function returning the weight for a
+            specific window as a single number. Directly passed to the
+            :class:`~pyflex.window.Window` 's initialization function.
+        :type window_weight_fct: function
         """
         self.min_period = min_period
         self.max_period = min_period
@@ -185,6 +191,8 @@ class Config(object):
         self.noise_end_index = noise_end_index
         self.signal_start_index = noise_start_index
         self.signal_end_index = noise_end_index
+
+        self.window_weight_fct = window_weight_fct
 
     def _convert_to_array(self, npts):
         """

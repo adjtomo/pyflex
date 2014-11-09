@@ -353,7 +353,8 @@ class WindowSelector(object):
                     left=left, right=right, center=peak,
                     time_of_first_sample=self.synthetic.stats.starttime,
                     dt=self.observed.stats.delta,
-                    min_period=self.config.min_period))
+                    min_period=self.config.min_period,
+                    weight_function=self.config.window_weight_fct))
 
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))

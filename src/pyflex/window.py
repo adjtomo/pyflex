@@ -131,7 +131,7 @@ class Window(object):
         return max_cc_value, time_shift
 
     def _dlnA_win(self, d, s):
-        return 0.5 * np.log10(np.sum(d ** 2) / np.sum(s ** 2))
+        return 0.5 * np.log(np.sum(d ** 2) / np.sum(s ** 2))
 
     def _calc_criteria(self, d, s):
         d = d[self.left: self.right + 1]

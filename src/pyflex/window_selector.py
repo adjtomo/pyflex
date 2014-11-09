@@ -196,7 +196,21 @@ class WindowSelector(object):
         self.reject_based_on_data_fit_criteria()
         self.schedule_weighted_intervals()
 
+        if self.ttimes:
+            self.attach_phase_arrivals_to_windows()
+
         return self.windows
+
+    def attach_phase_arrivals_to_windows(self):
+        """
+        Attaches the theoretical phase arrivals to the windows.
+        """
+        offset = self.event.origin_time - self.observed.stats.starttime
+        for win in self.windows:
+            left = win.relative_starttime - offset
+            right = win.relative_endtime - offset
+            win.phase_arrivals = [
+                _i for _i in self.ttimes if left <= _i["time"] <= right]
 
     def determine_signal_and_noise_indices(self):
         """

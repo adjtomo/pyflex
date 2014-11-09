@@ -50,6 +50,7 @@ class Window(object):
         self.dlnA = None
         self.dt = float(dt)
         self.min_period = float(min_period)
+        self.phase_arrivals = []
 
     def _get_internal_indices(self, indices):
         """

@@ -659,7 +659,10 @@ class WindowSelector(object):
         plt.plot(times, self.config.stalta_waterlevel, linestyle="dashed",
                  color="blue")
         plt.xlim(times[0], times[-1])
-        plt.xlabel("Time [s]")
+        if self.event:
+            plt.xlabel("Time [s] since event")
+        else:
+            plt.xlabel("Time [s]")
 
         ax = plt.gca()
         ax.spines['right'].set_color('none')

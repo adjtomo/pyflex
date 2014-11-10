@@ -105,8 +105,8 @@ run the tests with</p>
 processed. An easy way to accomplish this is to utilize ObsPy. This
 example reproduces what the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> package does when it is
 told to also perform the filtering.</p>
-<div class="code python highlight-python"><div class="highlight"><pre><span class="n">obs_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC&quot;</span><span class="p">)</span>
-<span class="n">synth_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../tests/data/ABKT.II.LHZ.semd.sac&quot;</span><span class="p">)</span>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">obs_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../src/pyflex/tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC&quot;</span><span class="p">)</span>
+<span class="n">synth_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../src/pyflex/tests/data/ABKT.II.LHZ.semd.sac&quot;</span><span class="p">)</span>
 
 <span class="n">obs_data</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&quot;linear&quot;</span><span class="p">)</span>
 <span class="n">obs_data</span><span class="o">.</span><span class="n">taper</span><span class="p">(</span><span class="n">max_percentage</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;hann&quot;</span><span class="p">)</span>
@@ -117,36 +117,6 @@ told to also perform the filtering.</p>
 <span class="n">synth_data</span><span class="o">.</span><span class="n">taper</span><span class="p">(</span><span class="n">max_percentage</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;hann&quot;</span><span class="p">)</span>
 <span class="n">synth_data</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&quot;bandpass&quot;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">150.0</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">50.0</span><span class="p">,</span>
                   <span class="n">corners</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zerophase</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre>---------------------------------------------------------------------------
-IOError                                   Traceback (most recent call last)
-
-&lt;ipython-input-2-642617b3f02a&gt; in &lt;module&gt;()
-----&gt; 1 obs_data = obspy.read(&quot;../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC&quot;)
-      2 synth_data = obspy.read(&quot;../tests/data/ABKT.II.LHZ.semd.sac&quot;)
-      3
-      4 obs_data.detrend(&quot;linear&quot;)
-      5 obs_data.taper(max_percentage=0.05, type=&quot;hann&quot;)
-
-
-/home/travis/miniconda/envs/condaenv/lib/python2.7/site-packages/obspy/core/util/decorator.pyc in new_func(*args, **kwargs)
-    369                             except IOError:
-    370                                 pass
---&gt; 371             return func(*args, **kwargs)
-    372
-    373         new_func.__name__ = func.__name__
-
-
-/home/travis/miniconda/envs/condaenv/lib/python2.7/site-packages/obspy/core/stream.pyc in read(pathname_or_url, format, headonly, starttime, endtime, nearest_sample, dtype, apply_calib, **kwargs)
-    222                 raise Exception(&quot;No file matching file pattern: %s&quot; % pathname)
-    223             elif not has_magic(pathname) and not os.path.isfile(pathname):
---&gt; 224                 raise IOError(2, &quot;No such file or directory&quot;, pathname)
-    225             # Only raise error if no starttime/endtime has been set. This
-    226             # will return an empty stream if the user chose a time window with
-
-
-IOError: [Errno 2] No such file or directory: &#39;../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC&#39;
 </pre></div>
 </div>
 <p>The configuration is encapsuled within a <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a> object. It thus replaces the need for a PAR_FILE and the user functions. Please refer to the <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a> object&#8217;s documentation for more details.</p>
@@ -161,12 +131,18 @@ IOError: [Errno 2] No such file or directory: &#39;../tests/data/1995.122.05.32.
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
+<img alt="_images/index_7_0.png" src="_images/index_7_0.png" />
 </div>
 <div class="section" id="windows">
 <h2>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h2>
 <p>It returns a sorted list of <a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><tt class="xref py py-class docutils literal"><span class="pre">Window</span></tt></a> objects which can then be used in further applications.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pprint</span>
 <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">windows</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">Window</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mi">1551</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">1985</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">1768</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="mf">0.957406507201</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=</span><span class="mf">0.074690297213</span><span class="p">),</span>
+ <span class="n">Window</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mi">2221</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">2709</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">2465</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="mf">0.96646884731</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=</span><span class="mf">0.128084405453</span><span class="p">),</span>
+ <span class="n">Window</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mi">2709</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">2960</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">2834</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="mf">0.963357104153</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=-</span><span class="mf">0.192768491696</span><span class="p">)]</span>
 </pre></div>
 </div>
 <p>Each window contains a number of properties that can be used to
@@ -184,10 +160,29 @@ necessarily identical to the event origin time!).</p>
                                               <span class="n">win</span><span class="o">.</span><span class="n">relative_endtime</span><span class="p">))</span>
 </pre></div>
 </div>
+<div class="highlight-python"><div class="highlight"><pre>Indices: 3353 - 3609
+Absolute times: 1995-05-02T06:53:46.500006Z - 1995-05-02T06:58:02.500006Z
+Relative times in seconds: 3353.0 - 3609.0
+</pre></div>
+</div>
 <p>A window furthermore contains a list of phases theoretically arriving
 within the window. Take care that the times here are in seconds since
 the event origin.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">win</span><span class="o">.</span><span class="n">phase_arrivals</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;d2T/dD2&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.008985511</span><span class="p">,</span>
+  <span class="s">&#39;dT/dD&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.7036695</span><span class="p">,</span>
+  <span class="s">&#39;dT/dh&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.21970677</span><span class="p">,</span>
+  <span class="s">&#39;phase_name&#39;</span><span class="p">:</span> <span class="s">&quot;S&#39;S&#39;ac&quot;</span><span class="p">,</span>
+  <span class="s">&#39;take-off angle&#39;</span><span class="p">:</span> <span class="mf">8.7734709</span><span class="p">,</span>
+  <span class="s">&#39;time&#39;</span><span class="p">:</span> <span class="mf">3049.9629</span><span class="p">},</span>
+ <span class="p">{</span><span class="s">&#39;d2T/dD2&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.21710481</span><span class="p">,</span>
+  <span class="s">&#39;dT/dD&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.9104689</span><span class="p">,</span>
+  <span class="s">&#39;dT/dh&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.22161883</span><span class="p">,</span>
+  <span class="s">&#39;phase_name&#39;</span><span class="p">:</span> <span class="s">&quot;S&#39;S&#39;df&quot;</span><span class="p">,</span>
+  <span class="s">&#39;take-off angle&#39;</span><span class="p">:</span> <span class="mf">4.5126305</span><span class="p">,</span>
+  <span class="s">&#39;time&#39;</span><span class="p">:</span> <span class="mf">3091.7417</span><span class="p">}]</span>
 </pre></div>
 </div>
 </div>
@@ -256,6 +251,7 @@ windows. This is useful for some misfit measurements.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
+<img alt="_images/index_19_0.png" src="_images/index_19_0.png" />
 </div>
 </div>
 <div class="section" id="logging">
@@ -271,6 +267,23 @@ channels.</p>
 <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>[2014-11-10 07:14:47,187] - pyflex - INFO: Extracted station information from observed SAC file.
+[2014-11-10 07:14:47,188] - pyflex - INFO: Extracted event information from observed SAC file.
+[2014-11-10 07:14:47,191] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-11-10 07:14:47,193] - pyflex - INFO: Calculating STA/LTA.
+[2014-11-10 07:14:47,518] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+[2014-11-10 07:14:47,519] - pyflex - INFO: Calculated travel times.
+[2014-11-10 07:14:47,528] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
+[2014-11-10 07:14:47,560] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
+[2014-11-10 07:14:47,661] - pyflex - INFO: Water level rejection retained 39 windows
+[2014-11-10 07:14:47,663] - pyflex - INFO: Single phase group rejection retained 14 windows
+[2014-11-10 07:14:47,664] - pyflex - INFO: Removing duplicates retains 14 windows.
+[2014-11-10 07:14:47,665] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+[2014-11-10 07:14:47,666] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
+[2014-11-10 07:14:47,669] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
+[2014-11-10 07:14:47,676] - pyflex - INFO: Merging windows resulted in 3 windows.
 </pre></div>
 </div>
 </div>

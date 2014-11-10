@@ -73,8 +73,8 @@ told to also perform the filtering.
 
 .. code:: python
 
-    obs_data = obspy.read("../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC")
-    synth_data = obspy.read("../tests/data/ABKT.II.LHZ.semd.sac")
+    obs_data = obspy.read("../src/pyflex/tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC")
+    synth_data = obspy.read("../src/pyflex/tests/data/ABKT.II.LHZ.semd.sac")
     
     obs_data.detrend("linear")
     obs_data.taper(max_percentage=0.05, type="hann")
@@ -85,40 +85,6 @@ told to also perform the filtering.
     synth_data.taper(max_percentage=0.05, type="hann")
     synth_data.filter("bandpass", freqmin=1.0 / 150.0, freqmax=1.0 / 50.0,
                       corners=4, zerophase=True)
-
-::
-
-
-    ---------------------------------------------------------------------------
-    IOError                                   Traceback (most recent call last)
-
-    <ipython-input-2-642617b3f02a> in <module>()
-    ----> 1 obs_data = obspy.read("../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC")
-          2 synth_data = obspy.read("../tests/data/ABKT.II.LHZ.semd.sac")
-          3 
-          4 obs_data.detrend("linear")
-          5 obs_data.taper(max_percentage=0.05, type="hann")
-
-
-    /home/travis/miniconda/envs/condaenv/lib/python2.7/site-packages/obspy/core/util/decorator.pyc in new_func(*args, **kwargs)
-        369                             except IOError:
-        370                                 pass
-    --> 371             return func(*args, **kwargs)
-        372 
-        373         new_func.__name__ = func.__name__
-
-
-    /home/travis/miniconda/envs/condaenv/lib/python2.7/site-packages/obspy/core/stream.pyc in read(pathname_or_url, format, headonly, starttime, endtime, nearest_sample, dtype, apply_calib, **kwargs)
-        222                 raise Exception("No file matching file pattern: %s" % pathname)
-        223             elif not has_magic(pathname) and not os.path.isfile(pathname):
-    --> 224                 raise IOError(2, "No such file or directory", pathname)
-        225             # Only raise error if no starttime/endtime has been set. This
-        226             # will return an empty stream if the user chose a time window with
-
-
-    IOError: [Errno 2] No such file or directory: '../tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC'
-
-
                 
 The configuration is encapsuled within a :class:`~pyflex.config.Config` object. It thus replaces the need for a PAR_FILE and the user functions. Please refer to the :class:`~pyflex.config.Config` object's documentation for more details.
                 
@@ -135,6 +101,11 @@ Observed and synthetic waveforms can be passed as either ObsPy :class:`~obspy.co
 .. code:: python
 
     windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+.. image:: index_files/index_7_0.png
+
+
 Windows
 -------
 
@@ -145,6 +116,14 @@ It returns a sorted list of :class:`~pyflex.window.Window` objects which can the
 
     import pprint
     pprint.pprint(windows[:3])
+
+.. parsed-literal::
+
+    [Window(left=1551, right=1985, center=1768, max_cc_value=0.957406507201, cc_shift=-3, dlnA=0.074690297213),
+     Window(left=2221, right=2709, center=2465, max_cc_value=0.96646884731, cc_shift=0, dlnA=0.128084405453),
+     Window(left=2709, right=2960, center=2834, max_cc_value=0.963357104153, cc_shift=-5, dlnA=-0.192768491696)]
+
+
 Each window contains a number of properties that can be used to
 calculate absolute and relative times for the specific window. ``left``
 and ``right`` specify the boundary indices of a window,
@@ -161,6 +140,14 @@ necessarily identical to the event origin time!).
     print("Absolute times: %s - %s" % (win.absolute_starttime, win.absolute_endtime))
     print("Relative times in seconds: %s - %s" % (win.relative_starttime,
                                                   win.relative_endtime))
+
+.. parsed-literal::
+
+    Indices: 3353 - 3609
+    Absolute times: 1995-05-02T06:53:46.500006Z - 1995-05-02T06:58:02.500006Z
+    Relative times in seconds: 3353.0 - 3609.0
+
+
 A window furthermore contains a list of phases theoretically arriving
 within the window. Take care that the times here are in seconds since
 the event origin.
@@ -168,6 +155,26 @@ the event origin.
 .. code:: python
 
     win.phase_arrivals
+
+
+
+.. parsed-literal::
+
+    [{'d2T/dD2': -0.008985511,
+      'dT/dD': -3.7036695,
+      'dT/dh': -0.21970677,
+      'phase_name': "S'S'ac",
+      'take-off angle': 8.7734709,
+      'time': 3049.9629},
+     {'d2T/dD2': -0.21710481,
+      'dT/dD': -1.9104689,
+      'dT/dh': -0.22161883,
+      'phase_name': "S'S'df",
+      'take-off angle': 4.5126305,
+      'time': 3091.7417}]
+
+
+
 Event and Station Information
 -----------------------------
 
@@ -243,6 +250,11 @@ windows. This is useful for some misfit measurements.
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
         resolution_strategy="merge")
     windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+.. image:: index_files/index_19_0.png
+
+
 Logging
 -------
 
@@ -260,6 +272,26 @@ channels.
     logger.setLevel(logging.DEBUG)
     
     windows = pyflex.select_windows(obs_data, synth_data, config)
+
+.. parsed-literal::
+
+    [2014-11-10 07:14:47,187] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2014-11-10 07:14:47,188] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2014-11-10 07:14:47,191] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-10 07:14:47,193] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-10 07:14:47,518] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+    [2014-11-10 07:14:47,519] - pyflex - INFO: Calculated travel times.
+    [2014-11-10 07:14:47,528] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
+    [2014-11-10 07:14:47,560] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
+    [2014-11-10 07:14:47,661] - pyflex - INFO: Water level rejection retained 39 windows
+    [2014-11-10 07:14:47,663] - pyflex - INFO: Single phase group rejection retained 14 windows
+    [2014-11-10 07:14:47,664] - pyflex - INFO: Removing duplicates retains 14 windows.
+    [2014-11-10 07:14:47,665] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+    [2014-11-10 07:14:47,666] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
+    [2014-11-10 07:14:47,669] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
+    [2014-11-10 07:14:47,676] - pyflex - INFO: Merging windows resulted in 3 windows.
+
+
 API Documentation
 =================
 

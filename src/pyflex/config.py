@@ -38,6 +38,38 @@ class Config(object):
         defaults for most values but you will probably want to adjust them
         for your given application.
 
+        If necessary, the acceptance levels/limits can also be set as
+        arrays. Each array must have the same number of samples as the
+        observed and synthetic data. The corresponding values are then
+        evaluated seperately at each necessary point. This enables the full
+        emulation of the user functions in the original FLEXWIN code. The
+        following basic example illustrates the concept which can become
+        arbitrarily complex.
+
+        .. code-block:: python
+
+            stalta_waterlevel = 0.08 * np.ones(npts)
+            tshift_acceptance_level = 15.0 * np.ones(npts)
+            dlna_acceptance_level = 1.0 * np.ones(npts)
+            cc_acceptance_level = 0.80 * np.ones(npts)
+            s2n_limit = 1.5 * np.ones(npts)
+
+            # Double all values from a certain index on.
+            stalta_waterlevel[2500:] *= 2.0
+            tshift_acceptance_level[2500:] += 5.0
+            dlna_acceptance_level[2500:] *= 1.5
+            cc_acceptance_level[2500:] += 0.5
+            s2n_limit[2500:] *= 0.9
+
+            config = Config(
+                min_period=10.0, max_period=50.0,
+                stalta_waterlevel=stalta_waterlevel,
+                tshift_acceptance_level=tshift_acceptance_level,
+                dlna_acceptance_level=dlna_acceptance_level,
+                cc_acceptance_level=cc_acceptance_level,
+                s2n_limit=s2n_limit)
+
+
         :param min_period: Minimum period of the filtered input data in
             seconds.
         :type min_period: float

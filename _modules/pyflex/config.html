@@ -82,13 +82,46 @@
                  <span class="n">check_global_data_quality</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">snr_integrate_base</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span>
                  <span class="n">snr_max_base</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">noise_start_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">noise_end_index</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">signal_start_index</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">signal_end_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
-                 <span class="n">window_weight_fct</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+                 <span class="n">window_weight_fct</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">resolution_strategy</span><span class="o">=</span><span class="s">&quot;interval_scheduling&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Central configuration object for Pyflex.</span>
 
 <span class="sd">        This replaces the old PAR_FILEs and user functions. It has sensible</span>
 <span class="sd">        defaults for most values but you will probably want to adjust them</span>
 <span class="sd">        for your given application.</span>
+
+<span class="sd">        If necessary, the acceptance levels/limits can also be set as</span>
+<span class="sd">        arrays. Each array must have the same number of samples as the</span>
+<span class="sd">        observed and synthetic data. The corresponding values are then</span>
+<span class="sd">        evaluated seperately at each necessary point. This enables the full</span>
+<span class="sd">        emulation of the user functions in the original FLEXWIN code. The</span>
+<span class="sd">        following basic example illustrates the concept which can become</span>
+<span class="sd">        arbitrarily complex.</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            stalta_waterlevel = 0.08 * np.ones(npts)</span>
+<span class="sd">            tshift_acceptance_level = 15.0 * np.ones(npts)</span>
+<span class="sd">            dlna_acceptance_level = 1.0 * np.ones(npts)</span>
+<span class="sd">            cc_acceptance_level = 0.80 * np.ones(npts)</span>
+<span class="sd">            s2n_limit = 1.5 * np.ones(npts)</span>
+
+<span class="sd">            # Double all values from a certain index on.</span>
+<span class="sd">            stalta_waterlevel[2500:] *= 2.0</span>
+<span class="sd">            tshift_acceptance_level[2500:] += 5.0</span>
+<span class="sd">            dlna_acceptance_level[2500:] *= 1.5</span>
+<span class="sd">            cc_acceptance_level[2500:] += 0.5</span>
+<span class="sd">            s2n_limit[2500:] *= 0.9</span>
+
+<span class="sd">            config = Config(</span>
+<span class="sd">                min_period=10.0, max_period=50.0,</span>
+<span class="sd">                stalta_waterlevel=stalta_waterlevel,</span>
+<span class="sd">                tshift_acceptance_level=tshift_acceptance_level,</span>
+<span class="sd">                dlna_acceptance_level=dlna_acceptance_level,</span>
+<span class="sd">                cc_acceptance_level=cc_acceptance_level,</span>
+<span class="sd">                s2n_limit=s2n_limit)</span>
+
 
 <span class="sd">        :param min_period: Minimum period of the filtered input data in</span>
 <span class="sd">            seconds.</span>
@@ -211,6 +244,13 @@
 <span class="sd">            specific window as a single number. Directly passed to the</span>
 <span class="sd">            :class:`~pyflex.window.Window` &#39;s initialization function.</span>
 <span class="sd">        :type window_weight_fct: function</span>
+
+<span class="sd">        :param resolution_strategy: Strategy used to resolve overlaps.</span>
+<span class="sd">            Possibilities are ``&quot;interval_scheduling&quot;`` and ``&quot;merge&quot;``.</span>
+<span class="sd">            Interval scheduling will chose the optimal subset of</span>
+<span class="sd">            non-overlapping windows. Merging will simply merge overlapping</span>
+<span class="sd">            windows.</span>
+<span class="sd">        :type resolution_strategy: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span> <span class="o">=</span> <span class="n">min_period</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_period</span> <span class="o">=</span> <span class="n">min_period</span>
@@ -246,6 +286,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">signal_end_index</span> <span class="o">=</span> <span class="n">noise_end_index</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">window_weight_fct</span> <span class="o">=</span> <span class="n">window_weight_fct</span>
+
+        <span class="k">if</span> <span class="n">resolution_strategy</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;interval_scheduling&quot;</span><span class="p">,</span> <span class="s">&quot;merge&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                <span class="s">&quot;Invalid resolution strategy. Choose either &quot;</span>
+                <span class="s">&quot;&#39;interval_scheduling&#39; or &#39;merge&#39;.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution_strategy</span> <span class="o">=</span> <span class="n">resolution_strategy</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_convert_to_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npts</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

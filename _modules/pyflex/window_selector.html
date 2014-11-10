@@ -232,7 +232,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;No rejection based on traveltime possible. Event and/or &quot;</span> \
                   <span class="s">&quot;station information is not available.&quot;</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">PyflexWarning</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">determine_signal_and_noise_indices</span><span class="p">()</span>
@@ -249,7 +249,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">reject_windows_based_on_minimum_length</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reject_based_on_signal_to_noise_ratio</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reject_based_on_data_fit_criteria</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">schedule_weighted_intervals</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">resolution_strategy</span> <span class="o">==</span> <span class="s">&quot;interval_scheduling&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">schedule_weighted_intervals</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">resolution_strategy</span> <span class="o">==</span> <span class="s">&quot;merge&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">merge_windows</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">attach_phase_arrivals_to_windows</span><span class="p">()</span>
@@ -267,6 +273,29 @@
             <span class="n">win</span><span class="o">.</span><span class="n">phase_arrivals</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">_i</span> <span class="k">for</span> <span class="n">_i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span> <span class="k">if</span> <span class="n">left</span> <span class="o">&lt;=</span> <span class="n">_i</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">right</span><span class="p">]</span>
 </div>
+<div class="viewcode-block" id="WindowSelector.merge_windows"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.merge_windows">[docs]</a>    <span class="k">def</span> <span class="nf">merge_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge overlapping windows. Will also recalculate the data fit criteria.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Sort by starttime.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
+        <span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">right_win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="n">left_win</span> <span class="o">=</span> <span class="n">windows</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">left_win</span><span class="o">.</span><span class="n">right</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">right_win</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
+                <span class="n">windows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">right_win</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">left_win</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">right_win</span><span class="o">.</span><span class="n">right</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="n">windows</span>
+
+        <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">:</span>
+            <span class="c"># Recenter windows</span>
+            <span class="n">win</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">left</span> <span class="o">+</span> <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+            <span class="c"># Recalculate criteria.</span>
+            <span class="n">win</span><span class="o">.</span><span class="n">_calc_criteria</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Merging windows resulted in </span><span class="si">%i</span><span class="s"> windows.&quot;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</div>
 <div class="viewcode-block" id="WindowSelector.determine_signal_and_noise_indices"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.determine_signal_and_noise_indices">[docs]</a>    <span class="k">def</span> <span class="nf">determine_signal_and_noise_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate the time range of the noise and the signal respectively if</span>
@@ -274,10 +303,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Cannot calculate the end of the noise as &quot;</span>
-                            <span class="s">&quot;event and/or station information is not given &quot;</span>
-                            <span class="s">&quot;and thus the theoretical arrival times cannot &quot;</span>
-                            <span class="s">&quot;be calculated&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Cannot calculate the end of the noise as &quot;</span>
+                               <span class="s">&quot;event and/or station information is not given &quot;</span>
+                               <span class="s">&quot;and thus the theoretical arrival times cannot &quot;</span>
+                               <span class="s">&quot;be calculated&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="o">=</span> \
                     <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&quot;time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">)</span>
@@ -289,10 +318,10 @@
 <span class="sd">        Rejects windows based on their signal to noise amplitude ratio.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&quot;Cannot reject windows based on their signal to &quot;</span>
-                        <span class="s">&quot;noise ratio. Please give station and event &quot;</span>
-                        <span class="s">&quot;information or information about the temporal range &quot;</span>
-                        <span class="s">&quot;of the noise.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Cannot reject windows based on their signal to &quot;</span>
+                           <span class="s">&quot;noise ratio. Please give station and event &quot;</span>
+                           <span class="s">&quot;information or information about the temporal &quot;</span>
+                           <span class="s">&quot;range of the noise.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="n">noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_start_index</span><span class="p">:</span>
@@ -530,7 +559,7 @@
                 <span class="k">return</span> <span class="bp">True</span>
             <span class="k">return</span> <span class="bp">False</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">ifilter</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span>
             <span class="n">filter_phase_rejection</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Single phase group rejection retained </span><span class="si">%i</span><span class="s"> windows&quot;</span> <span class="o">%</span>
                     <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>

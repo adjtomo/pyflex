@@ -72,8 +72,9 @@ ObsPy</a> for your
 given platform (we recommend the installation with
 <a class="reference external" href="https://github.com/obspy/obspy/wiki/Installation-via-Anaconda">Anaconda</a>
 as it will most likely result in the least amount of problems).
-<tt class="docutils literal"><span class="pre">Pyflex</span></tt> should work with Python versions 2.6, 2.7, 3.3, and 3.4. To
-install it, best use <tt class="docutils literal"><span class="pre">pip</span></tt>:</p>
+<tt class="docutils literal"><span class="pre">Pyflex</span></tt> should work with Python versions 2.6, 2.7, 3.3, and 3.4
+(mainly depends on the used ObsPy version). To install it, best use
+<tt class="docutils literal"><span class="pre">pip</span></tt>:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ pip install pyflex
 </pre></div>
 </div>
@@ -185,6 +186,74 @@ the event origin.</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="event-and-station-information">
+<h2>Event and Station Information<a class="headerlink" href="#event-and-station-information" title="Permalink to this headline">¶</a></h2>
+<p>While <tt class="docutils literal"><span class="pre">Pyflex</span></tt> can also operate without any event and station
+information, it needs some information to work at full efficiency. In
+case the waveform traces originate from SAC files, they might contain
+the necessary information. <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is able to extract that
+information but this should really be seen as a last resort.</p>
+<p>The easiest way to pass the necessary information to <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is to
+use its very bare bones event and station objects.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="mf">12.0</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=-</span><span class="mf">11.2</span><span class="p">,</span> <span class="n">depth_in_m</span><span class="o">=</span><span class="mi">12800</span><span class="p">,</span>
+                     <span class="n">origin_time</span><span class="o">=</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">2014</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">station</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="mf">48.0</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)</span>
+
+<span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                                <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Catalog</span></tt></a> or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> objects. Station information on the other hand can be passed as an <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Inventory</span></tt></a> object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">readEvents</span><span class="p">(</span><span class="s">&quot;../events/event_1.xml&quot;</span><span class="p">)</span>
+<span class="n">station</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="s">&quot;../stations/II_ABKT.xml&quot;</span><span class="p">)</span>
+<span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                                <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="difference-to-the-original-flexwin-algorithm">
+<h2>Difference to the original FLEXWIN algorithm<a class="headerlink" href="#difference-to-the-original-flexwin-algorithm" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> largely follows the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm. The major
+differences are outlined here.</p>
+<ul class="simple">
+<li>The found local extrema of the STA/LTA functional might differ a bit.
+In case of a &#8220;flat&#8221; extrema, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> will always find the leftmost
+index.</li>
+<li>The order of rejection stages has been changed a bit to assure
+cheaper eliminations are run first. This results in a significant
+speed boost.</li>
+<li>The water/acceptance level of the data fit criteria is now evaluated
+at the center of each windows and not at the central peak.</li>
+<li>The Config object has a <tt class="docutils literal"><span class="pre">min_surface_wave_velocity</span></tt> parameter which
+can be used to easily discard windows for late arriving surface/coda
+waves.</li>
+</ul>
+<div class="section" id="overlap-resolution-strategy">
+<h3>Overlap Resolution Strategy<a class="headerlink" href="#overlap-resolution-strategy" title="Permalink to this headline">¶</a></h3>
+<p>Instead of using the overlap resolution strategy outlined in section
+<strong>2.5 Stage E</strong> in the <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> paper, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilizes weighted
+interval scheduling which is a classical IT problem. The weighted
+interval scheduling algorithm finds the best possible subset of
+non-overlapping windows by maximizing the cumulative weight of all
+chosen windows. By default the weight of each window is its length in
+terms of minimum period of the data times the maximum cross correlation
+coefficient. The weighting function can be overwritten with the help of
+the Config object. This results in similar windows to the original
+<tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm but is easier to reason about.</p>
+<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> furthermore offers the option to merge all good candidate
+windows. This is useful for some misfit measurements.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">config</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+    <span class="n">min_period</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">max_period</span><span class="o">=</span><span class="mf">150.0</span><span class="p">,</span>
+    <span class="n">stalta_waterlevel</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">tshift_acceptance_level</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span>
+    <span class="n">dlna_acceptance_level</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">cc_acceptance_level</span><span class="o">=</span><span class="mf">0.80</span><span class="p">,</span>
+    <span class="n">c_0</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">c_1</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">c_2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">c_3a</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">c_3b</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">c_4a</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">c_4b</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+    <span class="n">resolution_strategy</span><span class="o">=</span><span class="s">&quot;merge&quot;</span><span class="p">)</span>
+<span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/index_19_0.png" src="_images/index_19_0.png" />
+</div>
+</div>
 <div class="section" id="logging">
 <h2>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h2>
 <p>By default, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is fairly quiet and will only raise exceptions
@@ -198,37 +267,23 @@ channels.</p>
 <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
-
-<span class="nb">sorted</span><span class="p">([</span><span class="n">_i</span><span class="p">[</span><span class="s">&quot;phase_name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_i</span> <span class="ow">in</span> <span class="n">windows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">phase_arrivals</span><span class="p">])</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2014-11-09 22:59:16,355] - pyflex - INFO: Extracted station information from observed SAC file.
-[2014-11-09 22:59:16,356] - pyflex - INFO: Extracted event information from observed SAC file.
-[2014-11-09 22:59:16,361] - pyflex - INFO: Calculating envelope of synthetics.
-[2014-11-09 22:59:16,363] - pyflex - INFO: Calculating STA/LTA.
-[2014-11-09 22:59:16,699] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-[2014-11-09 22:59:16,701] - pyflex - INFO: Calculated travel times.
-[2014-11-09 22:59:16,712] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
-[2014-11-09 22:59:16,750] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
-[2014-11-09 22:59:16,874] - pyflex - INFO: Water level rejection retained 39 windows
-[2014-11-09 22:59:16,877] - pyflex - INFO: Single phase group rejection retained 14 windows
-[2014-11-09 22:59:16,878] - pyflex - INFO: Removing duplicates retains 14 windows.
-[2014-11-09 22:59:16,879] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
-[2014-11-09 22:59:16,879] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
-[2014-11-09 22:59:16,884] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
-[2014-11-09 22:59:16,885] - pyflex - INFO: Weighted interval schedule optimzation retained 7 windows.
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;PKPdf&#39;</span><span class="p">,</span>
- <span class="s">&#39;PKSdf&#39;</span><span class="p">,</span>
- <span class="s">&#39;PKiKP&#39;</span><span class="p">,</span>
- <span class="s">&#39;PP&#39;</span><span class="p">,</span>
- <span class="s">&#39;SKPdf&#39;</span><span class="p">,</span>
- <span class="s">&#39;SKiKP&#39;</span><span class="p">,</span>
- <span class="s">&#39;pPKPdf&#39;</span><span class="p">,</span>
- <span class="s">&#39;pPKiKP&#39;</span><span class="p">,</span>
- <span class="s">&#39;sPKPdf&#39;</span><span class="p">,</span>
- <span class="s">&#39;sPKiKP&#39;</span><span class="p">]</span>
+<div class="highlight-python"><div class="highlight"><pre>[2014-11-10 00:41:34,451] - pyflex - INFO: Extracted station information from observed SAC file.
+[2014-11-10 00:41:34,453] - pyflex - INFO: Extracted event information from observed SAC file.
+[2014-11-10 00:41:34,456] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-11-10 00:41:34,458] - pyflex - INFO: Calculating STA/LTA.
+[2014-11-10 00:41:34,835] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+[2014-11-10 00:41:34,837] - pyflex - INFO: Calculated travel times.
+[2014-11-10 00:41:34,848] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
+[2014-11-10 00:41:34,887] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
+[2014-11-10 00:41:35,007] - pyflex - INFO: Water level rejection retained 39 windows
+[2014-11-10 00:41:35,011] - pyflex - INFO: Single phase group rejection retained 14 windows
+[2014-11-10 00:41:35,012] - pyflex - INFO: Removing duplicates retains 14 windows.
+[2014-11-10 00:41:35,012] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+[2014-11-10 00:41:35,013] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
+[2014-11-10 00:41:35,018] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
+[2014-11-10 00:41:35,025] - pyflex - INFO: Merging windows resulted in 3 windows.
 </pre></div>
 </div>
 </div>
@@ -241,11 +296,40 @@ details you can always have a look at the code.</p>
 <h2>Config Object<a class="headerlink" href="#config-object" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyflex.config.Config">
-<em class="property">class </em><tt class="descclassname">pyflex.config.</tt><tt class="descname">Config</tt><big>(</big><em>min_period</em>, <em>max_period</em>, <em>stalta_waterlevel=0.07</em>, <em>tshift_acceptance_level=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_acceptance_level=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_acceptance_level=0.7</em>, <em>s2n_limit=1.5</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em>, <em>check_global_data_quality=False</em>, <em>snr_integrate_base=3.5</em>, <em>snr_max_base=3.0</em>, <em>noise_start_index=0</em>, <em>noise_end_index=None</em>, <em>signal_start_index=None</em>, <em>signal_end_index=-1</em>, <em>window_weight_fct=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">pyflex.config.</tt><tt class="descname">Config</tt><big>(</big><em>min_period</em>, <em>max_period</em>, <em>stalta_waterlevel=0.07</em>, <em>tshift_acceptance_level=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_acceptance_level=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_acceptance_level=0.7</em>, <em>s2n_limit=1.5</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em>, <em>check_global_data_quality=False</em>, <em>snr_integrate_base=3.5</em>, <em>snr_max_base=3.0</em>, <em>noise_start_index=0</em>, <em>noise_end_index=None</em>, <em>signal_start_index=None</em>, <em>signal_end_index=-1</em>, <em>window_weight_fct=None</em>, <em>resolution_strategy=u'interval_scheduling'</em><big>)</big><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Central configuration object for Pyflex.</p>
 <p>This replaces the old PAR_FILEs and user functions. It has sensible
 defaults for most values but you will probably want to adjust them
 for your given application.</p>
+<p>If necessary, the acceptance levels/limits can also be set as
+arrays. Each array must have the same number of samples as the
+observed and synthetic data. The corresponding values are then
+evaluated seperately at each necessary point. This enables the full
+emulation of the user functions in the original FLEXWIN code. The
+following basic example illustrates the concept which can become
+arbitrarily complex.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">stalta_waterlevel</span> <span class="o">=</span> <span class="mf">0.08</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">npts</span><span class="p">)</span>
+<span class="n">tshift_acceptance_level</span> <span class="o">=</span> <span class="mf">15.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">npts</span><span class="p">)</span>
+<span class="n">dlna_acceptance_level</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">npts</span><span class="p">)</span>
+<span class="n">cc_acceptance_level</span> <span class="o">=</span> <span class="mf">0.80</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">npts</span><span class="p">)</span>
+<span class="n">s2n_limit</span> <span class="o">=</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">npts</span><span class="p">)</span>
+
+<span class="c"># Double all values from a certain index on.</span>
+<span class="n">stalta_waterlevel</span><span class="p">[</span><span class="mi">2500</span><span class="p">:]</span> <span class="o">*=</span> <span class="mf">2.0</span>
+<span class="n">tshift_acceptance_level</span><span class="p">[</span><span class="mi">2500</span><span class="p">:]</span> <span class="o">+=</span> <span class="mf">5.0</span>
+<span class="n">dlna_acceptance_level</span><span class="p">[</span><span class="mi">2500</span><span class="p">:]</span> <span class="o">*=</span> <span class="mf">1.5</span>
+<span class="n">cc_acceptance_level</span><span class="p">[</span><span class="mi">2500</span><span class="p">:]</span> <span class="o">+=</span> <span class="mf">0.5</span>
+<span class="n">s2n_limit</span><span class="p">[</span><span class="mi">2500</span><span class="p">:]</span> <span class="o">*=</span> <span class="mf">0.9</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span>
+    <span class="n">min_period</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">max_period</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
+    <span class="n">stalta_waterlevel</span><span class="o">=</span><span class="n">stalta_waterlevel</span><span class="p">,</span>
+    <span class="n">tshift_acceptance_level</span><span class="o">=</span><span class="n">tshift_acceptance_level</span><span class="p">,</span>
+    <span class="n">dlna_acceptance_level</span><span class="o">=</span><span class="n">dlna_acceptance_level</span><span class="p">,</span>
+    <span class="n">cc_acceptance_level</span><span class="o">=</span><span class="n">cc_acceptance_level</span><span class="p">,</span>
+    <span class="n">s2n_limit</span><span class="o">=</span><span class="n">s2n_limit</span><span class="p">)</span>
+</pre></div>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -328,6 +412,11 @@ to noise calculations.</li>
 <li><strong>window_weight_fct</strong> (<em>function</em>) &#8211; A function returning the weight for a
 specific window as a single number. Directly passed to the
 <a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><tt class="xref py py-class docutils literal"><span class="pre">Window</span></tt></a> &#8216;s initialization function.</li>
+<li><strong>resolution_strategy</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Strategy used to resolve overlaps.
+Possibilities are <tt class="docutils literal"><span class="pre">&quot;interval_scheduling&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;merge&quot;</span></tt>.
+Interval scheduling will chose the optimal subset of
+non-overlapping windows. Merging will simply merge overlapping
+windows.</li>
 </ul>
 </td>
 </tr>
@@ -563,6 +652,12 @@ not yet specified by the user.</p>
 function in flexwin.</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="pyflex.window_selector.WindowSelector.merge_windows">
+<tt class="descname">merge_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.merge_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.merge_windows" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge overlapping windows. Will also recalculate the data fit criteria.</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="pyflex.window_selector.WindowSelector.minimum_window_length">
 <tt class="descname">minimum_window_length</tt><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.minimum_window_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.minimum_window_length" title="Permalink to this definition">¶</a></dt>
@@ -657,6 +752,51 @@ of a window.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="misc-functionality">
+<h2>Misc Functionality<a class="headerlink" href="#misc-functionality" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pyflex.interval_scheduling.schedule_weighted_intervals">
+<tt class="descclassname">pyflex.interval_scheduling.</tt><tt class="descname">schedule_weighted_intervals</tt><big>(</big><em>I</em><big>)</big><a class="reference internal" href="_modules/pyflex/interval_scheduling.html#schedule_weighted_intervals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.interval_scheduling.schedule_weighted_intervals" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Use dynamic algorithm to schedule weighted intervals</dt>
+<dd>sorting is O(n log n),
+finding p[1..n] is O(n log n),
+finding OPT[1..n] is O(n),
+selecting is O(n)
+whole operation is dominated by O(n log n)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyflex.utils.find_local_extrema">
+<tt class="descclassname">pyflex.utils.</tt><tt class="descname">find_local_extrema</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/pyflex/utils.html#find_local_extrema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.utils.find_local_extrema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function finding local extrema. It can also deal with flat extrema,
+e.g. a flat top or bottom. In that case the first index of all flat
+values will be returned.</p>
+<p>Returns a tuple of maxima and minima indices.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyflex.stalta.sta_lta">
+<tt class="descclassname">pyflex.stalta.</tt><tt class="descname">sta_lta</tt><big>(</big><em>data</em>, <em>dt</em>, <em>min_period</em><big>)</big><a class="reference internal" href="_modules/pyflex/stalta.html#sta_lta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.stalta.sta_lta" title="Permalink to this definition">¶</a></dt>
+<dd><p>STA/LTA as used in SPECFEM. Should potentially be replace by a suitable
+STA/LTA variant in ObsPy as it is really slow right now.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> &#8211; The data array.</li>
+<li><strong>dt</strong> &#8211; The sample interval of the data.</li>
+<li><strong>min_period</strong> &#8211; The minimum period of the data.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
 </div>
 
 
@@ -675,6 +815,11 @@ of a window.</p>
 <li><a class="reference internal" href="#tests">Tests</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#windows">Windows</a></li>
+<li><a class="reference internal" href="#event-and-station-information">Event and Station Information</a></li>
+<li><a class="reference internal" href="#difference-to-the-original-flexwin-algorithm">Difference to the original FLEXWIN algorithm</a><ul>
+<li><a class="reference internal" href="#overlap-resolution-strategy">Overlap Resolution Strategy</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#logging">Logging</a></li>
 </ul>
 </li>
@@ -685,6 +830,7 @@ of a window.</p>
 <li><a class="reference internal" href="#helper-objects">Helper Objects</a></li>
 <li><a class="reference internal" href="#exceptions-and-warnings">Exceptions and Warnings</a></li>
 <li><a class="reference internal" href="#low-level-windowselector-class">Low-level WindowSelector Class</a></li>
+<li><a class="reference internal" href="#misc-functionality">Misc Functionality</a></li>
 </ul>
 </li>
 </ul>

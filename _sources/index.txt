@@ -26,8 +26,9 @@ ObsPy <https://github.com/obspy/obspy/wiki#installation>`_ for your
 given platform (we recommend the installation with
 `Anaconda <https://github.com/obspy/obspy/wiki/Installation-via-Anaconda>`_
 as it will most likely result in the least amount of problems).
-``Pyflex`` should work with Python versions 2.6, 2.7, 3.3, and 3.4. To
-install it, best use ``pip``:
+``Pyflex`` should work with Python versions 2.6, 2.7, 3.3, and 3.4
+(mainly depends on the used ObsPy version). To install it, best use
+``pip``:
 
 ::
 
@@ -170,6 +171,86 @@ the event origin.
 
 
 
+Event and Station Information
+-----------------------------
+
+While ``Pyflex`` can also operate without any event and station
+information, it needs some information to work at full efficiency. In
+case the waveform traces originate from SAC files, they might contain
+the necessary information. ``Pyflex`` is able to extract that
+information but this should really be seen as a last resort.
+
+The easiest way to pass the necessary information to ``Pyflex`` is to
+use its very bare bones event and station objects.
+
+.. code:: python
+
+    event = pyflex.Event(latitude=12.0, longitude=-11.2, depth_in_m=12800,
+                         origin_time=obspy.UTCDateTime(2014, 2, 4))
+    station = pyflex.Station(latitude=48.0, longitude=20.0)
+    
+    windows = pyflex.select_windows(obs_data, synth_data, config,
+                                    event=event, station=station)
+                
+A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy :class:`~obspy.core.event.Catalog` or :class:`~obspy.core.event.Event` objects. Station information on the other hand can be passed as an :class:`~obspy.station.inventory.Inventory` object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.
+
+.. code-block:: python
+
+    event = obspy.readEvents("../events/event_1.xml")
+    station = obspy.read_inventory("../stations/II_ABKT.xml")
+    windows = pyflex.select_windows(obs_data, synth_data, config,
+                                    event=event, station=station)
+
+                
+Difference to the original FLEXWIN algorithm
+--------------------------------------------
+
+``Pyflex`` largely follows the original ``FLEXWIN`` algorithm. The major
+differences are outlined here.
+
+-  The found local extrema of the STA/LTA functional might differ a bit.
+   In case of a "flat" extrema, ``Pyflex`` will always find the leftmost
+   index.
+-  The order of rejection stages has been changed a bit to assure
+   cheaper eliminations are run first. This results in a significant
+   speed boost.
+-  The water/acceptance level of the data fit criteria is now evaluated
+   at the center of each windows and not at the central peak.
+-  The Config object has a ``min_surface_wave_velocity`` parameter which
+   can be used to easily discard windows for late arriving surface/coda
+   waves.
+
+Overlap Resolution Strategy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of using the overlap resolution strategy outlined in section
+**2.5 Stage E** in the ``FLEXWIN`` paper, ``Pyflex`` utilizes weighted
+interval scheduling which is a classical IT problem. The weighted
+interval scheduling algorithm finds the best possible subset of
+non-overlapping windows by maximizing the cumulative weight of all
+chosen windows. By default the weight of each window is its length in
+terms of minimum period of the data times the maximum cross correlation
+coefficient. The weighting function can be overwritten with the help of
+the Config object. This results in similar windows to the original
+``FLEXWIN`` algorithm but is easier to reason about.
+
+``Pyflex`` furthermore offers the option to merge all good candidate
+windows. This is useful for some misfit measurements.
+
+.. code:: python
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        resolution_strategy="merge")
+    windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+.. image:: index_files/index_19_0.png
+
+
 Logging
 -------
 
@@ -187,43 +268,24 @@ channels.
     logger.setLevel(logging.DEBUG)
     
     windows = pyflex.select_windows(obs_data, synth_data, config)
-    
-    sorted([_i["phase_name"] for _i in windows[0].phase_arrivals])
 
 .. parsed-literal::
 
-    [2014-11-09 22:59:16,355] - pyflex - INFO: Extracted station information from observed SAC file.
-    [2014-11-09 22:59:16,356] - pyflex - INFO: Extracted event information from observed SAC file.
-    [2014-11-09 22:59:16,361] - pyflex - INFO: Calculating envelope of synthetics.
-    [2014-11-09 22:59:16,363] - pyflex - INFO: Calculating STA/LTA.
-    [2014-11-09 22:59:16,699] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-    [2014-11-09 22:59:16,701] - pyflex - INFO: Calculated travel times.
-    [2014-11-09 22:59:16,712] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
-    [2014-11-09 22:59:16,750] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
-    [2014-11-09 22:59:16,874] - pyflex - INFO: Water level rejection retained 39 windows
-    [2014-11-09 22:59:16,877] - pyflex - INFO: Single phase group rejection retained 14 windows
-    [2014-11-09 22:59:16,878] - pyflex - INFO: Removing duplicates retains 14 windows.
-    [2014-11-09 22:59:16,879] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
-    [2014-11-09 22:59:16,879] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
-    [2014-11-09 22:59:16,884] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
-    [2014-11-09 22:59:16,885] - pyflex - INFO: Weighted interval schedule optimzation retained 7 windows.
-
-
-
-
-.. parsed-literal::
-
-    ['PKPdf',
-     'PKSdf',
-     'PKiKP',
-     'PP',
-     'SKPdf',
-     'SKiKP',
-     'pPKPdf',
-     'pPKiKP',
-     'sPKPdf',
-     'sPKiKP']
-
+    [2014-11-10 00:41:34,451] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2014-11-10 00:41:34,453] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2014-11-10 00:41:34,456] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-10 00:41:34,458] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-10 00:41:34,835] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+    [2014-11-10 00:41:34,837] - pyflex - INFO: Calculated travel times.
+    [2014-11-10 00:41:34,848] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
+    [2014-11-10 00:41:34,887] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
+    [2014-11-10 00:41:35,007] - pyflex - INFO: Water level rejection retained 39 windows
+    [2014-11-10 00:41:35,011] - pyflex - INFO: Single phase group rejection retained 14 windows
+    [2014-11-10 00:41:35,012] - pyflex - INFO: Removing duplicates retains 14 windows.
+    [2014-11-10 00:41:35,012] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+    [2014-11-10 00:41:35,013] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
+    [2014-11-10 00:41:35,018] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
+    [2014-11-10 00:41:35,025] - pyflex - INFO: Merging windows resulted in 3 windows.
 
 
 API Documentation
@@ -286,4 +348,14 @@ For most purposes, the :func:`~pyflex.flexwin.select_windows` function it the be
 
 .. autoclass:: pyflex.window_selector.WindowSelector
     :members:
+                
+Misc Functionality
+------------------
+
+                
+.. autofunction:: pyflex.interval_scheduling.schedule_weighted_intervals
+
+.. autofunction:: pyflex.utils.find_local_extrema
+
+.. autofunction:: pyflex.stalta.sta_lta
                 

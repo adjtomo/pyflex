@@ -33,7 +33,7 @@ def compute_previous_intervals(I):
     finish = [i.right for i in I]
 
     p = []
-    for j in xrange(len(I)):
+    for j in range(len(I)):
         # rightmost interval f_i <= s_j
         i = bisect.bisect_right(finish, start[j]) - 1
         p.append(i)
@@ -58,7 +58,7 @@ def schedule_weighted_intervals(I):
     OPT = collections.defaultdict(int)
     OPT[-1] = 0
     OPT[0] = 0
-    for j in xrange(1, len(I)):
+    for j in range(1, len(I)):
         OPT[j] = max(I[j].weight + OPT[p[j]], OPT[j - 1])
 
     # given OPT and p, find actual solution intervals in O(n)

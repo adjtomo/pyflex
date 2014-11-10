@@ -20,9 +20,6 @@ class Window(object):
     """
     Class representing window candidates and final windows.
     """
-    __slots__ = ["_left", "middle", "_right", "max_cc_value",
-                 "cc_shift", "dlnA", "dt", "min_win_period"]
-
     def __init__(self, left, right, center, time_of_first_sample, dt,
                  min_period, weight_function=None):
         """

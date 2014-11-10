@@ -179,7 +179,7 @@ class WindowSelector(object):
         else:
             msg = "No rejection based on traveltime possible. Event and/or " \
                   "station information is not available."
-            logger.warn(msg)
+            logger.warning(msg)
             warnings.warn(msg, PyflexWarning)
 
         self.determine_signal_and_noise_indices()
@@ -250,10 +250,10 @@ class WindowSelector(object):
         """
         if self.config.noise_end_index is None:
             if not self.ttimes:
-                logger.warn("Cannot calculate the end of the noise as "
-                            "event and/or station information is not given "
-                            "and thus the theoretical arrival times cannot "
-                            "be calculated")
+                logger.warning("Cannot calculate the end of the noise as "
+                               "event and/or station information is not given "
+                               "and thus the theoretical arrival times cannot "
+                               "be calculated")
             else:
                 self.config.noise_end_index = \
                     int(self.ttimes[0]["time"] - self.config.min_period)
@@ -265,10 +265,10 @@ class WindowSelector(object):
         Rejects windows based on their signal to noise amplitude ratio.
         """
         if self.config.noise_end_index is None:
-            logger.warn("Cannot reject windows based on their signal to "
-                        "noise ratio. Please give station and event "
-                        "information or information about the temporal range "
-                        "of the noise.")
+            logger.warning("Cannot reject windows based on their signal to "
+                           "noise ratio. Please give station and event "
+                           "information or information about the temporal "
+                           "range of the noise.")
             return
 
         noise = self.observed.data[self.config.noise_start_index:
@@ -506,7 +506,7 @@ class WindowSelector(object):
                 return True
             return False
 
-        self.windows = list(itertools.ifilter(
+        self.windows = list(filter(
             filter_phase_rejection, self.windows))
         logger.info("Single phase group rejection retained %i windows" %
                     len(self.windows))

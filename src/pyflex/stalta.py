@@ -45,12 +45,12 @@ def sta_lta(data, dt, min_period):
     lta = 0.0
 
     # warm up the sta and lta
-    for i in xrange(n_extend):
+    for i in range(n_extend):
         sta = Cs * sta + extended_syn[i]
         lta = Cl * lta + extended_syn[i]
 
     # calculate sta/lta for the envelope
-    for i in xrange(len(data)):
+    for i in range(len(data)):
         sta = Cs * sta + extended_syn[n_extend + i]
         lta = Cl * lta + extended_syn[n_extend + i]
         if lta > TOL:

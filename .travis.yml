@@ -1,7 +1,10 @@
 language: python
 
 python:
+  - "2.6"
   - "2.7"
+  - "3.3"
+  - "3.4"
 
 env:
   global:
@@ -25,7 +28,10 @@ before_install:
   - pip install --use-mirrors sphinx-readable-theme
   - pip install --use-mirrors runipy
   - pip install --use-mirrors future
-  - pip install obspy
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then "pip install obspy" ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then "pip install obspy" ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then "pip install obspy==master" ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then "pip install obspy==master" ; fi
   - pip install coveralls
 
 install:

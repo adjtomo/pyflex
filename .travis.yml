@@ -24,14 +24,13 @@ before_install:
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
   - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose pytest flake8 sphinx lxml sqlalchemy mock ipython-notebook nose
-  - pip install --use-mirrors suds
-  - pip install --use-mirrors sphinx-readable-theme
-  - pip install --use-mirrors runipy
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors sphinx-readable-theme ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors runipy ; fi
   - pip install --use-mirrors future
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then "pip install obspy" ; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then "pip install obspy" ; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then "pip install obspy==master" ; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then "pip install obspy==master" ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install obspy ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install obspy ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then pip install obspy==master ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then pip install obspy==master ; fi
   - pip install coveralls
 
 install:
@@ -39,8 +38,8 @@ install:
 
 script:
   - coverage run --source=src/pyflex -m pyflex.tests
-  - cd $TRAVIS_BUILD_DIR/doc; make html
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then cd $TRAVIS_BUILD_DIR/doc; make html ; fi
 
 after_success:
   - cd $TRAVIS_BUILD_DIR; coveralls
-  - bash $TRAVIS_BUILD_DIR/.travis-update-gh-pages.sh
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then bash $TRAVIS_BUILD_DIR/.travis-update-gh-pages.sh ; fi

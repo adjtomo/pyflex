@@ -30,7 +30,6 @@ before_install:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install obspy ; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install obspy ; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then pip install https://github.com/obspy/obspy/archive/master.zip ; fi
-  obspy==master ; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then pip install https://github.com/obspy/obspy/archive/master.zip ; fi
   - pip install coveralls
 

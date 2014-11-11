@@ -104,25 +104,30 @@ def test_window_selection():
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
 
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
-    assert len(windows) == 7
+    assert len(windows) == 9
 
-    assert [_i.left for _i in windows] == [1551, 2221, 2709, 2960, 3353, 3609,
-                                           3983]
-    assert [_i.right for _i in windows] == [1985, 2709, 2960, 3172, 3609, 3920,
-                                            4442]
+    lefties = np.array([_i.left for _i in windows])
+    righties = np.array([_i.right for _i in windows])
+
+    np.testing.assert_allclose(
+        lefties,
+        np.array([1551, 2221, 2709, 2960, 3353, 3609, 3983, 4715, 4962]),
+        atol=3)
+    np.testing.assert_allclose(
+        righties,
+        np.array([1985, 2709, 2960, 3172, 3609, 3920, 4442, 4962, 5207]),
+        atol=3)
+
     np.testing.assert_allclose(
         np.array([_i.max_cc_value for _i in windows]),
-        np.array([0.95740629373181685, 0.96646803651993862, 0.9633571597878805,
-                  0.98249546895396034, 0.96838753962768898,
-                  0.88501979275369003, 0.82529382012185848]), rtol=1E-4)
+        np.array([0.95740629, 0.96646804, 0.96335716, 0.98249547, 0.96838754,
+                  0.88501979, 0.82529382, 0.92953344, 0.92880873]), rtol=1E-4)
 
-    assert [_i.cc_shift for _i in windows] == [-3, 0, -5, -5, -6, 4, -9]
+    assert [_i.cc_shift for _i in windows] == [-3, 0, -5, -5, -6, 4, -9, -1, 7]
     np.testing.assert_allclose(
         np.array([_i.dlnA for _i in windows]),
-        np.array([0.074690084388978839, 0.12807961376836777,
-                  -0.19276977567364437, 0.18556340842688038,
-                  0.093674448597561411, -0.11885913254077075,
-                  -0.63865703707265198]), rtol=1E-4)
+        np.array([0.07469, 0.12808, -0.19277, 0.185563, 0.093674, -0.118859,
+                  -0.638657, 0.25942, 0.106571]), rtol=1E-4)
 
     # Assert the phases of the first window.
     assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \
@@ -290,7 +295,7 @@ def test_run_with_data_quality_checks():
 
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
     # The data in this case is so good that nothing should have changed.
-    assert len(windows) == 7
+    assert len(windows) == 9
 
 
 def test_window_plotting(tmpdir):
@@ -318,7 +323,7 @@ def test_window_merging_strategy():
         resolution_strategy="merge")
 
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
-    assert len(windows) == 3
+    assert len(windows) == 4
 
 
 def test_settings_arrays_as_config_values():
@@ -340,4 +345,4 @@ def test_settings_arrays_as_config_values():
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
 
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
-    assert len(windows) == 7
+    assert len(windows) == 9

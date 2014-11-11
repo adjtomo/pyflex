@@ -355,11 +355,14 @@ class WindowSelector(object):
             self.station.latitude, self.station.longitude, self.event.latitude,
             self.event.longitude)[0] / 1000.0
 
-        min_time = self.ttimes[0]["time"] - self.config.min_period
-        max_time = dist_in_km / self.config.min_surface_wave_velocity
+        offset = self.event.origin_time - self.observed.stats.starttime
+
+        min_time = self.ttimes[0]["time"] - self.config.min_period + offset
+        max_time = dist_in_km / self.config.min_surface_wave_velocity + offset
 
         self.windows = [win for win in self.windows
-                        if (win.right >= min_time) and (win.left <= max_time)]
+                        if (win.relative_endtime >= min_time)
+                        and (win.relative_starttime <= max_time)]
         logger.info("Rejection based on travel times retained %i windows." %
                     len(self.windows))
 
@@ -719,7 +722,9 @@ class WindowSelector(object):
             plt.gca().add_patch(re)
             plt.text(l + buf, plt.ylim()[1],
                      "CC=%.2f\ndT=%.2f\ndA=%.2f" %
-                     (win.max_cc_value, win.cc_shift, win.dlnA),
+                     (win.max_cc_value,
+                      win.cc_shift * self.observed.stats.delta,
+                      win.dlnA),
                      horizontalalignment="left",
                      verticalalignment="top", rotation="vertical",
                      size="small", multialignment="right")

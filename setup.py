@@ -18,7 +18,7 @@ def read(*names, **kwargs):
 
 setup(
     name="pyflex",
-    version="0.1.0",
+    version="0.1.1",
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Python port of the FLEXWIN package",
     author="Lion Krischer",

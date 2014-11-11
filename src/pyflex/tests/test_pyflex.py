@@ -127,7 +127,7 @@ def test_window_selection():
     np.testing.assert_allclose(
         np.array([_i.dlnA for _i in windows]),
         np.array([0.07469, 0.12808, -0.19277, 0.185563, 0.093674, -0.118859,
-                  -0.638657, 0.25942, 0.106571]), rtol=1E-3)
+                  -0.638657, 0.25942, 0.106571]), rtol=1E-2)
 
     # Assert the phases of the first window.
     assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \

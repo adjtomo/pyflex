@@ -275,21 +275,21 @@ channels.
 
 .. parsed-literal::
 
-    [2014-11-10 07:14:47,187] - pyflex - INFO: Extracted station information from observed SAC file.
-    [2014-11-10 07:14:47,188] - pyflex - INFO: Extracted event information from observed SAC file.
-    [2014-11-10 07:14:47,191] - pyflex - INFO: Calculating envelope of synthetics.
-    [2014-11-10 07:14:47,193] - pyflex - INFO: Calculating STA/LTA.
-    [2014-11-10 07:14:47,518] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-    [2014-11-10 07:14:47,519] - pyflex - INFO: Calculated travel times.
-    [2014-11-10 07:14:47,528] - pyflex - INFO: Rejection based on travel times retained 3271 windows.
-    [2014-11-10 07:14:47,560] - pyflex - INFO: Rejection based on minimum window length retained 3257 windows.
-    [2014-11-10 07:14:47,661] - pyflex - INFO: Water level rejection retained 39 windows
-    [2014-11-10 07:14:47,663] - pyflex - INFO: Single phase group rejection retained 14 windows
-    [2014-11-10 07:14:47,664] - pyflex - INFO: Removing duplicates retains 14 windows.
-    [2014-11-10 07:14:47,665] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
-    [2014-11-10 07:14:47,666] - pyflex - INFO: SN amplitude ratio window rejection retained 12 windows
-    [2014-11-10 07:14:47,669] - pyflex - INFO: Rejection based on data fit criteria retained 12 windows.
-    [2014-11-10 07:14:47,676] - pyflex - INFO: Merging windows resulted in 3 windows.
+    [2014-11-11 15:57:42,318] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2014-11-11 15:57:42,318] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2014-11-11 15:57:42,323] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-11 15:57:42,325] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-11 15:57:42,792] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+    [2014-11-11 15:57:42,795] - pyflex - INFO: Calculated travel times.
+    [2014-11-11 15:57:42,809] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
+    [2014-11-11 15:57:42,858] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
+    [2014-11-11 15:57:43,013] - pyflex - INFO: Water level rejection retained 41 windows
+    [2014-11-11 15:57:43,018] - pyflex - INFO: Single phase group rejection retained 16 windows
+    [2014-11-11 15:57:43,019] - pyflex - INFO: Removing duplicates retains 16 windows.
+    [2014-11-11 15:57:43,020] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
+    [2014-11-11 15:57:43,021] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+    [2014-11-11 15:57:43,027] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+    [2014-11-11 15:57:43,036] - pyflex - INFO: Merging windows resulted in 4 windows.
 
 
 API Documentation

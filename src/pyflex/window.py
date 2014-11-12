@@ -77,7 +77,7 @@ class Window(object):
         return not self == other
 
     @staticmethod
-    def read(self, filename):
+    def read(filename):
         if hasattr(filename, "read"):
             obj = json.load(filename)
         else:
@@ -94,7 +94,7 @@ class Window(object):
         necessary_keys = set([
             "left_index", "right_index", "center_index", "channel_id",
             "time_of_first_sample", "max_cc_value", "cc_shift_in_samples",
-            "cc_shift_in_seconds", "dlnA", "dt", "min_period ",
+            "cc_shift_in_seconds", "dlnA", "dt", "min_period",
             "phase_arrivals", "absolute_starttime", "absolute_endtime",
             "relative_starttime", "relative_endtime", "window_weight"])
         missing_keys = necessary_keys.difference(set(win.keys()))
@@ -103,6 +103,20 @@ class Window(object):
             raise ValueError(
                 "Window JSON file misses the following keys:\n%s" %
                 ", ".join(missing_keys))
+
+        new_win = Window(
+            left=win["left_index"], right=win["right_index"],
+            center=win["center_index"],
+            time_of_first_sample=obspy.UTCDateTime(
+                win["time_of_first_sample"]),
+            dt=win["dt"], min_period=win["min_period"],
+            channel_id=win["channel_id"])
+        new_win.max_cc_value = win["max_cc_value"]
+        new_win.cc_shift = win["cc_shift_in_samples"]
+        new_win.dlnA = win["dlnA"]
+        new_win.phase_arrivals = win["phase_arrivals"]
+
+        return new_win
 
     def write(self, filename):
         """
@@ -122,7 +136,7 @@ class Window(object):
             "cc_shift_in_seconds":  self.cc_shift_in_seconds,
             "dlnA":  self.dlnA,
             "dt": self.dt,
-            "min_period ": self.min_period,
+            "min_period": self.min_period,
             "phase_arrivals": self.phase_arrivals,
             "absolute_starttime": self.absolute_starttime,
             "absolute_endtime": self.absolute_endtime,
@@ -172,7 +186,7 @@ class Window(object):
 
     @property
     def cc_shift_in_seconds(self):
-        return self.cc_shift * self.dt
+        return self.cc_shift * self.dt if self.cc_shift is not None else None
 
     @property
     def absolute_starttime(self):
@@ -230,6 +244,8 @@ class Window(object):
         """
         if self.weight_function:
             return self.weight_function(self)
+        if self.max_cc_value is None:
+            return None
         return (self.right - self.left) * self.dt / self.min_period * \
             self.max_cc_value
 

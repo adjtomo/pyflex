@@ -142,7 +142,7 @@ def test_write_window(tmpdir):
         "cc_shift_in_seconds": win.cc_shift_in_seconds,
         "dlnA":  win.dlnA,
         "dt": win.dt,
-        "min_period ": win.min_period,
+        "min_period": win.min_period,
         "phase_arrivals": [],
         "absolute_starttime": str(win.absolute_starttime),
         "absolute_endtime": str(win.absolute_endtime),
@@ -200,11 +200,11 @@ def test_equality():
     assert win2 != win
 
 
-def test_reading_and_writing_windows(tmpfile):
+def test_reading_and_writing_windows(tmpdir):
     np.random.seed(12345)
     d = np.random.random(100)
 
-    filename = os.path.join(str(tmpfile), "window.json")
+    filename = os.path.join(str(tmpdir), "window.json")
 
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
@@ -223,4 +223,3 @@ def test_reading_and_writing_windows(tmpfile):
     win.write(filename)
     win2 = pyflex.window.Window.read(filename)
     assert win == win2
-

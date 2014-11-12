@@ -198,3 +198,29 @@ def test_equality():
     assert win2 == win2
     assert win != win2
     assert win2 != win
+
+
+def test_reading_and_writing_windows(tmpfile):
+    np.random.seed(12345)
+    d = np.random.random(100)
+
+    filename = os.path.join(str(tmpfile), "window.json")
+
+    start = obspy.UTCDateTime(2012, 1, 1)
+    win = pyflex.window.Window(left=10, right=20, center=15,
+                               time_of_first_sample=start, dt=0.5,
+                               channel_id=EXAMPLE_ID, min_period=1.0)
+
+    # Without criteria.
+    win.write(filename)
+    win2 = pyflex.window.Window.read(filename)
+    assert win == win2
+
+    os.remove(filename)
+
+    # With criteria.
+    win._calc_criteria(d, d)
+    win.write(filename)
+    win2 = pyflex.window.Window.read(filename)
+    assert win == win2
+

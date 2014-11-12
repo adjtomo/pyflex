@@ -23,7 +23,7 @@ class Window(object):
     Class representing window candidates and final windows.
     """
     def __init__(self, left, right, center, time_of_first_sample, dt,
-                 min_period, weight_function=None):
+                 min_period, channel_id, weight_function=None):
         """
         The optional ``weight_function`` parameter can be used to customize
         the weight of the window. Its single parameter is an instance of the
@@ -49,6 +49,9 @@ class Window(object):
         :type dt: float
         :param min_period: The minimum period in seconds.
         :type min_period: float
+        :param channel_id: The id of the channel of interest. Needed for a
+            useful serialization.
+        :type channel_id: str
         :param weight_function: Function determining the window weight. The
             only argument of the function is a window instance.
         :type weight_function: function
@@ -62,6 +65,7 @@ class Window(object):
         self.dlnA = None
         self.dt = float(dt)
         self.min_period = float(min_period)
+        self.channel_id = channel_id
         self.phase_arrivals = []
         self.weight_function = weight_function
 
@@ -186,10 +190,11 @@ class Window(object):
     def __repr__(self):
         return (
             "Window(left={left}, right={right}, center={center}, "
+            "channel_id={channel_id}, "
             "max_cc_value={max_cc_value}, cc_shift={cc_shift}, dlnA={dlnA})"
             .format(left=self.left, right=self.right, center=self.center,
-                    max_cc_value=self.max_cc_value, cc_shift=self.cc_shift,
-                    dlnA=self.dlnA))
+                    channel_id=self.channel_id, max_cc_value=self.max_cc_value,
+                    cc_shift=self.cc_shift, dlnA=self.dlnA))
 
     def _xcorr_win(self, d, s):
         cc = np.correlate(d, s, mode="full")

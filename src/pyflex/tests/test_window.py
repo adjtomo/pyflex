@@ -18,6 +18,8 @@ import obspy
 import os
 import pyflex
 
+EXAMPLE_ID = "BW.FURT.00.BHZ"
+
 
 def test_windows_time_calculations():
     """
@@ -26,7 +28,7 @@ def test_windows_time_calculations():
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
-                               min_period=10.0)
+                               channel_id=EXAMPLE_ID, min_period=10.0)
     assert win.left == 10
     assert win.right == 20
     assert win.absolute_starttime == start + 5
@@ -42,7 +44,7 @@ def test_calc_criteria():
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
-                               min_period=10.0)
+                               channel_id=EXAMPLE_ID, min_period=10.0)
 
     np.random.seed(12345)
     d = np.random.random(100)
@@ -63,7 +65,7 @@ def test_get_internal_indices():
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
-                               min_period=10.0)
+                               channel_id=EXAMPLE_ID, min_period=10.0)
 
     # Excludes the boundaries.
     idxs = win._get_internal_indices([1, 5, 9, 10, 11, 15, 19, 20, 21, 30])
@@ -77,10 +79,10 @@ def test_window_repr():
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
-                               min_period=10.0)
+                               channel_id=EXAMPLE_ID, min_period=10.0)
     assert repr(win) == (
-        "Window(left=10, right=20, center=15, max_cc_value=None, "
-        "cc_shift=None, dlnA=None)")
+        "Window(left=10, right=20, center=15, channel_id=BW.FURT.00.BHZ, "
+        "max_cc_value=None, cc_shift=None, dlnA=None)")
 
 
 def test_custom_weight_fct():
@@ -90,7 +92,7 @@ def test_custom_weight_fct():
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
-                               min_period=1.0)
+                               channel_id=EXAMPLE_ID, min_period=1.0)
     win._calc_criteria(d, d)
 
     # Default is the window length in term of minimum period times the cc
@@ -103,6 +105,7 @@ def test_custom_weight_fct():
 
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
+                               channel_id=EXAMPLE_ID,
                                min_period=1.0, weight_function=weight_fct)
     win._calc_criteria(d, d)
     assert (win.weight - 5.0) <= 1E-12
@@ -118,7 +121,7 @@ def test_write_window(tmpdir):
     start = obspy.UTCDateTime(2012, 1, 1)
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
-                               min_period=1.0)
+                               channel_id=EXAMPLE_ID, min_period=1.0)
     win._calc_criteria(d, d)
 
     filename = os.path.join(str(tmpdir), "window.json")

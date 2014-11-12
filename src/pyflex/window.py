@@ -70,6 +70,12 @@ class Window(object):
         self.phase_arrivals = []
         self.weight_function = weight_function
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self == other
+
     @staticmethod
     def read(self, filename):
         if hasattr(filename, "read"):

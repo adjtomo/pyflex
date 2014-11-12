@@ -172,3 +172,29 @@ def test_write_window(tmpdir):
         buf.seek(0, 0)
         new_win = json.load(buf)
     assert new_win["window"] == new_win_expected
+
+
+def test_equality():
+    """
+    Tests (in)equality for windows.
+    """
+    np.random.seed(12345)
+    d = np.random.random(100)
+
+    start = obspy.UTCDateTime(2012, 1, 1)
+    win = pyflex.window.Window(left=10, right=20, center=15,
+                               time_of_first_sample=start, dt=0.5,
+                               channel_id=EXAMPLE_ID, min_period=1.0)
+    win2 = pyflex.window.Window(left=10, right=21, center=15,
+                                time_of_first_sample=start, dt=0.5,
+                                channel_id=EXAMPLE_ID, min_period=1.0)
+    assert win == win
+    assert win2 == win2
+    assert win != win2
+    assert win2 != win
+
+    win._calc_criteria(d, d)
+    assert win == win
+    assert win2 == win2
+    assert win != win2
+    assert win2 != win

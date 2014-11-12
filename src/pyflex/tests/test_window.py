@@ -134,6 +134,7 @@ def test_write_window(tmpdir):
         "left_index": win.left,
         "right_index": win.right,
         "center_index": win.center,
+        "channel_id": win.channel_id,
         "time_of_first_sample": str(win.time_of_first_sample),
         "max_cc_value": win.max_cc_value,
         "cc_shift_in_samples": win.cc_shift,

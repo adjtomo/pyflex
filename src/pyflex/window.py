@@ -109,6 +109,7 @@ class Window(object):
             "left_index": self.left,
             "right_index": self.right,
             "center_index": self.center,
+            "channel_id": self.channel_id,
             "time_of_first_sample": self.time_of_first_sample,
             "max_cc_value":  self.max_cc_value,
             "cc_shift_in_samples":  self.cc_shift,

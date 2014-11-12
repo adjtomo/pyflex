@@ -12,8 +12,10 @@ Run with pytest.
     (http://www.gnu.org/copyleft/gpl.html)
 """
 
+import json
 import numpy as np
 import obspy
+import os
 import pyflex
 
 
@@ -104,3 +106,43 @@ def test_custom_weight_fct():
                                min_period=1.0, weight_function=weight_fct)
     win._calc_criteria(d, d)
     assert (win.weight - 5.0) <= 1E-12
+
+
+def test_write_window(tmpdir):
+    """
+    Tests writing of windows.
+    """
+    np.random.seed(12345)
+    d = np.random.random(100)
+
+    start = obspy.UTCDateTime(2012, 1, 1)
+    win = pyflex.window.Window(left=10, right=20, center=15,
+                               time_of_first_sample=start, dt=0.5,
+                               min_period=1.0)
+    win._calc_criteria(d, d)
+
+    filename = os.path.join(str(tmpdir), "window.json")
+    win.write(filename)
+
+    with open(filename, "rt") as fh:
+        new_win = json.load(fh)
+
+    new_win_expected = {
+        "left_index": win.left,
+        "right_index": win.right,
+        "center_index": win.center,
+        "time_of_first_sample": str(win.time_of_first_sample),
+        "max_cc_value": win.max_cc_value,
+        "cc_shift_in_samples": win.cc_shift,
+        "cc_shift_in_seconds": win.cc_shift_in_seconds,
+        "dlnA":  win.dlnA,
+        "dt": win.dt,
+        "min_period ": win.min_period,
+        "phase_arrivals": [],
+        "absolute_starttime": str(win.absolute_starttime),
+        "absolute_endtime": str(win.absolute_endtime),
+        "relative_starttime": win.relative_starttime,
+        "relative_endtime": win.relative_endtime,
+        "window_weight": win.weight}
+
+    assert new_win["window"] == new_win_expected

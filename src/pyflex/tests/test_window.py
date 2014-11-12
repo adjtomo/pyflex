@@ -223,3 +223,60 @@ def test_reading_and_writing_windows(tmpdir):
     win.write(filename)
     win2 = pyflex.window.Window.read(filename)
     assert win == win2
+
+    # With phase arrivals.
+    win.phase_arrivals = [
+        {
+            "d2T/dD2": -0.20390565693378448,
+            "dT/dD": -1.909112811088562,
+            "dT/dh": -0.12297123670578003,
+            "phase_name": "PKKPdf",
+            "take-off angle": 8.089553833007812,
+            "time": 1744.7362060546875
+        }, {
+            "d2T/dD2": -0.0033220183104276657,
+            "dT/dD": 8.340600967407227,
+            "dT/dh": 0.09796148538589478,
+            "phase_name": "pSdiff",
+            "take-off angle": 142.0636444091797,
+            "time": 1759.0133056640625}]
+
+    win.write(filename)
+    win2 = pyflex.window.Window.read(filename)
+    assert win == win2
+
+
+def read_write_from_memory_files(tmpdir):
+    """
+    Tests reading and writing to and from StringIO/BytesIO and open files.
+    """
+    filename = os.path.join(str(tmpdir), "window.json")
+
+    start = obspy.UTCDateTime(2012, 1, 1)
+    win = pyflex.window.Window(left=10, right=20, center=15,
+                               time_of_first_sample=start, dt=0.5,
+                               channel_id=EXAMPLE_ID, min_period=1.0)
+
+    # StringIO.
+    with io.StringIO() as buf:
+        win.write(buf)
+        buf.seek(0, 0)
+        new_win = pyflex.window.Window.load(buf)
+
+    assert win == new_win
+
+    # BytesIO.
+    with io.BytesIO() as buf:
+        win.write(buf)
+        buf.seek(0, 0)
+        new_win = pyflex.window.Window.load(buf)
+
+    assert win == new_win
+
+    # Open files.
+    with open(filename, "rw") as fh:
+        win.write(fh)
+        fh.seek(0, 0)
+        new_win = pyflex.window.Window.load(fh)
+
+    assert win == new_win

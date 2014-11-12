@@ -13,7 +13,9 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
+import json
 import numpy as np
+import obspy
 
 
 class Window(object):
@@ -63,6 +65,53 @@ class Window(object):
         self.phase_arrivals = []
         self.weight_function = weight_function
 
+    def write(self, filename):
+        """
+        Write windows to the specified filename or file like object.
+
+        :param filename: Name or object to write to.
+        :type filename: str or file-like object
+        """
+        info = {"window": {
+            "left_index": self.left,
+            "right_index": self.right,
+            "center_index": self.center,
+            "time_of_first_sample": self.time_of_first_sample,
+            "max_cc_value":  self.max_cc_value,
+            "cc_shift_in_samples":  self.cc_shift,
+            "cc_shift_in_seconds":  self.cc_shift_in_seconds,
+            "dlnA":  self.dlnA,
+            "dt": self.dt,
+            "min_period ": self.min_period,
+            "phase_arrivals": self.phase_arrivals,
+            "absolute_starttime": self.absolute_starttime,
+            "absolute_endtime": self.absolute_endtime,
+            "relative_starttime": self.relative_starttime,
+            "relative_endtime": self.relative_endtime,
+            "window_weight": self.weight}}
+
+        for phase in self.phase_arrivals:
+            for key, value in phase.items():
+                try:
+                    phase[key] = float(value)
+                except ValueError:
+                    pass
+
+        class UTCDateTimeEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, obspy.UTCDateTime):
+                    return str(obj)
+                # Let the base class default method raise the TypeError
+                return json.JSONEncoder.default(self, obj)
+
+        if not hasattr(filename, "write"):
+            with open(filename, "wb") as fh:
+                json.dump(info, fh, cls=UTCDateTimeEncoder,
+                          sort_keys=True, indent=4, separators=(',', ': '))
+        else:
+            json.dump(info, filename, cls=UTCDateTimeEncoder,
+                      sort_keys=True, indent=4, separators=(',', ': '))
+
     def _get_internal_indices(self, indices):
         """
         From a list of indices, return the ones inside this window excluding
@@ -70,6 +119,10 @@ class Window(object):
         """
         indices = np.array(indices)
         return indices[(indices > self.left) & (indices < self.right)]
+
+    @property
+    def cc_shift_in_seconds(self):
+        return self.cc_shift * self.dt
 
     @property
     def absolute_starttime(self):

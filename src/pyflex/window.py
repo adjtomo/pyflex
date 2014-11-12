@@ -16,6 +16,7 @@ from future.builtins import *  # NOQA
 import json
 import numpy as np
 import obspy
+import os
 
 
 class Window(object):
@@ -68,6 +69,34 @@ class Window(object):
         self.channel_id = channel_id
         self.phase_arrivals = []
         self.weight_function = weight_function
+
+    @staticmethod
+    def read(self, filename):
+        if hasattr(filename, "read"):
+            obj = json.load(filename)
+        else:
+            if os.path.exists(filename):
+                with open(filename, "r") as fh:
+                    obj = json.load(fh)
+            else:
+                obj = json.loads(filename)
+
+        if "window" not in obj:
+            raise ValueError("Not a valid Window JSON file.")
+
+        win = obj["window"]
+        necessary_keys = set([
+            "left_index", "right_index", "center_index", "channel_id",
+            "time_of_first_sample", "max_cc_value", "cc_shift_in_samples",
+            "cc_shift_in_seconds", "dlnA", "dt", "min_period ",
+            "phase_arrivals", "absolute_starttime", "absolute_endtime",
+            "relative_starttime", "relative_endtime", "window_weight"])
+        missing_keys = necessary_keys.difference(set(win.keys()))
+
+        if missing_keys:
+            raise ValueError(
+                "Window JSON file misses the following keys:\n%s" %
+                ", ".join(missing_keys))
 
     def write(self, filename):
         """

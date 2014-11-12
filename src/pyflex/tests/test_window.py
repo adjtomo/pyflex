@@ -11,11 +11,12 @@ Run with pytest.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-
+import io
 import json
 import numpy as np
 import obspy
 import os
+
 import pyflex
 
 EXAMPLE_ID = "BW.FURT.00.BHZ"
@@ -149,4 +150,25 @@ def test_write_window(tmpdir):
         "relative_endtime": win.relative_endtime,
         "window_weight": win.weight}
 
+    assert new_win["window"] == new_win_expected
+
+    # Test writing to an open file.
+    with open(filename, "w") as fh:
+        win.write(fh)
+    with open(filename, "rt") as fh:
+        new_win = json.load(fh)
+    assert new_win["window"] == new_win_expected
+
+    # Test writing to BytesIO.
+    with io.StringIO() as buf:
+        win.write(buf)
+        buf.seek(0, 0)
+        new_win = json.load(buf)
+    assert new_win["window"] == new_win_expected
+
+    # Test writing to BytesIO.
+    with io.BytesIO() as buf:
+        win.write(buf)
+        buf.seek(0, 0)
+        new_win = json.load(buf)
     assert new_win["window"] == new_win_expected

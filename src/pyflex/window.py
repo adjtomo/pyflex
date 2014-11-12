@@ -140,11 +140,21 @@ class Window(object):
 
         if not hasattr(filename, "write"):
             with open(filename, "wb") as fh:
-                json.dump(info, fh, cls=UTCDateTimeEncoder,
-                          sort_keys=True, indent=4, separators=(',', ': '))
+                j = json.dumps(
+                    info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
+                    separators=(',', ': '), encoding="ASCII")
+                try:
+                    fh.write(j)
+                except TypeError:
+                    fh.write(j.encode())
         else:
-            json.dump(info, filename, cls=UTCDateTimeEncoder,
-                      sort_keys=True, indent=4, separators=(',', ': '))
+            j = json.dumps(
+                info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
+                separators=(',', ': '), encoding="ASCII")
+            try:
+                filename.write(j)
+            except TypeError:
+                filename.write(j.encode())
 
     def _get_internal_indices(self, indices):
         """

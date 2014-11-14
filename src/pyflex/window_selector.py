@@ -104,7 +104,7 @@ class WindowSelector(object):
         window_objects = []
 
         for win in windows:
-            win_obj = Window._load_from_json_contents(win)
+            win_obj = Window._load_from_json_content(win)
 
             # Perform a number of checks.
             if win_obj.channel_id != self.observed.id:
@@ -131,7 +131,7 @@ class WindowSelector(object):
             # Collect in temporary list and not directly attach to not
             # modify the window object in case a later window raises an
             # exception. Either all or nothing.
-            window_objects.append(win)
+            window_objects.append(win_obj)
         self.windows.extend(window_objects)
 
     def write(self, filename):
@@ -143,7 +143,7 @@ class WindowSelector(object):
         :param filename: Name or object to write to.
         :type filename: str or file-like object
         """
-        windows = [_i.get_json_contents() for _i in self.windows]
+        windows = [_i._get_json_content() for _i in self.windows]
 
         info = {"windows": windows}
 

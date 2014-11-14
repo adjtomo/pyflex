@@ -21,6 +21,8 @@ import os
 
 import pyflex
 
+EXAMPLE_ID = "BW.FURT.00.BHZ"
+
 # Most generic way to get the data folder path.
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe()))), "data")

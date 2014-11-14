@@ -16,12 +16,14 @@ from future import standard_library
 with standard_library.hooks():
     import itertools
 
+import json
 import numpy as np
 import obspy
 import obspy.station
 from obspy.core.util import geodetics
 from obspy.signal.filter import envelope
 from obspy.taup import getTravelTimes
+import os
 import warnings
 
 from . import PyflexError, PyflexWarning, utils, logger, Event, Station
@@ -77,6 +79,98 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+
+    def load(self, filename):
+        """
+        Load windows from a JSON file and attach them to the current window
+        selector object.
+
+        :param filename: The filename or file-like object to load.
+        :type filename: str or file-like object
+        """
+        if hasattr(filename, "read"):
+            obj = json.load(filename)
+        else:
+            if os.path.exists(filename):
+                with open(filename, "r") as fh:
+                    obj = json.load(fh)
+            else:
+                obj = json.loads(filename)
+
+        if "windows" not in obj:
+            raise ValueError("Not a valid Windows JSON file.")
+
+        windows = obj["windows"]
+        window_objects = []
+
+        for win in windows:
+            win_obj = Window._load_from_json_contents(win)
+
+            # Perform a number of checks.
+            if win_obj.channel_id != self.observed.id:
+                raise PyflexError(
+                    "The window has channel id '%s' whereas the observed "
+                    "data has channel id '%s'." % (
+                        win_obj.channel_id, self.observed.id))
+
+            if abs(win_obj.dt - self.observed.stats.delta) / \
+                    self.observed.stats.delta >= 0.001:
+               raise PyflexError(
+                   "The sample interval specified in the window is %g whereas "
+                   "the sample interval in the observed data is %g." % (
+                      win_obj.delta, self.observed_stats.delta))
+
+            if abs(win_obj.time_of_first_sample -
+                    self.observed.stats.starttime) > \
+                    0.5 * self.observed.stats.delta:
+               raise PyflexError(
+                   "The window expects the data to start with at %s whereas "
+                   "the observed data starts at %s." % (
+                       win.time_of_first_sample,
+                       self.observed.stats.starttime))
+            # Collect in temporary list and not directly attach to not
+            # modify the window object in case a later window raises an
+            # exception. Either all or nothing.
+            window_objects.append(win)
+        self.windows.extend(window_objects)
+
+    def write(self, filename):
+        """
+        Write windows to the specified filename or file like object.
+
+        Will be written as a custom JSON file.
+
+        :param filename: Name or object to write to.
+        :type filename: str or file-like object
+        """
+        windows = [_i.get_json_contents() for _i in self.windows]
+
+        info = {"windows": windows}
+
+        class UTCDateTimeEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, obspy.UTCDateTime):
+                    return str(obj)
+                # Let the base class default method raise the TypeError
+                return json.JSONEncoder.default(self, obj)
+
+        if not hasattr(filename, "write"):
+            with open(filename, "wb") as fh:
+                j = json.dumps(
+                    info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
+                    separators=(',', ': '), encoding="ASCII")
+                try:
+                    fh.write(j)
+                except TypeError:
+                    fh.write(j.encode())
+        else:
+            j = json.dumps(
+                info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
+                separators=(',', ': '), encoding="ASCII")
+            try:
+                filename.write(j)
+            except TypeError:
+                filename.write(j.encode())
 
     def _parse_event_and_station(self):
         """

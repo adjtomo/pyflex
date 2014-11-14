@@ -77,20 +77,17 @@ class Window(object):
         return not self == other
 
     @staticmethod
-    def read(filename):
-        if hasattr(filename, "read"):
-            obj = json.load(filename)
-        else:
-            if os.path.exists(filename):
-                with open(filename, "r") as fh:
-                    obj = json.load(fh)
-            else:
-                obj = json.loads(filename)
+    def _load_from_json_contents(win):
+        """
+        Load a dictionary coming from a JSON file and parse it to Window
+        object.
 
-        if "window" not in obj:
-            raise ValueError("Not a valid Window JSON file.")
-
-        win = obj["window"]
+        :param win: A dictionary containing window information from the JSON
+            file.
+        :type win: dict
+        :returns: A new window object.
+        :rtype: :class:`~pyflex.window.Window`
+        """
         necessary_keys = set([
             "left_index", "right_index", "center_index", "channel_id",
             "time_of_first_sample", "max_cc_value", "cc_shift_in_samples",
@@ -118,12 +115,10 @@ class Window(object):
 
         return new_win
 
-    def write(self, filename):
+    def _get_json_contents(self):
         """
-        Write windows to the specified filename or file like object.
-
-        :param filename: Name or object to write to.
-        :type filename: str or file-like object
+        Returns the window in a representation suitable for inclusion as a
+        JSON file.
         """
         info = {"window": {
             "left_index": self.left,
@@ -151,30 +146,7 @@ class Window(object):
                 except ValueError:
                     pass
 
-        class UTCDateTimeEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, obspy.UTCDateTime):
-                    return str(obj)
-                # Let the base class default method raise the TypeError
-                return json.JSONEncoder.default(self, obj)
-
-        if not hasattr(filename, "write"):
-            with open(filename, "wb") as fh:
-                j = json.dumps(
-                    info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
-                    separators=(',', ': '), encoding="ASCII")
-                try:
-                    fh.write(j)
-                except TypeError:
-                    fh.write(j.encode())
-        else:
-            j = json.dumps(
-                info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
-                separators=(',', ': '), encoding="ASCII")
-            try:
-                filename.write(j)
-            except TypeError:
-                filename.write(j.encode())
+        return info
 
     def _get_internal_indices(self, indices):
         """

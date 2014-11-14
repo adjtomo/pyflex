@@ -64,6 +64,7 @@
 <span class="kn">from</span> <span class="nn">future.builtins</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># NOQA</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
 
 
 <div class="viewcode-block" id="Window"><a class="viewcode-back" href="../../index.html#pyflex.window.Window">[docs]</a><span class="k">class</span> <span class="nc">Window</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -71,7 +72,7 @@
 <span class="sd">    Class representing window candidates and final windows.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">time_of_first_sample</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span>
-                 <span class="n">min_period</span><span class="p">,</span> <span class="n">weight_function</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+                 <span class="n">min_period</span><span class="p">,</span> <span class="n">channel_id</span><span class="p">,</span> <span class="n">weight_function</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The optional ``weight_function`` parameter can be used to customize</span>
 <span class="sd">        the weight of the window. Its single parameter is an instance of the</span>
@@ -97,6 +98,9 @@
 <span class="sd">        :type dt: float</span>
 <span class="sd">        :param min_period: The minimum period in seconds.</span>
 <span class="sd">        :type min_period: float</span>
+<span class="sd">        :param channel_id: The id of the channel of interest. Needed for a</span>
+<span class="sd">            useful serialization.</span>
+<span class="sd">        :type channel_id: str</span>
 <span class="sd">        :param weight_function: Function determining the window weight. The</span>
 <span class="sd">            only argument of the function is a window instance.</span>
 <span class="sd">        :type weight_function: function</span>
@@ -110,8 +114,87 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dlnA</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_period</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span> <span class="o">=</span> <span class="n">channel_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">phase_arrivals</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weight_function</span> <span class="o">=</span> <span class="n">weight_function</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_load_from_json_content</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load a dictionary coming from a JSON file and parse it to Window</span>
+<span class="sd">        object.</span>
+
+<span class="sd">        :param win: A dictionary containing window information from the JSON</span>
+<span class="sd">            file.</span>
+<span class="sd">        :type win: dict</span>
+<span class="sd">        :returns: A new window object.</span>
+<span class="sd">        :rtype: :class:`~pyflex.window.Window`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">necessary_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span>
+            <span class="s">&quot;left_index&quot;</span><span class="p">,</span> <span class="s">&quot;right_index&quot;</span><span class="p">,</span> <span class="s">&quot;center_index&quot;</span><span class="p">,</span> <span class="s">&quot;channel_id&quot;</span><span class="p">,</span>
+            <span class="s">&quot;time_of_first_sample&quot;</span><span class="p">,</span> <span class="s">&quot;max_cc_value&quot;</span><span class="p">,</span> <span class="s">&quot;cc_shift_in_samples&quot;</span><span class="p">,</span>
+            <span class="s">&quot;cc_shift_in_seconds&quot;</span><span class="p">,</span> <span class="s">&quot;dlnA&quot;</span><span class="p">,</span> <span class="s">&quot;dt&quot;</span><span class="p">,</span> <span class="s">&quot;min_period&quot;</span><span class="p">,</span>
+            <span class="s">&quot;phase_arrivals&quot;</span><span class="p">,</span> <span class="s">&quot;absolute_starttime&quot;</span><span class="p">,</span> <span class="s">&quot;absolute_endtime&quot;</span><span class="p">,</span>
+            <span class="s">&quot;relative_starttime&quot;</span><span class="p">,</span> <span class="s">&quot;relative_endtime&quot;</span><span class="p">,</span> <span class="s">&quot;window_weight&quot;</span><span class="p">])</span>
+        <span class="n">missing_keys</span> <span class="o">=</span> <span class="n">necessary_keys</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+        <span class="k">if</span> <span class="n">missing_keys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s">&quot;Window JSON file misses the following keys:</span><span class="se">\n</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span>
+                <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">))</span>
+
+        <span class="n">new_win</span> <span class="o">=</span> <span class="n">Window</span><span class="p">(</span>
+            <span class="n">left</span><span class="o">=</span><span class="n">win</span><span class="p">[</span><span class="s">&quot;left_index&quot;</span><span class="p">],</span> <span class="n">right</span><span class="o">=</span><span class="n">win</span><span class="p">[</span><span class="s">&quot;right_index&quot;</span><span class="p">],</span>
+            <span class="n">center</span><span class="o">=</span><span class="n">win</span><span class="p">[</span><span class="s">&quot;center_index&quot;</span><span class="p">],</span>
+            <span class="n">time_of_first_sample</span><span class="o">=</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span>
+                <span class="n">win</span><span class="p">[</span><span class="s">&quot;time_of_first_sample&quot;</span><span class="p">]),</span>
+            <span class="n">dt</span><span class="o">=</span><span class="n">win</span><span class="p">[</span><span class="s">&quot;dt&quot;</span><span class="p">],</span> <span class="n">min_period</span><span class="o">=</span><span class="n">win</span><span class="p">[</span><span class="s">&quot;min_period&quot;</span><span class="p">],</span>
+            <span class="n">channel_id</span><span class="o">=</span><span class="n">win</span><span class="p">[</span><span class="s">&quot;channel_id&quot;</span><span class="p">])</span>
+        <span class="n">new_win</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="o">=</span> <span class="n">win</span><span class="p">[</span><span class="s">&quot;max_cc_value&quot;</span><span class="p">]</span>
+        <span class="n">new_win</span><span class="o">.</span><span class="n">cc_shift</span> <span class="o">=</span> <span class="n">win</span><span class="p">[</span><span class="s">&quot;cc_shift_in_samples&quot;</span><span class="p">]</span>
+        <span class="n">new_win</span><span class="o">.</span><span class="n">dlnA</span> <span class="o">=</span> <span class="n">win</span><span class="p">[</span><span class="s">&quot;dlnA&quot;</span><span class="p">]</span>
+        <span class="n">new_win</span><span class="o">.</span><span class="n">phase_arrivals</span> <span class="o">=</span> <span class="n">win</span><span class="p">[</span><span class="s">&quot;phase_arrivals&quot;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">new_win</span>
+
+    <span class="k">def</span> <span class="nf">_get_json_content</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the window in a representation suitable for inclusion as a</span>
+<span class="sd">        JSON file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&quot;left_index&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span>
+            <span class="s">&quot;right_index&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span>
+            <span class="s">&quot;center_index&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
+            <span class="s">&quot;channel_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">,</span>
+            <span class="s">&quot;time_of_first_sample&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_of_first_sample</span><span class="p">,</span>
+            <span class="s">&quot;max_cc_value&quot;</span><span class="p">:</span>  <span class="bp">self</span><span class="o">.</span><span class="n">max_cc_value</span><span class="p">,</span>
+            <span class="s">&quot;cc_shift_in_samples&quot;</span><span class="p">:</span>  <span class="bp">self</span><span class="o">.</span><span class="n">cc_shift</span><span class="p">,</span>
+            <span class="s">&quot;cc_shift_in_seconds&quot;</span><span class="p">:</span>  <span class="bp">self</span><span class="o">.</span><span class="n">cc_shift_in_seconds</span><span class="p">,</span>
+            <span class="s">&quot;dlnA&quot;</span><span class="p">:</span>  <span class="bp">self</span><span class="o">.</span><span class="n">dlnA</span><span class="p">,</span>
+            <span class="s">&quot;dt&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="s">&quot;min_period&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span><span class="p">,</span>
+            <span class="s">&quot;phase_arrivals&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_arrivals</span><span class="p">,</span>
+            <span class="s">&quot;absolute_starttime&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_starttime</span><span class="p">,</span>
+            <span class="s">&quot;absolute_endtime&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_endtime</span><span class="p">,</span>
+            <span class="s">&quot;relative_starttime&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_starttime</span><span class="p">,</span>
+            <span class="s">&quot;relative_endtime&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_endtime</span><span class="p">,</span>
+            <span class="s">&quot;window_weight&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">phase</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_arrivals</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">phase</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">phase</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">info</span>
 
     <span class="k">def</span> <span class="nf">_get_internal_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -120,6 +203,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">indices</span><span class="p">[(</span><span class="n">indices</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">indices</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cc_shift_in_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cc_shift</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cc_shift</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">None</span>
 
     <span class="nd">@property</span>
 <div class="viewcode-block" id="Window.absolute_starttime"><a class="viewcode-back" href="../../index.html#pyflex.window.Window.absolute_starttime">[docs]</a>    <span class="k">def</span> <span class="nf">absolute_starttime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -177,16 +264,19 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_function</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_function</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_period</span> <span class="o">*</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">max_cc_value</span>
 </div>
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="s">&quot;Window(left={left}, right={right}, center={center}, &quot;</span>
+            <span class="s">&quot;channel_id={channel_id}, &quot;</span>
             <span class="s">&quot;max_cc_value={max_cc_value}, cc_shift={cc_shift}, dlnA={dlnA})&quot;</span>
             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
-                    <span class="n">max_cc_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_cc_value</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cc_shift</span><span class="p">,</span>
-                    <span class="n">dlnA</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dlnA</span><span class="p">))</span>
+                    <span class="n">channel_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_cc_value</span><span class="p">,</span>
+                    <span class="n">cc_shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cc_shift</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dlnA</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_xcorr_win</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
         <span class="n">cc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">correlate</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;full&quot;</span><span class="p">)</span>

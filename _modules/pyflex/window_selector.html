@@ -66,12 +66,14 @@
 <span class="k">with</span> <span class="n">standard_library</span><span class="o">.</span><span class="n">hooks</span><span class="p">():</span>
     <span class="kn">import</span> <span class="nn">itertools</span>
 
+<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">obspy</span>
 <span class="kn">import</span> <span class="nn">obspy.station</span>
 <span class="kn">from</span> <span class="nn">obspy.core.util</span> <span class="kn">import</span> <span class="n">geodetics</span>
 <span class="kn">from</span> <span class="nn">obspy.signal.filter</span> <span class="kn">import</span> <span class="n">envelope</span>
 <span class="kn">from</span> <span class="nn">obspy.taup</span> <span class="kn">import</span> <span class="n">getTravelTimes</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">PyflexError</span><span class="p">,</span> <span class="n">PyflexWarning</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">Station</span>
@@ -128,6 +130,98 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="p">[]</span>
 
+<div class="viewcode-block" id="WindowSelector.load"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load windows from a JSON file and attach them to the current window</span>
+<span class="sd">        selector object.</span>
+
+<span class="sd">        :param filename: The filename or file-like object to load.</span>
+<span class="sd">        :type filename: str or file-like object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;read&quot;</span><span class="p">):</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                    <span class="n">obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&quot;windows&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Not a valid Windows JSON file.&quot;</span><span class="p">)</span>
+
+        <span class="n">windows</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s">&quot;windows&quot;</span><span class="p">]</span>
+        <span class="n">window_objects</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="n">windows</span><span class="p">:</span>
+            <span class="n">win_obj</span> <span class="o">=</span> <span class="n">Window</span><span class="o">.</span><span class="n">_load_from_json_content</span><span class="p">(</span><span class="n">win</span><span class="p">)</span>
+
+            <span class="c"># Perform a number of checks.</span>
+            <span class="k">if</span> <span class="n">win_obj</span><span class="o">.</span><span class="n">channel_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                    <span class="s">&quot;The window has channel id &#39;</span><span class="si">%s</span><span class="s">&#39; whereas the observed &quot;</span>
+                    <span class="s">&quot;data has channel id &#39;</span><span class="si">%s</span><span class="s">&#39;.&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                        <span class="n">win_obj</span><span class="o">.</span><span class="n">channel_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">win_obj</span><span class="o">.</span><span class="n">dt</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span> <span class="o">/</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span> <span class="o">&gt;=</span> <span class="mf">0.001</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                    <span class="s">&quot;The sample interval specified in the window is </span><span class="si">%g</span><span class="s"> whereas&quot;</span>
+                    <span class="s">&quot; the sample interval in the observed data is </span><span class="si">%g</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                        <span class="n">win_obj</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed_stats</span><span class="o">.</span><span class="n">delta</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">win_obj</span><span class="o">.</span><span class="n">time_of_first_sample</span> <span class="o">-</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">)</span> <span class="o">&gt;</span> \
+                    <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span>
+                    <span class="s">&quot;The window expects the data to start with at </span><span class="si">%s</span><span class="s"> whereas &quot;</span>
+                    <span class="s">&quot;the observed data starts at </span><span class="si">%s</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                        <span class="n">win</span><span class="o">.</span><span class="n">time_of_first_sample</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">))</span>
+            <span class="c"># Collect in temporary list and not directly attach to not</span>
+            <span class="c"># modify the window object in case a later window raises an</span>
+            <span class="c"># exception. Either all or nothing.</span>
+            <span class="n">window_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">win_obj</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">window_objects</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="WindowSelector.write"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write windows to the specified filename or file like object.</span>
+
+<span class="sd">        Will be written as a custom JSON file.</span>
+
+<span class="sd">        :param filename: Name or object to write to.</span>
+<span class="sd">        :type filename: str or file-like object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="n">_i</span><span class="o">.</span><span class="n">_get_json_content</span><span class="p">()</span> <span class="k">for</span> <span class="n">_i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">]</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;windows&quot;</span><span class="p">:</span> <span class="n">windows</span><span class="p">}</span>
+
+        <span class="k">class</span> <span class="nc">UTCDateTimeEncoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="c"># Let the base class default method raise the TypeError</span>
+                <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;write&quot;</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">j</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                    <span class="n">info</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="n">UTCDateTimeEncoder</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                    <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="s">&#39;: &#39;</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&quot;ASCII&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">j</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                <span class="n">info</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="n">UTCDateTimeEncoder</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="s">&#39;: &#39;</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s">&quot;ASCII&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">filename</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="n">filename</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">j</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+</div>
     <span class="k">def</span> <span class="nf">_parse_event_and_station</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse the event and station information.</span>
@@ -435,6 +529,7 @@
                                                  <span class="n">larger_troughs</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Window</span><span class="p">(</span>
                     <span class="n">left</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">right</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">peak</span><span class="p">,</span>
+                    <span class="n">channel_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                     <span class="n">time_of_first_sample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">synthetic</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span>
                     <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
                     <span class="n">min_period</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">,</span>

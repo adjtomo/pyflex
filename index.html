@@ -140,9 +140,9 @@ told to also perform the filtering.</p>
 <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">windows</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">Window</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mi">1551</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">1985</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">1768</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="mf">0.957406507201</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=</span><span class="mf">0.074690297213</span><span class="p">),</span>
- <span class="n">Window</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mi">2221</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">2709</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">2465</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="mf">0.96646884731</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=</span><span class="mf">0.128084405453</span><span class="p">),</span>
- <span class="n">Window</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mi">2709</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">2960</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">2834</span><span class="p">,</span> <span class="n">max_cc_value</span><span class="o">=</span><span class="mf">0.963357104153</span><span class="p">,</span> <span class="n">cc_shift</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">dlnA</span><span class="o">=-</span><span class="mf">0.192768491696</span><span class="p">)]</span>
+<div class="highlight-python"><div class="highlight"><pre>[Window(left=1551, right=1985, center=1768, channel_id=II.ABKT.00.LHZ, max_cc_value=0.957406507201, cc_shift=-3, dlnA=0.074690297213),
+ Window(left=2221, right=2709, center=2465, channel_id=II.ABKT.00.LHZ, max_cc_value=0.96646884731, cc_shift=0, dlnA=0.128084405453),
+ Window(left=2709, right=2960, center=2834, channel_id=II.ABKT.00.LHZ, max_cc_value=0.963357104153, cc_shift=-5, dlnA=-0.192768491696)]
 </pre></div>
 </div>
 <p>Each window contains a number of properties that can be used to
@@ -269,21 +269,21 @@ channels.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2014-11-11 16:42:50,183] - pyflex - INFO: Extracted station information from observed SAC file.
-[2014-11-11 16:42:50,184] - pyflex - INFO: Extracted event information from observed SAC file.
-[2014-11-11 16:42:50,188] - pyflex - INFO: Calculating envelope of synthetics.
-[2014-11-11 16:42:50,190] - pyflex - INFO: Calculating STA/LTA.
-[2014-11-11 16:42:50,603] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-[2014-11-11 16:42:50,605] - pyflex - INFO: Calculated travel times.
-[2014-11-11 16:42:50,616] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
-[2014-11-11 16:42:50,654] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
-[2014-11-11 16:42:50,783] - pyflex - INFO: Water level rejection retained 41 windows
-[2014-11-11 16:42:50,787] - pyflex - INFO: Single phase group rejection retained 16 windows
-[2014-11-11 16:42:50,789] - pyflex - INFO: Removing duplicates retains 16 windows.
-[2014-11-11 16:42:50,789] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
-[2014-11-11 16:42:50,790] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-[2014-11-11 16:42:50,796] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-[2014-11-11 16:42:50,804] - pyflex - INFO: Merging windows resulted in 4 windows.
+<div class="highlight-python"><div class="highlight"><pre>[2014-11-14 15:05:46,408] - pyflex - INFO: Extracted station information from observed SAC file.
+[2014-11-14 15:05:46,409] - pyflex - INFO: Extracted event information from observed SAC file.
+[2014-11-14 15:05:46,413] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-11-14 15:05:46,416] - pyflex - INFO: Calculating STA/LTA.
+[2014-11-14 15:05:46,879] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+[2014-11-14 15:05:46,881] - pyflex - INFO: Calculated travel times.
+[2014-11-14 15:05:46,891] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
+[2014-11-14 15:05:46,931] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
+[2014-11-14 15:05:47,077] - pyflex - INFO: Water level rejection retained 41 windows
+[2014-11-14 15:05:47,081] - pyflex - INFO: Single phase group rejection retained 16 windows
+[2014-11-14 15:05:47,082] - pyflex - INFO: Removing duplicates retains 16 windows.
+[2014-11-14 15:05:47,083] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
+[2014-11-14 15:05:47,083] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+[2014-11-14 15:05:47,088] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+[2014-11-14 15:05:47,097] - pyflex - INFO: Merging windows resulted in 4 windows.
 </pre></div>
 </div>
 </div>
@@ -469,7 +469,7 @@ show() function.</li>
 windows, the <tt class="docutils literal"><span class="pre">select_windows()</span></tt> function will return a list of these.</p>
 <dl class="class">
 <dt id="pyflex.window.Window">
-<em class="property">class </em><tt class="descclassname">pyflex.window.</tt><tt class="descname">Window</tt><big>(</big><em>left</em>, <em>right</em>, <em>center</em>, <em>time_of_first_sample</em>, <em>dt</em>, <em>min_period</em>, <em>weight_function=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/window.html#Window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">pyflex.window.</tt><tt class="descname">Window</tt><big>(</big><em>left</em>, <em>right</em>, <em>center</em>, <em>time_of_first_sample</em>, <em>dt</em>, <em>min_period</em>, <em>channel_id</em>, <em>weight_function=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/window.html#Window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class representing window candidates and final windows.</p>
 <p>The optional <tt class="docutils literal"><span class="pre">weight_function</span></tt> parameter can be used to customize
 the weight of the window. Its single parameter is an instance of the
@@ -492,6 +492,8 @@ does exactly the same as the default weighting function.</p>
 in the array. Needed for the absolute time calculations.</li>
 <li><strong>dt</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The sample interval in seconds.</li>
 <li><strong>min_period</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The minimum period in seconds.</li>
+<li><strong>channel_id</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The id of the channel of interest. Needed for a
+useful serialization.</li>
 <li><strong>weight_function</strong> (<em>function</em>) &#8211; Function determining the window weight. The
 only argument of the function is a window instance.</li>
 </ul>
@@ -653,6 +655,21 @@ function in flexwin.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyflex.window_selector.WindowSelector.load">
+<tt class="descname">load</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load windows from a JSON file and attach them to the current window
+selector object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str or file-like object</em>) &#8211; The filename or file-like object to load.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.merge_windows">
 <tt class="descname">merge_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.merge_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.merge_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Merge overlapping windows. Will also recalculate the data fit criteria.</p>
@@ -747,6 +764,21 @@ of a window.</p>
 <dt id="pyflex.window_selector.WindowSelector.select_windows">
 <tt class="descname">select_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.select_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Launch the window selection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyflex.window_selector.WindowSelector.write">
+<tt class="descname">write</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write windows to the specified filename or file like object.</p>
+<p>Will be written as a custom JSON file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str or file-like object</em>) &#8211; Name or object to write to.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>

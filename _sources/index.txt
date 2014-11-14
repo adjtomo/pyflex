@@ -206,6 +206,40 @@ A more powerful approach enabling the construction of cleaner workflows is to pa
                                     event=event, station=station)
 
                 
+(De)Serializing Windows
+-----------------------
+
+In case necessary, windows can also be written to and read from disc.
+``Pyflex`` utilizes a simple JSON representation of the windows. The
+``windows_filename`` parameter determines the filename if given.
+
+.. code:: python
+
+    windows = pyflex.select_windows(obs_data, synth_data, config,
+                                    windows_filename="windows.json")
+The resulting JSON file will have a list of Window objects under the
+``"windows"`` key.
+
+                
+.. literalinclude:: windows.json
+    :lines: 1-20
+    :language: JSON
+
+To read the windows again you will have to utilize the lower level :class:`~pyflex.window_selector.WindowSelector` class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.
+                
+.. code:: python
+
+    ws2 = pyflex.WindowSelector(obs_data, synth_data, config)
+    print("Windows before loading: %i" % len(ws2.windows))
+    ws2.load("windows.json")
+    print("Windows after loading: %i" % len(ws2.windows))
+
+.. parsed-literal::
+
+    Windows before loading: 0
+    Windows after loading: 9
+
+
 Difference to the original FLEXWIN algorithm
 --------------------------------------------
 
@@ -252,7 +286,7 @@ windows. This is useful for some misfit measurements.
     windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
 
 
-.. image:: index_files/index_19_0.png
+.. image:: index_files/index_24_0.png
 
 
 Logging
@@ -275,21 +309,21 @@ channels.
 
 .. parsed-literal::
 
-    [2014-11-14 15:05:46,408] - pyflex - INFO: Extracted station information from observed SAC file.
-    [2014-11-14 15:05:46,409] - pyflex - INFO: Extracted event information from observed SAC file.
-    [2014-11-14 15:05:46,413] - pyflex - INFO: Calculating envelope of synthetics.
-    [2014-11-14 15:05:46,416] - pyflex - INFO: Calculating STA/LTA.
-    [2014-11-14 15:05:46,879] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-    [2014-11-14 15:05:46,881] - pyflex - INFO: Calculated travel times.
-    [2014-11-14 15:05:46,891] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
-    [2014-11-14 15:05:46,931] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
-    [2014-11-14 15:05:47,077] - pyflex - INFO: Water level rejection retained 41 windows
-    [2014-11-14 15:05:47,081] - pyflex - INFO: Single phase group rejection retained 16 windows
-    [2014-11-14 15:05:47,082] - pyflex - INFO: Removing duplicates retains 16 windows.
-    [2014-11-14 15:05:47,083] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
-    [2014-11-14 15:05:47,083] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-    [2014-11-14 15:05:47,088] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-    [2014-11-14 15:05:47,097] - pyflex - INFO: Merging windows resulted in 4 windows.
+    [2014-11-14 17:17:18,678] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2014-11-14 17:17:18,679] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2014-11-14 17:17:18,682] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-11-14 17:17:18,684] - pyflex - INFO: Calculating STA/LTA.
+    [2014-11-14 17:17:19,093] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+    [2014-11-14 17:17:19,095] - pyflex - INFO: Calculated travel times.
+    [2014-11-14 17:17:19,105] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
+    [2014-11-14 17:17:19,143] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
+    [2014-11-14 17:17:19,268] - pyflex - INFO: Water level rejection retained 41 windows
+    [2014-11-14 17:17:19,272] - pyflex - INFO: Single phase group rejection retained 16 windows
+    [2014-11-14 17:17:19,273] - pyflex - INFO: Removing duplicates retains 16 windows.
+    [2014-11-14 17:17:19,274] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
+    [2014-11-14 17:17:19,275] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+    [2014-11-14 17:17:19,280] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+    [2014-11-14 17:17:19,288] - pyflex - INFO: Merging windows resulted in 4 windows.
 
 
 API Documentation

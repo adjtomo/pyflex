@@ -23,6 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="top" title="Pyflex 0.1.1 documentation" href="../../index.html" />
     <link rel="up" title="pyflex" href="../pyflex.html" />
    
@@ -68,7 +69,7 @@
 
 
 <div class="viewcode-block" id="select_windows"><a class="viewcode-back" href="../../index.html#pyflex.flexwin.select_windows">[docs]</a><span class="k">def</span> <span class="nf">select_windows</span><span class="p">(</span><span class="n">observed</span><span class="p">,</span> <span class="n">synthetic</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                   <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">plot_filename</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+                   <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">plot_filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">windows_filename</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convenience function for selecting (and plotting) windows.</span>
 
@@ -99,6 +100,9 @@
 <span class="sd">        from that name. If not given, the plot will be shown with pylab&#39;s</span>
 <span class="sd">        show() function.</span>
 <span class="sd">    :type plot_filename: str</span>
+<span class="sd">    :param windows_filename: If given, windows will be saved to that file or</span>
+<span class="sd">        file-like object. Pyflex utilizes a custom JSON format for that.</span>
+<span class="sd">    :type windows_filename: str or file-like object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ws</span> <span class="o">=</span> <span class="n">WindowSelector</span><span class="p">(</span><span class="n">observed</span><span class="o">=</span><span class="n">observed</span><span class="p">,</span> <span class="n">synthetic</span><span class="o">=</span><span class="n">synthetic</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
                         <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
@@ -106,6 +110,9 @@
 
     <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
         <span class="n">ws</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">plot_filename</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">windows_filename</span><span class="p">:</span>
+        <span class="n">ws</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">windows_filename</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">windows</span></div>
 </pre></div>

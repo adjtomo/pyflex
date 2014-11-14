@@ -23,6 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="Pyflex 0.1.1 documentation" href="#" />
    
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
@@ -211,6 +212,51 @@ use its very bare bones event and station objects.</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="de-serializing-windows">
+<h2>(De)Serializing Windows<a class="headerlink" href="#de-serializing-windows" title="Permalink to this headline">¶</a></h2>
+<p>In case necessary, windows can also be written to and read from disc.
+<tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilizes a simple JSON representation of the windows. The
+<tt class="docutils literal"><span class="pre">windows_filename</span></tt> parameter determines the filename if given.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                                <span class="n">windows_filename</span><span class="o">=</span><span class="s">&quot;windows.json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The resulting JSON file will have a list of Window objects under the
+<tt class="docutils literal"><span class="pre">&quot;windows&quot;</span></tt> key.</p>
+<div class="highlight-JSON"><div class="highlight"><pre>{
+    &quot;windows&quot;: [
+        {
+            &quot;absolute_endtime&quot;: &quot;1995-05-02T06:30:58.500006Z&quot;,
+            &quot;absolute_starttime&quot;: &quot;1995-05-02T06:23:44.500006Z&quot;,
+            &quot;cc_shift_in_samples&quot;: -3,
+            &quot;cc_shift_in_seconds&quot;: -3.0,
+            &quot;center_index&quot;: 1768,
+            &quot;channel_id&quot;: &quot;II.ABKT.00.LHZ&quot;,
+            &quot;dlnA&quot;: 0.0746902972130047,
+            &quot;dt&quot;: 1.0,
+            &quot;left_index&quot;: 1551,
+            &quot;max_cc_value&quot;: 0.95740650720086529,
+            &quot;min_period&quot;: 50.0,
+            &quot;phase_arrivals&quot;: [
+                {
+                    &quot;d2T/dD2&quot;: -0.10379227250814438,
+                    &quot;dT/dD&quot;: 1.9099057912826538,
+                    &quot;dT/dh&quot;: -0.12297020107507706,
+                    &quot;phase_name&quot;: &quot;PKPdf&quot;,
+</pre></div>
+</div>
+<p>To read the windows again you will have to utilize the lower level <a class="reference internal" href="#pyflex.window_selector.WindowSelector" title="pyflex.window_selector.WindowSelector"><tt class="xref py py-class docutils literal"><span class="pre">WindowSelector</span></tt></a> class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">ws2</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">WindowSelector</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows before loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+<span class="n">ws2</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&quot;windows.json&quot;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows after loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>Windows before loading: 0
+Windows after loading: 9
+</pre></div>
+</div>
+</div>
 <div class="section" id="difference-to-the-original-flexwin-algorithm">
 <h2>Difference to the original FLEXWIN algorithm<a class="headerlink" href="#difference-to-the-original-flexwin-algorithm" title="Permalink to this headline">¶</a></h2>
 <p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> largely follows the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm. The major
@@ -251,7 +297,7 @@ windows. This is useful for some misfit measurements.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="_images/index_19_0.png" src="_images/index_19_0.png" />
+<img alt="_images/index_24_0.png" src="_images/index_24_0.png" />
 </div>
 </div>
 <div class="section" id="logging">
@@ -269,21 +315,21 @@ channels.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2014-11-14 15:05:46,408] - pyflex - INFO: Extracted station information from observed SAC file.
-[2014-11-14 15:05:46,409] - pyflex - INFO: Extracted event information from observed SAC file.
-[2014-11-14 15:05:46,413] - pyflex - INFO: Calculating envelope of synthetics.
-[2014-11-14 15:05:46,416] - pyflex - INFO: Calculating STA/LTA.
-[2014-11-14 15:05:46,879] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-[2014-11-14 15:05:46,881] - pyflex - INFO: Calculated travel times.
-[2014-11-14 15:05:46,891] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
-[2014-11-14 15:05:46,931] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
-[2014-11-14 15:05:47,077] - pyflex - INFO: Water level rejection retained 41 windows
-[2014-11-14 15:05:47,081] - pyflex - INFO: Single phase group rejection retained 16 windows
-[2014-11-14 15:05:47,082] - pyflex - INFO: Removing duplicates retains 16 windows.
-[2014-11-14 15:05:47,083] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
-[2014-11-14 15:05:47,083] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-[2014-11-14 15:05:47,088] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-[2014-11-14 15:05:47,097] - pyflex - INFO: Merging windows resulted in 4 windows.
+<div class="highlight-python"><div class="highlight"><pre>[2014-11-14 17:17:18,678] - pyflex - INFO: Extracted station information from observed SAC file.
+[2014-11-14 17:17:18,679] - pyflex - INFO: Extracted event information from observed SAC file.
+[2014-11-14 17:17:18,682] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-11-14 17:17:18,684] - pyflex - INFO: Calculating STA/LTA.
+[2014-11-14 17:17:19,093] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
+[2014-11-14 17:17:19,095] - pyflex - INFO: Calculated travel times.
+[2014-11-14 17:17:19,105] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
+[2014-11-14 17:17:19,143] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
+[2014-11-14 17:17:19,268] - pyflex - INFO: Water level rejection retained 41 windows
+[2014-11-14 17:17:19,272] - pyflex - INFO: Single phase group rejection retained 16 windows
+[2014-11-14 17:17:19,273] - pyflex - INFO: Removing duplicates retains 16 windows.
+[2014-11-14 17:17:19,274] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
+[2014-11-14 17:17:19,275] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+[2014-11-14 17:17:19,280] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+[2014-11-14 17:17:19,288] - pyflex - INFO: Merging windows resulted in 4 windows.
 </pre></div>
 </div>
 </div>
@@ -429,7 +475,7 @@ windows.</li>
 <h2>Main select_windows() function<a class="headerlink" href="#main-select-windows-function" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="pyflex.flexwin.select_windows">
-<tt class="descclassname">pyflex.flexwin.</tt><tt class="descname">select_windows</tt><big>(</big><em>observed</em>, <em>synthetic</em>, <em>config</em>, <em>event=None</em>, <em>station=None</em>, <em>plot=False</em>, <em>plot_filename=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/flexwin.html#select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.flexwin.select_windows" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">pyflex.flexwin.</tt><tt class="descname">select_windows</tt><big>(</big><em>observed</em>, <em>synthetic</em>, <em>config</em>, <em>event=None</em>, <em>station=None</em>, <em>plot=False</em>, <em>plot_filename=None</em>, <em>windows_filename=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/flexwin.html#select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.flexwin.select_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience function for selecting (and plotting) windows.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -455,6 +501,8 @@ extracted from the data traces if either originates from a SAC file.</li>
 specify a filename for the plot. The fileformat will be determines
 from that name. If not given, the plot will be shown with pylab&#8217;s
 show() function.</li>
+<li><strong>windows_filename</strong> (<em>str or file-like object.</em>) &#8211; If given, windows will be saved to that file or
+file-like object. Pyflex utilizes a custom JSON format for that.</li>
 </ul>
 </td>
 </tr>
@@ -848,6 +896,7 @@ STA/LTA variant in ObsPy as it is really slow right now.</p>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#windows">Windows</a></li>
 <li><a class="reference internal" href="#event-and-station-information">Event and Station Information</a></li>
+<li><a class="reference internal" href="#de-serializing-windows">(De)Serializing Windows</a></li>
 <li><a class="reference internal" href="#difference-to-the-original-flexwin-algorithm">Difference to the original FLEXWIN algorithm</a><ul>
 <li><a class="reference internal" href="#overlap-resolution-strategy">Overlap Resolution Strategy</a></li>
 </ul>

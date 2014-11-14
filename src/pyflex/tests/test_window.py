@@ -11,11 +11,8 @@ Run with pytest.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-import io
-import json
 import numpy as np
 import obspy
-import os
 
 import pyflex
 
@@ -112,68 +109,6 @@ def test_custom_weight_fct():
     assert (win.weight - 5.0) <= 1E-12
 
 
-def test_write_window(tmpdir):
-    """
-    Tests writing of windows.
-    """
-    np.random.seed(12345)
-    d = np.random.random(100)
-
-    start = obspy.UTCDateTime(2012, 1, 1)
-    win = pyflex.window.Window(left=10, right=20, center=15,
-                               time_of_first_sample=start, dt=0.5,
-                               channel_id=EXAMPLE_ID, min_period=1.0)
-    win._calc_criteria(d, d)
-
-    filename = os.path.join(str(tmpdir), "window.json")
-    win.write(filename)
-
-    with open(filename, "rt") as fh:
-        new_win = json.load(fh)
-
-    new_win_expected = {
-        "left_index": win.left,
-        "right_index": win.right,
-        "center_index": win.center,
-        "channel_id": win.channel_id,
-        "time_of_first_sample": str(win.time_of_first_sample),
-        "max_cc_value": win.max_cc_value,
-        "cc_shift_in_samples": win.cc_shift,
-        "cc_shift_in_seconds": win.cc_shift_in_seconds,
-        "dlnA":  win.dlnA,
-        "dt": win.dt,
-        "min_period": win.min_period,
-        "phase_arrivals": [],
-        "absolute_starttime": str(win.absolute_starttime),
-        "absolute_endtime": str(win.absolute_endtime),
-        "relative_starttime": win.relative_starttime,
-        "relative_endtime": win.relative_endtime,
-        "window_weight": win.weight}
-
-    assert new_win["window"] == new_win_expected
-
-    # Test writing to an open file.
-    with open(filename, "w") as fh:
-        win.write(fh)
-    with open(filename, "rt") as fh:
-        new_win = json.load(fh)
-    assert new_win["window"] == new_win_expected
-
-    # Test writing to BytesIO.
-    with io.StringIO() as buf:
-        win.write(buf)
-        buf.seek(0, 0)
-        new_win = json.load(buf)
-    assert new_win["window"] == new_win_expected
-
-    # Test writing to BytesIO.
-    with io.BytesIO() as buf:
-        win.write(buf)
-        buf.seek(0, 0)
-        new_win = json.load(buf)
-    assert new_win["window"] == new_win_expected
-
-
 def test_equality():
     """
     Tests (in)equality for windows.
@@ -200,29 +135,57 @@ def test_equality():
     assert win2 != win
 
 
-def test_reading_and_writing_windows(tmpdir):
+def test_window_to_dict_and_back(tmpdir):
+    """
+    Tests exporting and reimporting the window to a dictionary representation
+    as a preliminary step towards JSON output.
+    """
     np.random.seed(12345)
     d = np.random.random(100)
-
-    filename = os.path.join(str(tmpdir), "window.json")
-
     start = obspy.UTCDateTime(2012, 1, 1)
+    win = pyflex.window.Window(left=10, right=20, center=15,
+                               time_of_first_sample=start, dt=0.5,
+                               channel_id=EXAMPLE_ID, min_period=1.0)
+    win._calc_criteria(d, d)
+
+    output = win._get_json_content()
+
+    expected = {
+        "left_index": win.left,
+        "right_index": win.right,
+        "center_index": win.center,
+        "channel_id": win.channel_id,
+        "time_of_first_sample": str(win.time_of_first_sample),
+        "max_cc_value": win.max_cc_value,
+        "cc_shift_in_samples": win.cc_shift,
+        "cc_shift_in_seconds": win.cc_shift_in_seconds,
+        "dlnA":  win.dlnA,
+        "dt": win.dt,
+        "min_period": win.min_period,
+        "phase_arrivals": [],
+        "absolute_starttime": str(win.absolute_starttime),
+        "absolute_endtime": str(win.absolute_endtime),
+        "relative_starttime": win.relative_starttime,
+        "relative_endtime": win.relative_endtime,
+        "window_weight": win.weight}
+
+    assert output == expected
+
+    new_win = pyflex.window.Window._load_from_json_content(output)
+    assert win == new_win
+
     win = pyflex.window.Window(left=10, right=20, center=15,
                                time_of_first_sample=start, dt=0.5,
                                channel_id=EXAMPLE_ID, min_period=1.0)
 
     # Without criteria.
-    win.write(filename)
-    win2 = pyflex.window.Window.read(filename)
-    assert win == win2
-
-    os.remove(filename)
+    assert win == \
+        pyflex.window.Window._load_from_json_content(win._get_json_content())
 
     # With criteria.
     win._calc_criteria(d, d)
-    win.write(filename)
-    win2 = pyflex.window.Window.read(filename)
-    assert win == win2
+    assert win == \
+        pyflex.window.Window._load_from_json_content(win._get_json_content())
 
     # With phase arrivals.
     win.phase_arrivals = [
@@ -240,43 +203,5 @@ def test_reading_and_writing_windows(tmpdir):
             "phase_name": "pSdiff",
             "take-off angle": 142.0636444091797,
             "time": 1759.0133056640625}]
-
-    win.write(filename)
-    win2 = pyflex.window.Window.read(filename)
-    assert win == win2
-
-
-def read_write_from_memory_files(tmpdir):
-    """
-    Tests reading and writing to and from StringIO/BytesIO and open files.
-    """
-    filename = os.path.join(str(tmpdir), "window.json")
-
-    start = obspy.UTCDateTime(2012, 1, 1)
-    win = pyflex.window.Window(left=10, right=20, center=15,
-                               time_of_first_sample=start, dt=0.5,
-                               channel_id=EXAMPLE_ID, min_period=1.0)
-
-    # StringIO.
-    with io.StringIO() as buf:
-        win.write(buf)
-        buf.seek(0, 0)
-        new_win = pyflex.window.Window.load(buf)
-
-    assert win == new_win
-
-    # BytesIO.
-    with io.BytesIO() as buf:
-        win.write(buf)
-        buf.seek(0, 0)
-        new_win = pyflex.window.Window.load(buf)
-
-    assert win == new_win
-
-    # Open files.
-    with open(filename, "rw") as fh:
-        win.write(fh)
-        fh.seek(0, 0)
-        new_win = pyflex.window.Window.load(fh)
-
-    assert win == new_win
+    assert win == \
+        pyflex.window.Window._load_from_json_content(win._get_json_content())

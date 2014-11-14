@@ -13,10 +13,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
-import json
 import numpy as np
 import obspy
-import os
 
 
 class Window(object):
@@ -77,7 +75,7 @@ class Window(object):
         return not self == other
 
     @staticmethod
-    def _load_from_json_contents(win):
+    def _load_from_json_content(win):
         """
         Load a dictionary coming from a JSON file and parse it to Window
         object.
@@ -115,12 +113,12 @@ class Window(object):
 
         return new_win
 
-    def _get_json_contents(self):
+    def _get_json_content(self):
         """
         Returns the window in a representation suitable for inclusion as a
         JSON file.
         """
-        info = {"window": {
+        info = {
             "left_index": self.left,
             "right_index": self.right,
             "center_index": self.center,
@@ -137,7 +135,7 @@ class Window(object):
             "absolute_endtime": self.absolute_endtime,
             "relative_starttime": self.relative_starttime,
             "relative_endtime": self.relative_endtime,
-            "window_weight": self.weight}}
+            "window_weight": self.weight}
 
         for phase in self.phase_arrivals:
             for key, value in phase.items():

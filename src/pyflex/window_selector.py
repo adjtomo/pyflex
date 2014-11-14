@@ -115,19 +115,19 @@ class WindowSelector(object):
 
             if abs(win_obj.dt - self.observed.stats.delta) / \
                     self.observed.stats.delta >= 0.001:
-               raise PyflexError(
-                   "The sample interval specified in the window is %g whereas "
-                   "the sample interval in the observed data is %g." % (
-                      win_obj.delta, self.observed_stats.delta))
+                raise PyflexError(
+                    "The sample interval specified in the window is %g whereas"
+                    " the sample interval in the observed data is %g." % (
+                        win_obj.delta, self.observed_stats.delta))
 
             if abs(win_obj.time_of_first_sample -
                     self.observed.stats.starttime) > \
                     0.5 * self.observed.stats.delta:
-               raise PyflexError(
-                   "The window expects the data to start with at %s whereas "
-                   "the observed data starts at %s." % (
-                       win.time_of_first_sample,
-                       self.observed.stats.starttime))
+                raise PyflexError(
+                    "The window expects the data to start with at %s whereas "
+                    "the observed data starts at %s." % (
+                        win.time_of_first_sample,
+                        self.observed.stats.starttime))
             # Collect in temporary list and not directly attach to not
             # modify the window object in case a later window raises an
             # exception. Either all or nothing.

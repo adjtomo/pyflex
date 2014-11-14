@@ -52,6 +52,7 @@ clean:
 html:
 	python ./convert.py index
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	rm -f windows.json
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

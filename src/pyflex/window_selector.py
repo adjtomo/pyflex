@@ -133,6 +133,9 @@ class WindowSelector(object):
             # exception. Either all or nothing.
             window_objects.append(win_obj)
         self.windows.extend(window_objects)
+        # Recalculate window criteria.
+        for win in self.windows:
+            win._calc_criteria(self.observed.data, self.synthetic.data)
 
     def write(self, filename):
         """
@@ -158,7 +161,7 @@ class WindowSelector(object):
             with open(filename, "wb") as fh:
                 j = json.dumps(
                     info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
-                    separators=(',', ': '), encoding="ASCII")
+                    separators=(',', ': '))
                 try:
                     fh.write(j)
                 except TypeError:
@@ -166,7 +169,7 @@ class WindowSelector(object):
         else:
             j = json.dumps(
                 info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
-                separators=(',', ': '), encoding="ASCII")
+                separators=(',', ': '))
             try:
                 filename.write(j)
             except TypeError:

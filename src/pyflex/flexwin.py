@@ -18,7 +18,7 @@ from .window_selector import WindowSelector
 
 
 def select_windows(observed, synthetic, config, event=None, station=None,
-                   plot=False, plot_filename=None):
+                   plot=False, plot_filename=None, windows_filename=None):
     """
     Convenience function for selecting (and plotting) windows.
 
@@ -49,6 +49,9 @@ def select_windows(observed, synthetic, config, event=None, station=None,
         from that name. If not given, the plot will be shown with pylab's
         show() function.
     :type plot_filename: str
+    :param windows_filename: If given, windows will be saved to that file or
+        file-like object. Pyflex utilizes a custom JSON format for that.
+    :type windows_filename: str or file-like object.
     """
     ws = WindowSelector(observed=observed, synthetic=synthetic, config=config,
                         event=event, station=station)
@@ -56,5 +59,8 @@ def select_windows(observed, synthetic, config, event=None, station=None,
 
     if plot:
         ws.plot(filename=plot_filename)
+
+    if windows_filename:
+        ws.write(windows_filename)
 
     return windows

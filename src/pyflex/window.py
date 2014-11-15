@@ -137,13 +137,6 @@ class Window(object):
             "relative_endtime": self.relative_endtime,
             "window_weight": self.weight}
 
-        for phase in self.phase_arrivals:
-            for key, value in phase.items():
-                try:
-                    phase[key] = float(value)
-                except ValueError:
-                    pass
-
         return info
 
     def _get_internal_indices(self, indices):

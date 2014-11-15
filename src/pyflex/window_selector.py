@@ -150,17 +150,26 @@ class WindowSelector(object):
 
         info = {"windows": windows}
 
-        class UTCDateTimeEncoder(json.JSONEncoder):
+        class WindowEncoder(json.JSONEncoder):
             def default(self, obj):
                 if isinstance(obj, obspy.UTCDateTime):
                     return str(obj)
+                # Numpy objects also require explicit handling.
+                elif isinstance(obj, np.int64):
+                    return int(obj)
+                elif isinstance(obj, np.int32):
+                    return int(obj)
+                elif isinstance(obj, np.float64):
+                    return float(obj)
+                elif isinstance(obj, np.float32):
+                    return float(obj)
                 # Let the base class default method raise the TypeError
                 return json.JSONEncoder.default(self, obj)
 
         if not hasattr(filename, "write"):
             with open(filename, "wb") as fh:
                 j = json.dumps(
-                    info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
+                    info, cls=WindowEncoder, sort_keys=True, indent=4,
                     separators=(',', ': '))
                 try:
                     fh.write(j)
@@ -168,7 +177,7 @@ class WindowSelector(object):
                     fh.write(j.encode())
         else:
             j = json.dumps(
-                info, cls=UTCDateTimeEncoder, sort_keys=True, indent=4,
+                info, cls=WindowEncoder, sort_keys=True, indent=4,
                 separators=(',', ': '))
             try:
                 filename.write(j)

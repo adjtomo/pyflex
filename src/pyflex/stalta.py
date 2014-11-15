@@ -14,12 +14,12 @@ from __future__ import (absolute_import, division, print_function,
 from future.builtins import *  # NOQA
 
 import numpy as np
+from scipy.signal import lfilter
 
 
 def sta_lta(data, dt, min_period):
     """
-    STA/LTA as used in SPECFEM. Should potentially be replace by a suitable
-    STA/LTA variant in ObsPy as it is really slow right now.
+    STA/LTA as used in SPECFEM.
 
     :param data: The data array.
     :param dt: The sample interval of the data.
@@ -31,28 +31,30 @@ def sta_lta(data, dt, min_period):
 
     noise = data.max() / 1E5
 
-    # set pre-extension for synthetic data and allocate extended_syn
-    n_extend = 1000 * int(min_period / dt)
-    extended_syn = np.zeros(len(data) + n_extend, dtype=np.float64)
+    # 1000 samples should be more then enough to "warm up" the STA/LTA.
+    extended_syn = np.zeros(len(data) + 1000, dtype=np.float64)
     # copy the original synthetic into the extended array, right justified
     # and add the noise level.
     extended_syn += noise
     extended_syn[-len(data):] += data
 
-    STA_LTA = np.zeros(len(data), dtype=np.float64)
+    # This piece of codes "abuses" SciPy a bit by "constructing" an IIR
+    # filter that does the same as the decaying sum and thus avoids the need to
+    # write the loop in Python. The result is a speedup of up to 2 orders of
+    # magnitude in common cases without needing to write the loop in C which
+    # would have a big impact in the ease of installation of this package.
+    # Other than that its quite a cool little trick.
+    a = [1.0, -Cs]
+    b = [1.0]
+    sta = lfilter(b, a, extended_syn)
 
-    sta = 0.0
-    lta = 0.0
+    a = [1.0, -Cl]
+    b = [1.0]
+    lta = lfilter(b, a, extended_syn)
 
-    # warm up the sta and lta
-    for i in range(n_extend):
-        sta = Cs * sta + extended_syn[i]
-        lta = Cl * lta + extended_syn[i]
+    # STA is now STA_LTA
+    sta /= lta
 
-    # calculate sta/lta for the envelope
-    for i in range(len(data)):
-        sta = Cs * sta + extended_syn[n_extend + i]
-        lta = Cl * lta + extended_syn[n_extend + i]
-        if lta > TOL:
-            STA_LTA[i] = sta / lta
-    return STA_LTA
+    # Apply threshold to avoid division by very small values.
+    sta[lta < TOL] = noise
+    return sta[-len(data):]

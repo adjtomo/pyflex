@@ -315,21 +315,21 @@ channels.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2014-11-15 15:19:19,850] - pyflex - INFO: Extracted station information from observed SAC file.
-[2014-11-15 15:19:19,851] - pyflex - INFO: Extracted event information from observed SAC file.
-[2014-11-15 15:19:19,854] - pyflex - INFO: Calculating envelope of synthetics.
-[2014-11-15 15:19:19,856] - pyflex - INFO: Calculating STA/LTA.
-[2014-11-15 15:19:20,279] - pyflex - INFO: Initial window selection yielded 3348 possible windows.
-[2014-11-15 15:19:20,281] - pyflex - INFO: Calculated travel times.
-[2014-11-15 15:19:20,292] - pyflex - INFO: Rejection based on travel times retained 3314 windows.
-[2014-11-15 15:19:20,331] - pyflex - INFO: Rejection based on minimum window length retained 3304 windows.
-[2014-11-15 15:19:20,466] - pyflex - INFO: Water level rejection retained 41 windows
-[2014-11-15 15:19:20,470] - pyflex - INFO: Single phase group rejection retained 16 windows
-[2014-11-15 15:19:20,471] - pyflex - INFO: Removing duplicates retains 16 windows.
-[2014-11-15 15:19:20,472] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
-[2014-11-15 15:19:20,472] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-[2014-11-15 15:19:20,477] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-[2014-11-15 15:19:20,486] - pyflex - INFO: Merging windows resulted in 4 windows.
+<div class="highlight-python"><div class="highlight"><pre>[2014-11-15 15:45:17,436] - pyflex - INFO: Extracted station information from observed SAC file.
+[2014-11-15 15:45:17,437] - pyflex - INFO: Extracted event information from observed SAC file.
+[2014-11-15 15:45:17,442] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-11-15 15:45:17,445] - pyflex - INFO: Calculating STA/LTA.
+[2014-11-15 15:45:17,607] - pyflex - INFO: Initial window selection yielded 3728 possible windows.
+[2014-11-15 15:45:17,609] - pyflex - INFO: Calculated travel times.
+[2014-11-15 15:45:17,624] - pyflex - INFO: Rejection based on travel times retained 3688 windows.
+[2014-11-15 15:45:17,679] - pyflex - INFO: Rejection based on minimum window length retained 3678 windows.
+[2014-11-15 15:45:17,847] - pyflex - INFO: Water level rejection retained 45 windows
+[2014-11-15 15:45:17,852] - pyflex - INFO: Single phase group rejection retained 16 windows
+[2014-11-15 15:45:17,853] - pyflex - INFO: Removing duplicates retains 16 windows.
+[2014-11-15 15:45:17,854] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
+[2014-11-15 15:45:17,855] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+[2014-11-15 15:45:17,860] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+[2014-11-15 15:45:17,869] - pyflex - INFO: Merging windows resulted in 4 windows.
 </pre></div>
 </div>
 </div>
@@ -859,8 +859,7 @@ values will be returned.</p>
 <dl class="function">
 <dt id="pyflex.stalta.sta_lta">
 <tt class="descclassname">pyflex.stalta.</tt><tt class="descname">sta_lta</tt><big>(</big><em>data</em>, <em>dt</em>, <em>min_period</em><big>)</big><a class="reference internal" href="_modules/pyflex/stalta.html#sta_lta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.stalta.sta_lta" title="Permalink to this definition">¶</a></dt>
-<dd><p>STA/LTA as used in SPECFEM. Should potentially be replace by a suitable
-STA/LTA variant in ObsPy as it is really slow right now.</p>
+<dd><p>STA/LTA as used in SPECFEM.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

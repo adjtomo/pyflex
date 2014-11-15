@@ -65,12 +65,12 @@
 <span class="kn">from</span> <span class="nn">future.builtins</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># NOQA</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">lfilter</span>
 
 
 <div class="viewcode-block" id="sta_lta"><a class="viewcode-back" href="../../index.html#pyflex.stalta.sta_lta">[docs]</a><span class="k">def</span> <span class="nf">sta_lta</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">min_period</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    STA/LTA as used in SPECFEM. Should potentially be replace by a suitable</span>
-<span class="sd">    STA/LTA variant in ObsPy as it is really slow right now.</span>
+<span class="sd">    STA/LTA as used in SPECFEM.</span>
 
 <span class="sd">    :param data: The data array.</span>
 <span class="sd">    :param dt: The sample interval of the data.</span>
@@ -82,31 +82,33 @@
 
     <span class="n">noise</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="mf">1E5</span>
 
-    <span class="c"># set pre-extension for synthetic data and allocate extended_syn</span>
-    <span class="n">n_extend</span> <span class="o">=</span> <span class="mi">1000</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">min_period</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span>
-    <span class="n">extended_syn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="n">n_extend</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="c"># 1000 samples should be more then enough to &quot;warm up&quot; the STA/LTA.</span>
+    <span class="n">extended_syn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="c"># copy the original synthetic into the extended array, right justified</span>
     <span class="c"># and add the noise level.</span>
     <span class="n">extended_syn</span> <span class="o">+=</span> <span class="n">noise</span>
     <span class="n">extended_syn</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):]</span> <span class="o">+=</span> <span class="n">data</span>
 
-    <span class="n">STA_LTA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="c"># This piece of codes &quot;abuses&quot; SciPy a bit by &quot;constructing&quot; an IIR</span>
+    <span class="c"># filter that does the same as the decaying sum and thus avoids the need to</span>
+    <span class="c"># write the loop in Python. The result is a speedup of up to 2 orders of</span>
+    <span class="c"># magnitude in common cases without needing to write the loop in C which</span>
+    <span class="c"># would have a big impact in the ease of installation of this package.</span>
+    <span class="c"># Other than that its quite a cool little trick.</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="n">Cs</span><span class="p">]</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+    <span class="n">sta</span> <span class="o">=</span> <span class="n">lfilter</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">extended_syn</span><span class="p">)</span>
 
-    <span class="n">sta</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">lta</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="n">Cl</span><span class="p">]</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+    <span class="n">lta</span> <span class="o">=</span> <span class="n">lfilter</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">extended_syn</span><span class="p">)</span>
 
-    <span class="c"># warm up the sta and lta</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_extend</span><span class="p">):</span>
-        <span class="n">sta</span> <span class="o">=</span> <span class="n">Cs</span> <span class="o">*</span> <span class="n">sta</span> <span class="o">+</span> <span class="n">extended_syn</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">lta</span> <span class="o">=</span> <span class="n">Cl</span> <span class="o">*</span> <span class="n">lta</span> <span class="o">+</span> <span class="n">extended_syn</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="c"># STA is now STA_LTA</span>
+    <span class="n">sta</span> <span class="o">/=</span> <span class="n">lta</span>
 
-    <span class="c"># calculate sta/lta for the envelope</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
-        <span class="n">sta</span> <span class="o">=</span> <span class="n">Cs</span> <span class="o">*</span> <span class="n">sta</span> <span class="o">+</span> <span class="n">extended_syn</span><span class="p">[</span><span class="n">n_extend</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
-        <span class="n">lta</span> <span class="o">=</span> <span class="n">Cl</span> <span class="o">*</span> <span class="n">lta</span> <span class="o">+</span> <span class="n">extended_syn</span><span class="p">[</span><span class="n">n_extend</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">lta</span> <span class="o">&gt;</span> <span class="n">TOL</span><span class="p">:</span>
-            <span class="n">STA_LTA</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sta</span> <span class="o">/</span> <span class="n">lta</span>
-    <span class="k">return</span> <span class="n">STA_LTA</span></div>
+    <span class="c"># Apply threshold to avoid division by very small values.</span>
+    <span class="n">sta</span><span class="p">[</span><span class="n">lta</span> <span class="o">&lt;</span> <span class="n">TOL</span><span class="p">]</span> <span class="o">=</span> <span class="n">noise</span>
+    <span class="k">return</span> <span class="n">sta</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):]</span></div>
 </pre></div>
 
           </div>

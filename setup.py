@@ -1,19 +1,30 @@
 #!/usr/bin/env python
 # -*- encoding: utf8 -*-
 import glob
+import inspect
 import io
-from os.path import basename
-from os.path import dirname
-from os.path import join
-from os.path import splitext
+import os
 
 from setuptools import find_packages
 from setuptools import setup
 
 
+changelog = os.path.join(os.path.dirname(os.path.abspath(
+    inspect.getfile(inspect.currentframe()))), "CHANGELOG.md")
+with open(changelog, "rt") as fh:
+    changelog = fh.read()
+
+long_description = """
+Source code: https://github.com/krischer/pyflex
+
+Documentation: http://krischer.github.io/pyflex
+
+%s""".strip() % changelog
+
+
 def read(*names, **kwargs):
     return io.open(
-        join(dirname(__file__), *names),
+        os.path.join(os.path.dirname(__file__), *names),
         encoding=kwargs.get("encoding", "utf8")).read()
 
 setup(
@@ -21,12 +32,14 @@ setup(
     version="0.1.2",
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Python port of the FLEXWIN package",
+    long_description=long_description,
     author="Lion Krischer",
     author_email="krischer@geophysik.uni-muenchen.de",
     url="https://github.com/krischer/pyflex",
     packages=find_packages("src"),
     package_dir={"": "src"},
-    py_modules=[splitext(basename(i))[0] for i in glob.glob("src/*.py")],
+    py_modules=[os.path.splitext(os.path.basename(i))[0]
+                for i in glob.glob("src/*.py")],
     include_package_data=True,
     zip_safe=False,
     classifiers=[

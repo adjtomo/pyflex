@@ -1,2 +1,3 @@
 include src/pyflex/tests/data/*
 include src/pyflex/tests/baseline_images/*
+include *.md

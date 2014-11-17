@@ -1,5 +1,8 @@
 # Notes on Documentation Building
 
+**This is only the readme for how to build the documentation. For a rendered
+ view of the documentation go [here](http://krischer.github.io/pyflex/).**
+
 The complete documentation is contained in the `index.ipynb` IPython notebook.
 Always edit that; the `index.rst` file will be overwritten by the sphinx 
 makefile.

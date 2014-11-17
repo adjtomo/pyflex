@@ -38,6 +38,9 @@ Event = collections.namedtuple("Event", ["latitude", "longitude",
 Station = collections.namedtuple("Station", ["latitude", "longitude"])
 
 
+__version__ = "0.1.2"
+
+
 # Setup the logger.
 logger = logging.getLogger("pyflex")
 logger.setLevel(logging.WARNING)

@@ -640,8 +640,8 @@ class WindowSelector(object):
             i_left = internal_maxima[0]
             i_right = internal_maxima[-1]
 
-            delta_left = i_left - win.left
-            delta_right = win.right - i_right
+            delta_left = int(i_left) - win.left
+            delta_right = win.right - int(i_right)
 
             # check condition
             if delta_left > time_decay_left:

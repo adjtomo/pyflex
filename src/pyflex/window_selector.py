@@ -41,7 +41,7 @@ class WindowSelector(object):
         :param observed: The preprocessed, observed waveform.
         :type observed: :class:`~obspy.core.trace.Trace` or single component
             :class:`~obspy.core.stream.Stream`
-        :param observed: The preprocessed, synthetic waveform.
+        :param synthetic: The preprocessed, synthetic waveform.
         :type synthetic: :class:`~obspy.core.trace.Trace` or single component
             :class:`~obspy.core.stream.Stream`
         :param config: Configuration object.

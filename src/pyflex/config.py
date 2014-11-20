@@ -202,6 +202,7 @@ class Config(object):
         :param par_flexwin: read the values from a legacy FLEXWIN PAR_FILE
         :type par_flexwin: str 
         """
+        self.par_flexwin=par_flexwin
         self.min_period = min_period
         self.max_period = min_period
 

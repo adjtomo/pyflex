@@ -200,7 +200,7 @@ class Config(object):
         :type resolution_strategy: str
         """
         self.min_period = min_period
-        self.max_period = min_period
+        self.max_period = max_period
 
         self.stalta_waterlevel = stalta_waterlevel
         self.tshift_acceptance_level = tshift_acceptance_level

@@ -30,7 +30,7 @@ class Config(object):
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
                  signal_start_index=None, signal_end_index=-1,
                  window_weight_fct=None,
-                 resolution_strategy="interval_scheduling"):
+                 resolution_strategy="interval_scheduling",par_flexwin=None):
         """
         Central configuration object for Pyflex.
 
@@ -198,7 +198,11 @@ class Config(object):
             non-overlapping windows. Merging will simply merge overlapping
             windows.
         :type resolution_strategy: str
+        
+        :param par_flexwin: read the values from a legacy FLEXWIN PAR_FILE
+        :type par_flexwin: str 
         """
+        self.par_flexwin=par_flexwin
         self.min_period = min_period
         self.max_period = max_period
 
@@ -239,6 +243,10 @@ class Config(object):
                 "Invalid resolution strategy. Choose either "
                 "'interval_scheduling' or 'merge'.")
         self.resolution_strategy = resolution_strategy.lower()
+        
+        if self.par_flexwin: 
+            self.read_flexwin_parfile(self.par_flexwin)
+            self.resolution_strategy = "merge" #overwriting the default
 
     def _convert_to_array(self, npts):
         """
@@ -260,3 +268,46 @@ class Config(object):
                 continue
 
             setattr(self, name, attr * np.ones(npts))
+    
+    def _read_flexwin_parfile(self,par_flexwin):
+        """
+        Reads a FLEXWIN legacy PAR_FILE and overwrite the Config parameters
+        """
+        import StringIO,ConfigParser
+        par_dict={}
+        ini_str = '[root]\n' + open(par_flexwin, 'r').read()
+        ini_fp = StringIO.StringIO(ini_str)
+        par = ConfigParser.RawConfigParser()
+        par.readfp(ini_fp)
+        section=par.sections()[0]
+        options = par.options(section)
+        for opt in options:
+            if par.get(section,opt) =='.true.':
+                par_dict[opt.split()[0]]=True
+            elif par.get(section,opt) =='.false.':
+                par_dict[opt.split()[0]]=False
+            else:
+                par_dict[opt.split()[0]]=par.getfloat(section,opt)
+        
+        self.min_period = par_dict['win_min_period']
+        self.max_period = par_dict['win_max_period']
+
+        self.stalta_waterlevel = par_dict['stalta_base']
+        self.tshift_acceptance_level = par_dict['tshift_base']
+        self.tshift_reference = par_dict['tshift_reference']
+        self.dlna_acceptance_level = par_dict['dlna_base']
+        self.dlna_reference = par_dict['dlna_reference']
+        self.cc_acceptance_level = par_dict['cc_base']
+        self.s2n_limit = par_dict['window_s2n_base']
+
+        self.c_0 = par_dict['c_0']
+        self.c_1 = par_dict['c_1']
+        self.c_2 = par_dict['c_2']
+        self.c_3a = par_dict['c_3a']
+        self.c_3b = par_dict['c_3b']
+        self.c_4a = par_dict['c_4a']
+        self.c_4b = par_dict['c_4b']
+
+        self.check_global_data_quality = par_dict['data_quality']
+        self.snr_integrate_base = par_dict['snr_integrate_base']
+        self.snr_max_base = par_dict['snr_max_base']

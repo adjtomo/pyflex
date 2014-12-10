@@ -204,6 +204,42 @@ use its very bare bones event and station objects.</p>
                                 <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
 </pre></div>
 </div>
+<div class="highlight-python"><div class="highlight"><pre>---------------------------------------------------------------------------
+IndexError                                Traceback (most recent call last)
+
+&lt;ipython-input-8-3fa1e903a313&gt; in &lt;module&gt;()
+      4
+      5 windows = pyflex.select_windows(obs_data, synth_data, config,
+----&gt; 6                                 event=event, station=station)
+
+
+/home/travis/build/krischer/pyflex/src/pyflex/flexwin.pyc in select_windows(observed, synthetic, config, event, station, plot, plot_filename, windows_filename)
+     56     ws = WindowSelector(observed=observed, synthetic=synthetic, config=config,
+     57                         event=event, station=station)
+---&gt; 58     windows = ws.select_windows()
+     59
+     60     if plot:
+
+
+/home/travis/build/krischer/pyflex/src/pyflex/window_selector.pyc in select_windows(self)
+    315             self.calculate_ttimes()
+    316
+--&gt; 317         self.calculate_preliminiaries()
+    318
+    319         # Perform all window selection steps.
+
+
+/home/travis/build/krischer/pyflex/src/pyflex/window_selector.pyc in calculate_preliminiaries(self)
+    303                         np.array([max_idx], dtype=self.troughs.dtype)])
+    304             # Make sure peaks are inside the troughs!
+--&gt; 305             min_trough, max_trough = self.troughs[0], self.troughs[-1]
+    306             self.peaks = self.peaks[(self.peaks &gt; min_trough) &amp;
+    307                                     (self.peaks &lt; max_trough)]
+
+
+IndexError: index 0 is out of bounds for axis 0 with size 0
+</pre></div>
+</div>
 <p>A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Catalog</span></tt></a> or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> objects. Station information on the other hand can be passed as an <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Inventory</span></tt></a> object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">readEvents</span><span class="p">(</span><span class="s">&quot;../events/event_1.xml&quot;</span><span class="p">)</span>
 <span class="n">station</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="s">&quot;../stations/II_ABKT.xml&quot;</span><span class="p">)</span>
@@ -223,37 +259,11 @@ use its very bare bones event and station objects.</p>
 </div>
 <p>The resulting JSON file will have a list of Window objects under the
 <tt class="docutils literal"><span class="pre">&quot;windows&quot;</span></tt> key.</p>
-<div class="highlight-JSON"><div class="highlight"><pre>{
-    &quot;windows&quot;: [
-        {
-            &quot;absolute_endtime&quot;: &quot;1995-05-02T06:30:58.500006Z&quot;,
-            &quot;absolute_starttime&quot;: &quot;1995-05-02T06:23:44.500006Z&quot;,
-            &quot;cc_shift_in_samples&quot;: -3,
-            &quot;cc_shift_in_seconds&quot;: -3.0,
-            &quot;center_index&quot;: 1768,
-            &quot;channel_id&quot;: &quot;II.ABKT.00.LHZ&quot;,
-            &quot;dlnA&quot;: 0.0746902972130047,
-            &quot;dt&quot;: 1.0,
-            &quot;left_index&quot;: 1551,
-            &quot;max_cc_value&quot;: 0.95740650720086529,
-            &quot;min_period&quot;: 50.0,
-            &quot;phase_arrivals&quot;: [
-                {
-                    &quot;d2T/dD2&quot;: -0.10379227250814438,
-                    &quot;dT/dD&quot;: 1.9099057912826538,
-                    &quot;dT/dh&quot;: -0.12297020107507706,
-                    &quot;phase_name&quot;: &quot;PKPdf&quot;,
-</pre></div>
-</div>
 <p>To read the windows again you will have to utilize the lower level <a class="reference internal" href="#pyflex.window_selector.WindowSelector" title="pyflex.window_selector.WindowSelector"><tt class="xref py py-class docutils literal"><span class="pre">WindowSelector</span></tt></a> class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">ws2</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">WindowSelector</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows before loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
 <span class="n">ws2</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&quot;windows.json&quot;</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows after loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre>Windows before loading: 0
-Windows after loading: 9
 </pre></div>
 </div>
 </div>
@@ -297,7 +307,6 @@ windows. This is useful for some misfit measurements.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="_images/index_24_0.png" src="_images/index_24_0.png" />
 </div>
 </div>
 <div class="section" id="logging">
@@ -315,23 +324,6 @@ channels.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2014-12-10 19:04:34,646] - pyflex - INFO: Extracted station information from observed SAC file.
-[2014-12-10 19:04:34,647] - pyflex - INFO: Extracted event information from observed SAC file.
-[2014-12-10 19:04:34,651] - pyflex - INFO: Calculating envelope of synthetics.
-[2014-12-10 19:04:34,655] - pyflex - INFO: Calculating STA/LTA.
-[2014-12-10 19:04:34,840] - pyflex - INFO: Initial window selection yielded 3728 possible windows.
-[2014-12-10 19:04:34,842] - pyflex - INFO: Calculated travel times.
-[2014-12-10 19:04:34,855] - pyflex - INFO: Rejection based on travel times retained 3688 windows.
-[2014-12-10 19:04:34,913] - pyflex - INFO: Rejection based on minimum window length retained 3678 windows.
-[2014-12-10 19:04:35,082] - pyflex - INFO: Water level rejection retained 45 windows
-[2014-12-10 19:04:35,087] - pyflex - INFO: Single phase group rejection retained 16 windows
-[2014-12-10 19:04:35,088] - pyflex - INFO: Removing duplicates retains 16 windows.
-[2014-12-10 19:04:35,089] - pyflex - INFO: Rejection based on minimum window length retained 16 windows.
-[2014-12-10 19:04:35,090] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-[2014-12-10 19:04:35,096] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-[2014-12-10 19:04:35,105] - pyflex - INFO: Merging windows resulted in 4 windows.
-</pre></div>
-</div>
 </div>
 </div>
 <div class="section" id="api-documentation">
@@ -342,7 +334,7 @@ details you can always have a look at the code.</p>
 <h2>Config Object<a class="headerlink" href="#config-object" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyflex.config.Config">
-<em class="property">class </em><tt class="descclassname">pyflex.config.</tt><tt class="descname">Config</tt><big>(</big><em>min_period</em>, <em>max_period</em>, <em>stalta_waterlevel=0.07</em>, <em>tshift_acceptance_level=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_acceptance_level=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_acceptance_level=0.7</em>, <em>s2n_limit=1.5</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em>, <em>check_global_data_quality=False</em>, <em>snr_integrate_base=3.5</em>, <em>snr_max_base=3.0</em>, <em>noise_start_index=0</em>, <em>noise_end_index=None</em>, <em>signal_start_index=None</em>, <em>signal_end_index=-1</em>, <em>window_weight_fct=None</em>, <em>resolution_strategy=u'interval_scheduling'</em><big>)</big><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">pyflex.config.</tt><tt class="descname">Config</tt><big>(</big><em>min_period</em>, <em>max_period</em>, <em>stalta_waterlevel=0.07</em>, <em>tshift_acceptance_level=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_acceptance_level=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_acceptance_level=0.7</em>, <em>s2n_limit=1.5</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>max_time_before_first_arrival=50.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em>, <em>check_global_data_quality=False</em>, <em>snr_integrate_base=3.5</em>, <em>snr_max_base=3.0</em>, <em>noise_start_index=0</em>, <em>noise_end_index=None</em>, <em>signal_start_index=None</em>, <em>signal_end_index=-1</em>, <em>window_weight_fct=None</em>, <em>window_signal_to_noise_type=u'amplitude'</em>, <em>resolution_strategy=u'interval_scheduling'</em><big>)</big><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Central configuration object for Pyflex.</p>
 <p>This replaces the old PAR_FILEs and user functions. It has sensible
 defaults for most values but you will probably want to adjust them
@@ -411,6 +403,9 @@ calculations. Either <tt class="docutils literal"><span class="pre">&quot;ak135&
 in km/s. All windows containing data later then this velocity
 will be rejected. Only used if station and event information is
 available.</li>
+<li><strong>max_time_before_first_arrival</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; This is the minimum starttime
+of any window in seconds before the first arrival. No windows will
+have a starttime smaller than this.</li>
 <li><strong>c_0</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Fine tuning constant for the rejection of windows based
 on the height of internal minima. Any windows with internal
 minima lower then this value times the STA/LTA water level at
@@ -458,6 +453,13 @@ to noise calculations.</li>
 <li><strong>window_weight_fct</strong> (<em>function</em>) &#8211; A function returning the weight for a
 specific window as a single number. Directly passed to the
 <a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><tt class="xref py py-class docutils literal"><span class="pre">Window</span></tt></a> &#8216;s initialization function.</li>
+<li><strong>window_signal_to_noise_type</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The type of signal to noise
+ratio used to reject windows. If <tt class="docutils literal"><span class="pre">&quot;amplitude&quot;</span></tt>, then the
+largest amplitude before the arrival is the noise amplitude and
+the largest amplitude in the window is the signal amplitude. If
+<tt class="docutils literal"><span class="pre">&quot;energy&quot;</span></tt> the time normalized energy is used in both cases.
+The later one is a bit more stable when having random wiggles
+before the first arrival.</li>
 <li><strong>resolution_strategy</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Strategy used to resolve overlaps.
 Possibilities are <tt class="docutils literal"><span class="pre">&quot;interval_scheduling&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;merge&quot;</span></tt>.
 Interval scheduling will chose the optimal subset of

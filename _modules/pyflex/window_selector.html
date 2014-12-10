@@ -319,11 +319,52 @@
                               <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
                               <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_period</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">find_local_extrema</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stalta</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origin_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+            <span class="n">min_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttimes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">&quot;time&quot;</span><span class="p">]</span> <span class="o">-</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_time_before_first_arrival</span> <span class="o">+</span> <span class="n">offset</span>
+            <span class="n">min_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">min_time</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+
+            <span class="n">dist_in_km</span> <span class="o">=</span> <span class="n">geodetics</span><span class="o">.</span><span class="n">calcVincentyInverse</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">longitude</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.0</span>
+            <span class="n">max_time</span> <span class="o">=</span> <span class="n">dist_in_km</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_surface_wave_velocity</span> <span class="o">+</span> \
+                <span class="n">offset</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_period</span>
+            <span class="n">max_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_time</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+
+            <span class="c"># Reject all peaks and troughs before the minimal allowed start</span>
+            <span class="c"># time and after the maximum allowed end time.</span>
+            <span class="n">first_trough</span><span class="p">,</span> <span class="n">last_trough</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&gt;=</span> <span class="n">min_idx</span><span class="p">)</span> <span class="o">&amp;</span>
+                                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">&lt;=</span> <span class="n">max_idx</span><span class="p">)]</span>
+
+            <span class="c"># If troughs have been removed, readd them add the boundaries.</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">first_trough</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">min_idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">last_trough</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">,</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">max_idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="o">.</span><span class="n">dtype</span><span class="p">)])</span>
+            <span class="c"># Make sure peaks are inside the troughs!</span>
+            <span class="n">min_trough</span><span class="p">,</span> <span class="n">max_trough</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">troughs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">&gt;</span> <span class="n">min_trough</span><span class="p">)</span> <span class="o">&amp;</span>
+                                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">&lt;</span> <span class="n">max_trough</span><span class="p">)]</span>
 </div>
 <div class="viewcode-block" id="WindowSelector.select_windows"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector.select_windows">[docs]</a>    <span class="k">def</span> <span class="nf">select_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Launch the window selection.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Fill self.ttimes.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_ttimes</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">calculate_preliminiaries</span><span class="p">()</span>
 
         <span class="c"># Perform all window selection steps.</span>
@@ -331,7 +372,6 @@
         <span class="c"># Reject windows based on traveltime if event and station</span>
         <span class="c"># information is given. This will also fill self.ttimes.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_ttimes</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">reject_on_traveltimes</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;No rejection based on traveltime possible. Event and/or &quot;</span> \
@@ -430,14 +470,29 @@
 
         <span class="n">noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_start_index</span><span class="p">:</span>
                                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">noise_end_index</span><span class="p">]</span>
-        <span class="n">noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">filter_window_noise</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
-            <span class="n">win_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">:</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">]</span>
-            <span class="n">win_noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">win_signal</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="n">noise_amp</span>
-            <span class="k">if</span> <span class="n">win_noise_amp</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">s2n_limit</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]:</span>
-                <span class="k">return</span> <span class="bp">False</span>
-            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">window_signal_to_noise_type</span> <span class="o">==</span> <span class="s">&quot;amplitude&quot;</span><span class="p">:</span>
+            <span class="n">noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+            <span class="k">def</span> <span class="nf">filter_window_noise</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+                <span class="n">win_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">:</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">]</span>
+                <span class="n">win_noise_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">win_signal</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="n">noise_amp</span>
+                <span class="k">if</span> <span class="n">win_noise_amp</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">s2n_limit</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">window_signal_to_noise_type</span> <span class="o">==</span> <span class="s">&quot;energy&quot;</span><span class="p">:</span>
+            <span class="n">noise_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">noise</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">filter_window_noise</span><span class="p">(</span><span class="n">win</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">left</span><span class="p">:</span> <span class="n">win</span><span class="o">.</span><span class="n">right</span><span class="p">]</span>
+                <span class="n">win_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">win_noise_amp</span> <span class="o">=</span> <span class="n">win_energy</span> <span class="o">/</span> <span class="n">noise_energy</span>
+                <span class="k">if</span> <span class="n">win_noise_amp</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">s2n_limit</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">filter_window_noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;SN amplitude ratio window rejection retained </span><span class="si">%i</span><span class="s"> windows&quot;</span> <span class="o">%</span>
@@ -743,10 +798,16 @@
 
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">tshift_min</span> <span class="o">&lt;</span> <span class="n">win</span><span class="o">.</span><span class="n">cc_shift</span> <span class="o">*</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">delta</span> <span class="o">&lt;</span> <span class="n">tshift_max</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Window rejected due to time shift: </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span>
+                             <span class="n">win</span><span class="o">.</span><span class="n">cc_shift</span><span class="p">)</span>
                 <span class="k">return</span> <span class="bp">False</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">dlnA_min</span> <span class="o">&lt;</span> <span class="n">win</span><span class="o">.</span><span class="n">dlnA</span> <span class="o">&lt;</span> <span class="n">dlnA_max</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Window rejected due to amplitude fit: </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span>
+                             <span class="n">win</span><span class="o">.</span><span class="n">dlnA</span><span class="p">)</span>
                 <span class="k">return</span> <span class="bp">False</span>
             <span class="k">if</span> <span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">cc_acceptance_level</span><span class="p">[</span><span class="n">win</span><span class="o">.</span><span class="n">center</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Window rejected due to CC value: </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span>
+                             <span class="n">win</span><span class="o">.</span><span class="n">max_cc_value</span><span class="p">)</span>
                 <span class="k">return</span> <span class="bp">False</span>
             <span class="k">return</span> <span class="bp">True</span>
 

@@ -252,9 +252,9 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Event does not contain an origin.&quot;</span><span class="p">)</span>
                 <span class="n">origin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
-                                   <span class="n">longitude</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
-                                   <span class="n">depth_in_m</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">latitude</span><span class="p">),</span>
+                                   <span class="n">longitude</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">longitude</span><span class="p">),</span>
+                                   <span class="n">depth_in_m</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">depth</span><span class="p">),</span>
                                    <span class="n">origin_time</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Could not parse the event. Unknown type.&quot;</span><span class="p">)</span>
@@ -264,7 +264,7 @@
             <span class="n">net</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span>
             <span class="n">sta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observed</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span>
             <span class="c"># Workaround for ObsPy 0.9.2 Newer version have a get</span>
-            <span class="c"># coordiantes method...</span>
+            <span class="c"># coordinates method...</span>
             <span class="k">for</span> <span class="n">network</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">network</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="n">net</span><span class="p">:</span>
                     <span class="k">break</span>
@@ -277,8 +277,8 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">PyflexError</span><span class="p">(</span><span class="s">&quot;Could not find the station of the &quot;</span>
                                   <span class="s">&quot;observed data in the inventory object.&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
-                                   <span class="n">longitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">),</span>
+                                   <span class="n">longitude</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">))</span>
 
         <span class="c"># Last resort, if either is not set, and the observed or synthetics</span>
         <span class="c"># are sac files, get the information from there.</span>

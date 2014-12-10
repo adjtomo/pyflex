@@ -692,10 +692,16 @@ class WindowSelector(object):
 
             if not (tshift_min < win.cc_shift *
                     self.observed.stats.delta < tshift_max):
+                logger.debug("Window rejected due to time shift: %f" %
+                             win.cc_shift)
                 return False
             if not (dlnA_min < win.dlnA < dlnA_max):
+                logger.debug("Window rejected due to amplitude fit: %f" %
+                             win.dlnA)
                 return False
             if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
+                logger.debug("Window rejected due to CC value: %f" %
+                             win.max_cc_value)
                 return False
             return True
 

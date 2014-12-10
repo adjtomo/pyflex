@@ -201,9 +201,9 @@ class WindowSelector(object):
                 if not self.event.origins:
                     raise PyflexError("Event does not contain an origin.")
                 origin = self.event.preferred_origin() or self.event.origins[0]
-                self.event = Event(latitude=origin.latitude,
-                                   longitude=origin.longitude,
-                                   depth_in_m=origin.depth,
+                self.event = Event(latitude=float(origin.latitude),
+                                   longitude=float(origin.longitude),
+                                   depth_in_m=float(origin.depth),
                                    origin_time=origin.time)
             else:
                 raise PyflexError("Could not parse the event. Unknown type.")
@@ -213,7 +213,7 @@ class WindowSelector(object):
             net = self.observed.stats.network
             sta = self.observed.stats.station
             # Workaround for ObsPy 0.9.2 Newer version have a get
-            # coordiantes method...
+            # coordinates method...
             for network in self.station:
                 if network.code == net:
                     break
@@ -226,8 +226,8 @@ class WindowSelector(object):
             else:
                 raise PyflexError("Could not find the station of the "
                                   "observed data in the inventory object.")
-            self.station = Station(latitude=station.latitude,
-                                   longitude=station.longitude)
+            self.station = Station(latitude=float(station.latitude),
+                                   longitude=float(station.longitude))
 
         # Last resort, if either is not set, and the observed or synthetics
         # are sac files, get the information from there.

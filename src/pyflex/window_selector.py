@@ -272,25 +272,39 @@ class WindowSelector(object):
         if not len(self.peaks) and len(self.troughs):
             return
 
-        # Reject all peaks and troughs before the minimal allowed start time.
         if self.ttimes:
             offset = self.event.origin_time - self.observed.stats.starttime
             min_time = self.ttimes[0]["time"] - \
                 self.config.max_time_before_first_arrival + offset
             min_idx = int(min_time / self.observed.stats.delta)
-            self.peaks = self.peaks[self.peaks > min_idx]
-            trough_length = len(self.troughs)
-            self.troughs = self.troughs[self.troughs >= min_idx]
-            # Make sure to add a "trough" at the limit if some has been
-            # removed.
-            if len(self.troughs) != trough_length and \
-                    self.troughs[0] != min_idx:
-                self.troughs = np.concatenate([
-                    np.array([min_idx], dtype=self.troughs.dtype),
-                    self.troughs])
-            while len(self.peaks) and len(self.troughs) and \
-                    self.peaks[0] <= self.troughs[0]:
-                self.peaks = self.peaks[1:]
+
+            dist_in_km = geodetics.calcVincentyInverse(
+                self.station.latitude, self.station.longitude,
+                self.event.latitude, self.event.longitude)[0] / 1000.0
+            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+                offset + self.config.max_period
+            max_idx = int(max_time / self.observed.stats.delta)
+
+            # Reject all peaks and troughs before the minimal allowed start
+            # time and after the maximum allowed end time.
+            first_trough, last_trough = self.troughs[0], self.troughs[-1]
+            self.troughs = self.troughs[(self.troughs >= min_idx) &
+                                        (self.troughs <= max_idx)]
+
+            # If troughs have been removed, readd them add the boundaries.
+            if len(self.troughs):
+                if first_trough != self.troughs[0]:
+                    self.troughs = np.concatenate([
+                        np.array([min_idx], dtype=self.troughs.dtype),
+                        self.troughs])
+                if last_trough != self.troughs[-1]:
+                    self.troughs = np.concatenate([
+                        self.troughs,
+                        np.array([max_idx], dtype=self.troughs.dtype)])
+            # Make sure peaks are inside the troughs!
+            min_trough, max_trough = self.troughs[0], self.troughs[-1]
+            self.peaks = self.peaks[(self.peaks > min_trough) &
+                                    (self.peaks < max_trough)]
 
     def select_windows(self):
         """

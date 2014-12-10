@@ -419,14 +419,29 @@ class WindowSelector(object):
 
         noise = self.observed.data[self.config.noise_start_index:
                                    self.config.noise_end_index]
-        noise_amp = np.abs(noise).max()
 
-        def filter_window_noise(win):
-            win_signal = self.observed.data[win.left: win.right]
-            win_noise_amp = np.abs(win_signal).max() / noise_amp
-            if win_noise_amp < self.config.s2n_limit[win.center]:
-                return False
-            return True
+        if self.config.window_signal_to_noise_type == "amplitude":
+            noise_amp = np.abs(noise).max()
+
+            def filter_window_noise(win):
+                win_signal = self.observed.data[win.left: win.right]
+                win_noise_amp = np.abs(win_signal).max() / noise_amp
+                if win_noise_amp < self.config.s2n_limit[win.center]:
+                    return False
+                return True
+
+        elif self.config.window_signal_to_noise_type == "energy":
+            noise_energy = np.sum(noise ** 2) / len(noise)
+
+            def filter_window_noise(win):
+                data = self.observed.data[win.left: win.right]
+                win_energy = np.sum(data ** 2) / len(data)
+                win_noise_amp = win_energy / noise_energy
+                if win_noise_amp < self.config.s2n_limit[win.center]:
+                    return False
+                return True
+        else:
+            raise NotImplementedError
 
         self.windows = list(filter(filter_window_noise, self.windows))
         logger.info("SN amplitude ratio window rejection retained %i windows" %

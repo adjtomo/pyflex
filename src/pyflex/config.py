@@ -32,6 +32,7 @@ class Config(object):
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
                  signal_start_index=None, signal_end_index=-1,
                  window_weight_fct=None,
+                 window_signal_to_noise_type="amplitude",
                  resolution_strategy="interval_scheduling"):
         """
         Central configuration object for Pyflex.
@@ -199,6 +200,15 @@ class Config(object):
             :class:`~pyflex.window.Window` 's initialization function.
         :type window_weight_fct: function
 
+        :param window_signal_to_noise_type: The type of signal to noise
+            ratio used to reject windows. If ``"amplitude"``, then the
+            largest amplitude before the arrival is the noise amplitude and
+            the largest amplitude in the window is the signal amplitude. If
+            ``"energy"`` the time normalized energy is used in both cases.
+            The later one is a bit more stable when having random wiggles
+            before the first arrival.
+        :type window_signal_to_noise_type: str
+
         :param resolution_strategy: Strategy used to resolve overlaps.
             Possibilities are ``"interval_scheduling"`` and ``"merge"``.
             Interval scheduling will chose the optimal subset of
@@ -241,6 +251,12 @@ class Config(object):
         self.signal_end_index = noise_end_index
 
         self.window_weight_fct = window_weight_fct
+
+        snr_type = window_signal_to_noise_type.lower()
+        if snr_type not in ["amplitude", "energy"]:
+            raise PyflexError("The window signal to noise type must be either"
+                              "'amplitude' or 'energy'.")
+        self.window_signal_to_noise_type = snr_type
 
         if resolution_strategy.lower() not in ["interval_scheduling", "merge"]:
             raise PyflexError(

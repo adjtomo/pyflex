@@ -24,7 +24,9 @@ class Config(object):
                  tshift_acceptance_level=10.0, tshift_reference=0.0,
                  dlna_acceptance_level=1.3, dlna_reference=0.0,
                  cc_acceptance_level=0.7, s2n_limit=1.5, earth_model="ak135",
-                 min_surface_wave_velocity=3.0, c_0=1.0, c_1=1.5, c_2=0.0,
+                 min_surface_wave_velocity=3.0,
+                 max_time_before_first_arrival=50.0,
+                 c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
                  check_global_data_quality=False, snr_integrate_base=3.5,
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
@@ -122,6 +124,11 @@ class Config(object):
             available.
         :type min_surface_wave_velocity: float
 
+        :param max_time_before_first_arrival: This is the minimum starttime
+            of any window in seconds before the first arrival. No windows will
+            have a starttime smaller than this.
+        :type max_time_before_first_arrival: float
+
         :param c_0: Fine tuning constant for the rejection of windows based
             on the height of internal minima. Any windows with internal
             minima lower then this value times the STA/LTA water level at
@@ -215,6 +222,7 @@ class Config(object):
                               "'iasp91'.")
         self.earth_model = earth_model.lower()
         self.min_surface_wave_velocity = min_surface_wave_velocity
+        self.max_time_before_first_arrival = max_time_before_first_arrival
 
         self.c_0 = c_0
         self.c_1 = c_1

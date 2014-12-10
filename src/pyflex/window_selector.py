@@ -269,10 +269,37 @@ class WindowSelector(object):
                               self.config.min_period)
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
 
+        if not len(self.peaks) and len(self.troughs):
+            return
+
+        # Reject all peaks and troughs before the minimal allowed start time.
+        if self.ttimes:
+            offset = self.event.origin_time - self.observed.stats.starttime
+            min_time = self.ttimes[0]["time"] - \
+                self.config.max_time_before_first_arrival + offset
+            min_idx = int(min_time / self.observed.stats.delta)
+            self.peaks = self.peaks[self.peaks > min_idx]
+            trough_length = len(self.troughs)
+            self.troughs = self.troughs[self.troughs >= min_idx]
+            # Make sure to add a "trough" at the limit if some has been
+            # removed.
+            if len(self.troughs) != trough_length and \
+                    self.troughs[0] != min_idx:
+                self.troughs = np.concatenate([
+                    np.array([min_idx], dtype=self.troughs.dtype),
+                    self.troughs])
+            while len(self.peaks) and len(self.troughs) and \
+                    self.peaks[0] <= self.troughs[0]:
+                self.peaks = self.peaks[1:]
+
     def select_windows(self):
         """
         Launch the window selection.
         """
+        # Fill self.ttimes.
+        if self.event and self.station:
+            self.calculate_ttimes()
+
         self.calculate_preliminiaries()
 
         # Perform all window selection steps.
@@ -280,7 +307,6 @@ class WindowSelector(object):
         # Reject windows based on traveltime if event and station
         # information is given. This will also fill self.ttimes.
         if self.event and self.station:
-            self.calculate_ttimes()
             self.reject_on_traveltimes()
         else:
             msg = "No rejection based on traveltime possible. Event and/or " \

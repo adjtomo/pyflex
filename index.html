@@ -98,8 +98,12 @@ run the tests with</p>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <p>The first step is to import ObsPy and Pyflex.</p>
-<div class="code python highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">obspy</span>
-<span class="kn">import</span> <span class="nn">pyflex</span>
+<div class="code python highlight-python"><div class="highlight"><pre>%pylab inline
+import obspy
+import pyflex
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>Populating the interactive namespace from numpy and matplotlib
 </pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> expects both observed and synthetic data to already be fully
@@ -196,48 +200,12 @@ the necessary information. <tt class="docutils literal"><span class="pre">Pyflex
 information but this should really be seen as a last resort.</p>
 <p>The easiest way to pass the necessary information to <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is to
 use its very bare bones event and station objects.</p>
-<div class="code python highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="mf">12.0</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=-</span><span class="mf">11.2</span><span class="p">,</span> <span class="n">depth_in_m</span><span class="o">=</span><span class="mi">12800</span><span class="p">,</span>
-                     <span class="n">origin_time</span><span class="o">=</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">2014</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-<span class="n">station</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="mf">48.0</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)</span>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=-</span><span class="mf">3.77</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=-</span><span class="mf">77.07</span><span class="p">,</span> <span class="n">depth_in_m</span><span class="o">=</span><span class="mi">112800</span><span class="p">,</span>
+                     <span class="n">origin_time</span><span class="o">=</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">1995</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">13</span><span class="p">))</span>
+<span class="n">station</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="mf">37.93</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=</span><span class="mf">58.12</span><span class="p">)</span>
 
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
                                 <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre>---------------------------------------------------------------------------
-IndexError                                Traceback (most recent call last)
-
-&lt;ipython-input-8-3fa1e903a313&gt; in &lt;module&gt;()
-      4
-      5 windows = pyflex.select_windows(obs_data, synth_data, config,
-----&gt; 6                                 event=event, station=station)
-
-
-/home/travis/build/krischer/pyflex/src/pyflex/flexwin.pyc in select_windows(observed, synthetic, config, event, station, plot, plot_filename, windows_filename)
-     56     ws = WindowSelector(observed=observed, synthetic=synthetic, config=config,
-     57                         event=event, station=station)
----&gt; 58     windows = ws.select_windows()
-     59
-     60     if plot:
-
-
-/home/travis/build/krischer/pyflex/src/pyflex/window_selector.pyc in select_windows(self)
-    315             self.calculate_ttimes()
-    316
---&gt; 317         self.calculate_preliminiaries()
-    318
-    319         # Perform all window selection steps.
-
-
-/home/travis/build/krischer/pyflex/src/pyflex/window_selector.pyc in calculate_preliminiaries(self)
-    303                         np.array([max_idx], dtype=self.troughs.dtype)])
-    304             # Make sure peaks are inside the troughs!
---&gt; 305             min_trough, max_trough = self.troughs[0], self.troughs[-1]
-    306             self.peaks = self.peaks[(self.peaks &gt; min_trough) &amp;
-    307                                     (self.peaks &lt; max_trough)]
-
-
-IndexError: index 0 is out of bounds for axis 0 with size 0
 </pre></div>
 </div>
 <p>A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Catalog</span></tt></a> or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> objects. Station information on the other hand can be passed as an <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.9.2) v0.9)"><tt class="xref py py-class docutils literal"><span class="pre">Inventory</span></tt></a> object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.</p>
@@ -259,11 +227,37 @@ IndexError: index 0 is out of bounds for axis 0 with size 0
 </div>
 <p>The resulting JSON file will have a list of Window objects under the
 <tt class="docutils literal"><span class="pre">&quot;windows&quot;</span></tt> key.</p>
+<div class="highlight-JSON"><div class="highlight"><pre>{
+    &quot;windows&quot;: [
+        {
+            &quot;absolute_endtime&quot;: &quot;1995-05-02T06:30:58.500006Z&quot;,
+            &quot;absolute_starttime&quot;: &quot;1995-05-02T06:23:44.500006Z&quot;,
+            &quot;cc_shift_in_samples&quot;: -3,
+            &quot;cc_shift_in_seconds&quot;: -3.0,
+            &quot;center_index&quot;: 1768,
+            &quot;channel_id&quot;: &quot;II.ABKT.00.LHZ&quot;,
+            &quot;dlnA&quot;: 0.0746902972130047,
+            &quot;dt&quot;: 1.0,
+            &quot;left_index&quot;: 1551,
+            &quot;max_cc_value&quot;: 0.95740650720086529,
+            &quot;min_period&quot;: 50.0,
+            &quot;phase_arrivals&quot;: [
+                {
+                    &quot;d2T/dD2&quot;: -0.10379227250814438,
+                    &quot;dT/dD&quot;: 1.9099057912826538,
+                    &quot;dT/dh&quot;: -0.12297020107507706,
+                    &quot;phase_name&quot;: &quot;PKPdf&quot;,
+</pre></div>
+</div>
 <p>To read the windows again you will have to utilize the lower level <a class="reference internal" href="#pyflex.window_selector.WindowSelector" title="pyflex.window_selector.WindowSelector"><tt class="xref py py-class docutils literal"><span class="pre">WindowSelector</span></tt></a> class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">ws2</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">WindowSelector</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows before loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
 <span class="n">ws2</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&quot;windows.json&quot;</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows after loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>Windows before loading: 0
+Windows after loading: 9
 </pre></div>
 </div>
 </div>
@@ -307,6 +301,7 @@ windows. This is useful for some misfit measurements.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
+<img alt="_images/index_24_0.png" src="_images/index_24_0.png" />
 </div>
 </div>
 <div class="section" id="logging">
@@ -322,6 +317,23 @@ channels.</p>
 <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>[2014-12-18 02:20:22,209] - pyflex - INFO: Extracted station information from observed SAC file.
+[2014-12-18 02:20:22,209] - pyflex - INFO: Extracted event information from observed SAC file.
+[2014-12-18 02:20:22,215] - pyflex - INFO: Calculated travel times.
+[2014-12-18 02:20:22,215] - pyflex - INFO: Calculating envelope of synthetics.
+[2014-12-18 02:20:22,217] - pyflex - INFO: Calculating STA/LTA.
+[2014-12-18 02:20:22,266] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
+[2014-12-18 02:20:22,270] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
+[2014-12-18 02:20:22,288] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
+[2014-12-18 02:20:22,343] - pyflex - INFO: Water level rejection retained 36 windows
+[2014-12-18 02:20:22,345] - pyflex - INFO: Single phase group rejection retained 14 windows
+[2014-12-18 02:20:22,346] - pyflex - INFO: Removing duplicates retains 14 windows.
+[2014-12-18 02:20:22,347] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+[2014-12-18 02:20:22,347] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+[2014-12-18 02:20:22,352] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+[2014-12-18 02:20:22,359] - pyflex - INFO: Merging windows resulted in 4 windows.
 </pre></div>
 </div>
 </div>

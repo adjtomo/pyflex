@@ -64,8 +64,15 @@ The first step is to import ObsPy and Pyflex.
 
 .. code:: python
 
+    %pylab inline
     import obspy
     import pyflex
+
+.. parsed-literal::
+
+    Populating the interactive namespace from numpy and matplotlib
+
+
 ``Pyflex`` expects both observed and synthetic data to already be fully
 processed. An easy way to accomplish this is to utilize ObsPy. This
 example reproduces what the original ``FLEXWIN`` package does when it is
@@ -189,52 +196,12 @@ use its very bare bones event and station objects.
 
 .. code:: python
 
-    event = pyflex.Event(latitude=12.0, longitude=-11.2, depth_in_m=12800,
-                         origin_time=obspy.UTCDateTime(2014, 2, 4))
-    station = pyflex.Station(latitude=48.0, longitude=20.0)
+    event = pyflex.Event(latitude=-3.77, longitude=-77.07, depth_in_m=112800,
+                         origin_time=obspy.UTCDateTime(1995, 5, 2, 6, 6, 13))
+    station = pyflex.Station(latitude=37.93, longitude=58.12)
     
     windows = pyflex.select_windows(obs_data, synth_data, config,
                                     event=event, station=station)
-
-::
-
-
-    ---------------------------------------------------------------------------
-    IndexError                                Traceback (most recent call last)
-
-    <ipython-input-8-3fa1e903a313> in <module>()
-          4 
-          5 windows = pyflex.select_windows(obs_data, synth_data, config,
-    ----> 6                                 event=event, station=station)
-    
-
-    /home/travis/build/krischer/pyflex/src/pyflex/flexwin.pyc in select_windows(observed, synthetic, config, event, station, plot, plot_filename, windows_filename)
-         56     ws = WindowSelector(observed=observed, synthetic=synthetic, config=config,
-         57                         event=event, station=station)
-    ---> 58     windows = ws.select_windows()
-         59 
-         60     if plot:
-
-
-    /home/travis/build/krischer/pyflex/src/pyflex/window_selector.pyc in select_windows(self)
-        315             self.calculate_ttimes()
-        316 
-    --> 317         self.calculate_preliminiaries()
-        318 
-        319         # Perform all window selection steps.
-
-
-    /home/travis/build/krischer/pyflex/src/pyflex/window_selector.pyc in calculate_preliminiaries(self)
-        303                         np.array([max_idx], dtype=self.troughs.dtype)])
-        304             # Make sure peaks are inside the troughs!
-    --> 305             min_trough, max_trough = self.troughs[0], self.troughs[-1]
-        306             self.peaks = self.peaks[(self.peaks > min_trough) &
-        307                                     (self.peaks < max_trough)]
-
-
-    IndexError: index 0 is out of bounds for axis 0 with size 0
-
-
                 
 A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy :class:`~obspy.core.event.Catalog` or :class:`~obspy.core.event.Event` objects. Station information on the other hand can be passed as an :class:`~obspy.station.inventory.Inventory` object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.
 
@@ -273,6 +240,13 @@ To read the windows again you will have to utilize the lower level :class:`~pyfl
     print("Windows before loading: %i" % len(ws2.windows))
     ws2.load("windows.json")
     print("Windows after loading: %i" % len(ws2.windows))
+
+.. parsed-literal::
+
+    Windows before loading: 0
+    Windows after loading: 9
+
+
 Difference to the original FLEXWIN algorithm
 --------------------------------------------
 
@@ -317,6 +291,11 @@ windows. This is useful for some misfit measurements.
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
         resolution_strategy="merge")
     windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+.. image:: index_files/index_24_0.png
+
+
 Logging
 -------
 
@@ -334,6 +313,26 @@ channels.
     logger.setLevel(logging.DEBUG)
     
     windows = pyflex.select_windows(obs_data, synth_data, config)
+
+.. parsed-literal::
+
+    [2014-12-18 02:20:22,209] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2014-12-18 02:20:22,209] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2014-12-18 02:20:22,215] - pyflex - INFO: Calculated travel times.
+    [2014-12-18 02:20:22,215] - pyflex - INFO: Calculating envelope of synthetics.
+    [2014-12-18 02:20:22,217] - pyflex - INFO: Calculating STA/LTA.
+    [2014-12-18 02:20:22,266] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
+    [2014-12-18 02:20:22,270] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
+    [2014-12-18 02:20:22,288] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
+    [2014-12-18 02:20:22,343] - pyflex - INFO: Water level rejection retained 36 windows
+    [2014-12-18 02:20:22,345] - pyflex - INFO: Single phase group rejection retained 14 windows
+    [2014-12-18 02:20:22,346] - pyflex - INFO: Removing duplicates retains 14 windows.
+    [2014-12-18 02:20:22,347] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+    [2014-12-18 02:20:22,347] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+    [2014-12-18 02:20:22,352] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+    [2014-12-18 02:20:22,359] - pyflex - INFO: Merging windows resulted in 4 windows.
+
+
 API Documentation
 =================
 

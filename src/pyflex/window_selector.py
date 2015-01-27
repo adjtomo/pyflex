@@ -232,12 +232,12 @@ class WindowSelector(object):
         # Last resort, if either is not set, and the observed or synthetics
         # are sac files, get the information from there.
         if not self.station or not self.event:
-            if hasattr(self.observed.stats, "sac"):
-                tr = self.observed
-                ftype = "observed"
-            elif hasattr(self.synthetic.stats, "sac"):
+            if hasattr(self.synthetic.stats, "sac"):
                 tr = self.synthetic
                 ftype = "synthetic"
+            elif hasattr(self.observed.stats, "sac"):
+                tr = self.observed
+                ftype = "observed"
             else:
                 return
             sac = tr.stats.sac
@@ -253,7 +253,7 @@ class WindowSelector(object):
                 self.event = Event(
                     latitude=values[0], longitude=values[1],
                     depth_in_m=values[2] * 1000.0,
-                    origin_time=self.observed.stats.starttime - values[5])
+                    origin_time=tr.stats.starttime - values[5])
                 logger.info("Extracted event information from %s SAC file." %
                             ftype)
 
@@ -306,6 +306,14 @@ class WindowSelector(object):
             self.peaks = self.peaks[(self.peaks > min_trough) &
                                     (self.peaks < max_trough)]
 
+    def print_remaining_windows(self):
+        logger.debug("Remaining windows: %d" % (len(self.windows)))
+        #offset = self.event.origin_time - self.observed.stats.starttime
+        for idx, win in enumerate(self.windows):
+            left = win.relative_starttime
+            right = win.relative_endtime
+            logger.debug("%02d: %6.2f %6.2f" % (idx, left, right))
+
     def select_windows(self):
         """
         Launch the window selection.
@@ -335,6 +343,7 @@ class WindowSelector(object):
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
         self.reject_on_phase_separation()
+        self.print_remaining_windows()
         self.curtail_length_of_windows()
         self.remove_duplicates()
         # Call once again as curtailing might change the length of some
@@ -420,6 +429,8 @@ class WindowSelector(object):
         noise = self.observed.data[self.config.noise_start_index:
                                    self.config.noise_end_index]
 
+        offset = self.event.origin_time - self.observed.stats.starttime
+
         if self.config.window_signal_to_noise_type == "amplitude":
             noise_amp = np.abs(noise).max()
 
@@ -438,6 +449,10 @@ class WindowSelector(object):
                 win_energy = np.sum(data ** 2) / len(data)
                 win_noise_amp = win_energy / noise_energy
                 if win_noise_amp < self.config.s2n_limit[win.center]:
+                    left = win.relative_starttime - offset
+                    right = win.relative_endtime - offset
+                    logger.debug("Win rejected due to S2N ratio(Amp): %3.1f %5.1f %5.1f"
+                                 % (win_noise_amp, left, right))
                     return False
                 return True
         else:
@@ -747,16 +762,16 @@ class WindowSelector(object):
 
             if not (tshift_min < win.cc_shift *
                     self.observed.stats.delta < tshift_max):
-                logger.debug("Window rejected due to time shift: %f" %
-                             win.cc_shift)
+                logger.debug("Window rejected due to time shift:    %6.2f %6.1f %6.1f" %
+                             (win.cc_shift, win.relative_starttime, win.relative_endtime))
                 return False
             if not (dlnA_min < win.dlnA < dlnA_max):
-                logger.debug("Window rejected due to amplitude fit: %f" %
-                             win.dlnA)
+                logger.debug("Window rejected due to amplitude fit: %6.2f %6.1f %6.1f" %
+                             (win.dlnA, win.relative_starttime, win.relative_endtime))
                 return False
             if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
-                logger.debug("Window rejected due to CC value: %f" %
-                             win.max_cc_value)
+                logger.debug("Window rejected due to CC value:      %6.2f %6.1f %6.1f" %
+                             (win.max_cc_value, win.relative_starttime, win.relative_endtime))
                 return False
             return True
 
@@ -808,8 +823,8 @@ class WindowSelector(object):
 
         ptp = sorted([self.observed.data.ptp(), self.synthetic.data.ptp()])
         if ptp[1] / ptp[0] >= 5:
-            warnings.warn("The amplitude difference between data and "
-                          "synthetic is fairly large.")
+            warnings.warn("The amplitude difference between data and"
+                           "synthetic is fairly large.")
 
         # Also check the components of the data to avoid silly mistakes of
         # users.
@@ -829,6 +844,7 @@ class WindowSelector(object):
         # Lazy imports to not import matplotlib all the time.
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle
+        import numpy as np
 
         # Use an offset to have the seconds since the event as the time axis.
         if self.event:
@@ -865,9 +881,10 @@ class WindowSelector(object):
                  verticalalignment='top', transform=ax.transAxes)
 
         plt.axes([0.025, 0.51, 0.95, 0.4])
-        plt.plot(times, self.observed.data, color="black")
-        plt.plot(times, self.synthetic.data, color="red")
+        obsd_handle, = plt.plot(times, self.observed.data, color="black")
+        synt_handle, = plt.plot(times, self.synthetic.data, color="red")
         plt.xlim(times[0], times[-1])
+        plt.legend([obsd_handle, synt_handle], ["obsd", "synt"], prop={'size':8})
 
         ax = plt.gca()
         ax.spines['right'].set_color('none')
@@ -911,10 +928,33 @@ class WindowSelector(object):
         ax.spines['right'].set_color('none')
         ax.spines['left'].set_color('none')
         ax.spines['top'].set_color('none')
+        stepsize = 200
+        start, end = ax.get_xlim()
+        ax.xaxis.set_ticks(np.arange(start, end+1, stepsize))
         ax.set_yticks([])
         ax.xaxis.set_ticks_position('bottom')
 
         plt.text(0.01, 0.99, 'STA/LTA', horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes)
+
+        # print more information on the figure
+        text = "Station: %s.%s     Comp: %s" % (self.observed.stats.network, self.observed.stats.station,
+            self.observed.stats.channel)
+        plt.text(0.75, 0.99, text, horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes)
+        dist_in_m, az, baz = geodetics.gps2DistAzimuth(self.event.latitude, self.event.longitude,
+                                self.station.latitude, self.station.longitude)
+        dist_in_degree = dist_in_m / (1000.0 * 40075.) * 360.0
+        text = "Dist: %5.2f$^\circ$   Azimuth: %5.2f$^\circ$" % ( dist_in_degree, az)
+        plt.text(0.75, 0.90, text, horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes)
+        offset = self.event.origin_time - self.observed.stats.starttime
+        signal_start = self.config.signal_start_index * self.observed.stats.delta + offset
+        signal_end = self.config.signal_end_index * self.observed.stats.delta + offset
+        #print(self.config.noise_end_index, self.config.signal_start_index)
+        #print(self.config.signal_end_index, self.config.signal_start_index)
+        text = "Signal Zone(s): [%-6.1f, %6.1f]" % (signal_start, signal_end)
+        plt.text(0.75, 0.81, text, horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)
 
         for win in self.windows:

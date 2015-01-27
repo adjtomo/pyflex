@@ -32,7 +32,7 @@ class Config(object):
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
                  signal_start_index=None, signal_end_index=-1,
                  window_weight_fct=None,
-                 window_signal_to_noise_type="amplitude",
+                 window_signal_to_noise_type="energy",
                  resolution_strategy="interval_scheduling"):
         """
         Central configuration object for Pyflex.
@@ -247,8 +247,8 @@ class Config(object):
         self.snr_max_base = snr_max_base
         self.noise_start_index = noise_start_index
         self.noise_end_index = noise_end_index
-        self.signal_start_index = noise_start_index
-        self.signal_end_index = noise_end_index
+        self.signal_start_index = signal_start_index
+        self.signal_end_index = signal_end_index
 
         self.window_weight_fct = window_weight_fct
 

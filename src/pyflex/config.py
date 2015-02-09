@@ -271,7 +271,7 @@ class Config(object):
         """
         attributes = ("stalta_waterlevel", "tshift_acceptance_level",
                       "dlna_acceptance_level", "cc_acceptance_level",
-                      "s2n_limit")
+                      "s2n_limit", "c_1")
         for name in attributes:
             attr = getattr(self, name)
 

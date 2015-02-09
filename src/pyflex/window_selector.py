@@ -351,6 +351,7 @@ class WindowSelector(object):
         self.reject_windows_based_on_minimum_length()
         self.reject_based_on_signal_to_noise_ratio()
         self.reject_based_on_data_fit_criteria()
+        self.print_remaining_windows()
 
         if self.config.resolution_strategy == "interval_scheduling":
             self.schedule_weighted_intervals()
@@ -736,9 +737,14 @@ class WindowSelector(object):
         """
         Reject windows smaller than the minimal window length.
         """
-        self.windows = list(filter(
-            lambda x: (x.right - x.left) >= self.minimum_window_length,
-            self.windows))
+        def filter_window_length(win):
+            win_length = (win.right - win.left) * win.dt
+            if win_length < (self.config.c_1[win.center] * self.config.min_period):
+                return False
+            else:
+                return True
+
+        self.windows = list(filter(filter_window_length, self.windows))
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))
 

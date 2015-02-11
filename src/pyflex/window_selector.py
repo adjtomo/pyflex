@@ -184,6 +184,21 @@ class WindowSelector(object):
             except TypeError:
                 filename.write(j.encode())
 
+    def write_text(self, filename):
+        """
+        Write plain text file for the window output
+        """
+        sta = self.observed.stats.station
+        nw = self.observed.stats.network
+        comp = self.observed.stats.channel
+        loc = self.observed.stats.location
+        f = open(filename, 'w')
+        text = "%s.%s.%s.%s\n" %(sta, nw, comp, loc)
+        f.write(text)
+        f.write("%d\n" %len(self.windows))
+        for win in self.windows:
+            f.write("%10.2f %10.2f\n" % (win.relative_starttime, win.relative_endtime))
+
     def _parse_event_and_station(self):
         """
         Parse the event and station information.

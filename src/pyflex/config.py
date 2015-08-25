@@ -24,7 +24,8 @@ class Config(object):
                  tshift_acceptance_level=10.0, tshift_reference=0.0,
                  dlna_acceptance_level=1.3, dlna_reference=0.0,
                  cc_acceptance_level=0.7, s2n_limit=1.5, earth_model="ak135",
-                 min_surface_wave_velocity=3.0,
+                 min_surface_wave_velocity=3.5,
+                 max_surface_wave_velocity=4.2,
                  max_time_before_first_arrival=50.0,
                  c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
@@ -33,7 +34,8 @@ class Config(object):
                  signal_start_index=None, signal_end_index=-1,
                  window_weight_fct=None,
                  window_signal_to_noise_type="energy",
-                 resolution_strategy="interval_scheduling"):
+                 resolution_strategy="interval_scheduling",
+                 select_mode="body_and_surface"):
         """
         Central configuration object for Pyflex.
 
@@ -232,6 +234,7 @@ class Config(object):
                               "'iasp91'.")
         self.earth_model = earth_model.lower()
         self.min_surface_wave_velocity = min_surface_wave_velocity
+        self.max_surface_wave_velocity = max_surface_wave_velocity
         self.max_time_before_first_arrival = max_time_before_first_arrival
 
         self.c_0 = c_0
@@ -263,6 +266,13 @@ class Config(object):
                 "Invalid resolution strategy. Choose either "
                 "'interval_scheduling' or 'merge'.")
         self.resolution_strategy = resolution_strategy.lower()
+
+        if select_mode.lower() not in ["all_wave", "body_and_surface", "body_wave",
+                "surface_wave", "mantle_wave"]:
+            raise PyflexError(
+                    "Invalide select_mode. Choose: 1) all_waves; 2) body_and_surface; "
+                    "3) body_wave; 4) surface_wave; 5) mantle_wave;")
+        self.select_mode = select_mode.lower()
 
     def _convert_to_array(self, npts):
         """

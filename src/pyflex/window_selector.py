@@ -344,7 +344,7 @@ class WindowSelector(object):
         # Reject windows based on traveltime if event and station
         # information is given. This will also fill self.ttimes.
         if self.event and self.station:
-            self.reject_on_traveltimes()
+            self.reject_on_select_mode()
         else:
             msg = "No rejection based on traveltime possible. Event and/or " \
                   "station information is not available."
@@ -535,6 +535,45 @@ class WindowSelector(object):
                              model=self.config.earth_model)
         self.ttimes = sorted(tts, key=lambda x: x["time"])
         logger.info("Calculated travel times.")
+
+    def reject_on_select_mode(self):
+        """
+        Reject based on select mode. Will reject windows outside of the wave
+        category specified. For example, if self.config.select_mode == "body_only",
+        only body wave windows will be selected.
+        """
+        dist_in_km = geodetics.calcVincentyInverse(
+            self.station.latitude, self.station.longitude, self.event.latitude,
+            self.event.longitude)[0] / 1000.0
+
+        offset = self.event.origin_time - self.observed.stats.starttime
+
+        select_mode = self.config.select_mode
+        if select_mode == "all_waves":
+            min_time = self.ttimes[0]["time"] - self.config.min_period + offset
+            max_time = self.observed.stats.endtime - self.observed.stats.starttime
+        elif select_mode == "body_and_surface":
+            min_time = self.ttimes[0]["time"] - self.config.min_period + offset
+            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+                    self.config.min_period + offset
+        elif select_mode == "body_wave":
+            min_time = self.ttimes[0]["time"] - self.config.min_period + offset
+            max_time = dist_in_km / self.config.max_surface_wave_velocity + \
+                    3 * self.config.min_period + offset
+        elif select_mode == "surface_wave":
+            min_time = dist_in_km / self.config.max_surface_wave_velocity - \
+                    3 * self.config.min_period + offset
+            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+                    3 * self.config.min_period + offset
+        elif select_mode == "mantle_wave":
+            min_time = dist_in_km / self.config.max_surface_wave_velocity + offset
+            max_time = self.observed.stats.endtime - self.observed.stats.starttime
+
+        self.windows = [win for win in self.windows
+                        if (win.relative_endtime >= min_time)
+                        and (win.relative_starttime <= max_time)]
+        logger.info("Rejection based on travel times retained %i windows." %
+                    len(self.windows))
 
     def reject_on_traveltimes(self):
         """

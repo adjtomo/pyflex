@@ -339,6 +339,11 @@ class WindowSelector(object):
 
         self.calculate_preliminiaries()
 
+        self.determine_signal_and_noise_indices()
+        if self.config.check_global_data_quality:
+            if not self.check_data_quality():
+                return
+
         # Perform all window selection steps.
         self.initial_window_selection()
         # Reject windows based on traveltime if event and station
@@ -351,9 +356,6 @@ class WindowSelector(object):
             logger.warning(msg)
             warnings.warn(msg, PyflexWarning)
 
-        self.determine_signal_and_noise_indices()
-        if self.config.check_global_data_quality:
-            self.check_data_quality()
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
@@ -430,6 +432,11 @@ class WindowSelector(object):
                     int(self.ttimes[0]["time"] - self.config.min_period)
         if self.config.signal_start_index is None:
             self.config.signal_start_index = self.config.noise_end_index
+
+        logger.info("Noise start index and noise end index: %d, %d"
+                    %(self.config.noise_start_index, self.config.noise_end_index))
+        logger.info("Signal start index and noise end index: %d, %d"
+                    %(self.config.signal_start_index, self.config.signal_end_index))
 
     def reject_based_on_signal_to_noise_ratio(self):
         """
@@ -1013,6 +1020,7 @@ class WindowSelector(object):
         signal_end = self.config.signal_end_index * self.observed.stats.delta + offset
         #print(self.config.noise_end_index, self.config.signal_start_index)
         #print(self.config.signal_end_index, self.config.signal_start_index)
+        #print(signal_start, signal_end)
         text = "Signal Zone(s): [%-6.1f, %6.1f]" % (signal_start, signal_end)
         plt.text(0.75, 0.81, text, horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)

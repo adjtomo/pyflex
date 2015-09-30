@@ -61,6 +61,8 @@ the corresponding publication is</p>
 automated time-window selection algorithm for seismic tomography.</strong>
 <em>Geophysical Journal International</em>, 178(1), 257–281
 <a class="reference external" href="http://dx.doi.org/10.1111/j.1365-246X.2009.04099.x">doi:10.1111/j.1365-246X.2009.04099.x</a></div></blockquote>
+<p>If you use <tt class="docutils literal"><span class="pre">Pyflex</span></tt>, please also cite the latest released version:
+<a class="reference external" href="http://dx.doi.org/10.5281/zenodo.31607">http://dx.doi.org/10.5281/zenodo.31607</a></p>
 <p>The source code for <tt class="docutils literal"><span class="pre">Pyflex</span></tt> lives on Github:
 <a class="reference external" href="https://github.com/krischer/pyflex">https://github.com/krischer/pyflex</a>. If you encounter any problems with
 it please open an issue or submit a pull request.</p>
@@ -318,21 +320,21 @@ channels.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2015-09-30 09:49:44,100] - pyflex - INFO: Extracted station information from observed SAC file.
-[2015-09-30 09:49:44,101] - pyflex - INFO: Extracted event information from observed SAC file.
-[2015-09-30 09:49:44,187] - pyflex - INFO: Calculated travel times.
-[2015-09-30 09:49:44,187] - pyflex - INFO: Calculating envelope of synthetics.
-[2015-09-30 09:49:44,190] - pyflex - INFO: Calculating STA/LTA.
-[2015-09-30 09:49:44,272] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
-[2015-09-30 09:49:44,280] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
-[2015-09-30 09:49:44,313] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
-[2015-09-30 09:49:44,418] - pyflex - INFO: Water level rejection retained 36 windows
-[2015-09-30 09:49:44,423] - pyflex - INFO: Single phase group rejection retained 14 windows
-[2015-09-30 09:49:44,425] - pyflex - INFO: Removing duplicates retains 14 windows.
-[2015-09-30 09:49:44,426] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
-[2015-09-30 09:49:44,427] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-[2015-09-30 09:49:44,434] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-[2015-09-30 09:49:44,443] - pyflex - INFO: Merging windows resulted in 4 windows.
+<div class="highlight-python"><div class="highlight"><pre>[2015-09-30 09:55:53,644] - pyflex - INFO: Extracted station information from observed SAC file.
+[2015-09-30 09:55:53,645] - pyflex - INFO: Extracted event information from observed SAC file.
+[2015-09-30 09:55:53,743] - pyflex - INFO: Calculated travel times.
+[2015-09-30 09:55:53,744] - pyflex - INFO: Calculating envelope of synthetics.
+[2015-09-30 09:55:53,746] - pyflex - INFO: Calculating STA/LTA.
+[2015-09-30 09:55:53,815] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
+[2015-09-30 09:55:53,823] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
+[2015-09-30 09:55:53,849] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
+[2015-09-30 09:55:53,927] - pyflex - INFO: Water level rejection retained 36 windows
+[2015-09-30 09:55:53,931] - pyflex - INFO: Single phase group rejection retained 14 windows
+[2015-09-30 09:55:53,933] - pyflex - INFO: Removing duplicates retains 14 windows.
+[2015-09-30 09:55:53,934] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+[2015-09-30 09:55:53,935] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+[2015-09-30 09:55:53,941] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+[2015-09-30 09:55:53,950] - pyflex - INFO: Merging windows resulted in 4 windows.
 </pre></div>
 </div>
 </div>

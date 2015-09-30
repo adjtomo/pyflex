@@ -13,8 +13,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 from future import standard_library
-with standard_library.hooks():
-    import itertools
 
 import json
 import numpy as np
@@ -30,6 +28,9 @@ from . import PyflexError, PyflexWarning, utils, logger, Event, Station
 from .stalta import sta_lta
 from .window import Window
 from .interval_scheduling import schedule_weighted_intervals
+
+with standard_library.hooks():
+    import itertools
 
 
 class WindowSelector(object):
@@ -522,8 +523,8 @@ class WindowSelector(object):
         max_time = dist_in_km / self.config.min_surface_wave_velocity + offset
 
         self.windows = [win for win in self.windows
-                        if (win.relative_endtime >= min_time)
-                        and (win.relative_starttime <= max_time)]
+                        if (win.relative_endtime >= min_time) and
+                        (win.relative_starttime <= max_time)]
         logger.info("Rejection based on travel times retained %i windows." %
                     len(self.windows))
 

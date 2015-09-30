@@ -13,11 +13,12 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 from future import standard_library
-with standard_library.hooks():
-    import itertools
 
 import numpy as np
 from scipy.signal import argrelextrema
+
+with standard_library.hooks():
+    import itertools
 
 
 def find_local_extrema(data):

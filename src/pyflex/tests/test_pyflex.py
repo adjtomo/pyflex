@@ -175,8 +175,8 @@ def test_custom_weight_function():
     # Not setting it will result in the default value.
     config.window_weight_fct = None
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
-    assert False == \
-        np.all(np.array([_i.max_cc_value for _i in windows]) >= 0.95)
+    assert bool(np.all(np.array([_i.max_cc_value for _i in windows]) >=
+                       0.95)) is False
 
 
 def test_runs_without_event_information(recwarn):

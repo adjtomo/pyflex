@@ -133,8 +133,8 @@ def test_window_selection():
 
     # Assert the phases of the first window.
     assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \
-        [u'PKPdf', u'PKSdf', u'PKiKP', u'PP', u'SKPdf', u'SKiKP', u'pPKPdf',
-         u'pPKiKP', u'sPKPdf', u'sPKiKP']
+        ['PKIKP', 'PKIKS', 'PKiKP', 'PP', 'SKIKP', 'SKiKP', 'pPKIKP', 'pPKiKP',
+         'sPKIKP', 'sPKiKP']
 
 
 def test_cc_config_setting():

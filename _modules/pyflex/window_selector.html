@@ -64,8 +64,6 @@
                         <span class="n">unicode_literals</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">future.builtins</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># NOQA</span>
 <span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
-<span class="k">with</span> <span class="n">standard_library</span><span class="o">.</span><span class="n">hooks</span><span class="p">():</span>
-    <span class="kn">import</span> <span class="nn">itertools</span>
 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
@@ -81,6 +79,9 @@
 <span class="kn">from</span> <span class="nn">.stalta</span> <span class="kn">import</span> <span class="n">sta_lta</span>
 <span class="kn">from</span> <span class="nn">.window</span> <span class="kn">import</span> <span class="n">Window</span>
 <span class="kn">from</span> <span class="nn">.interval_scheduling</span> <span class="kn">import</span> <span class="n">schedule_weighted_intervals</span>
+
+<span class="k">with</span> <span class="n">standard_library</span><span class="o">.</span><span class="n">hooks</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">itertools</span>
 
 
 <div class="viewcode-block" id="WindowSelector"><a class="viewcode-back" href="../../index.html#pyflex.window_selector.WindowSelector">[docs]</a><span class="k">class</span> <span class="nc">WindowSelector</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -573,8 +574,8 @@
         <span class="n">max_time</span> <span class="o">=</span> <span class="n">dist_in_km</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_surface_wave_velocity</span> <span class="o">+</span> <span class="n">offset</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="n">win</span> <span class="k">for</span> <span class="n">win</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">windows</span>
-                        <span class="k">if</span> <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">relative_endtime</span> <span class="o">&gt;=</span> <span class="n">min_time</span><span class="p">)</span>
-                        <span class="ow">and</span> <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">relative_starttime</span> <span class="o">&lt;=</span> <span class="n">max_time</span><span class="p">)]</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">relative_endtime</span> <span class="o">&gt;=</span> <span class="n">min_time</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="p">(</span><span class="n">win</span><span class="o">.</span><span class="n">relative_starttime</span> <span class="o">&lt;=</span> <span class="n">max_time</span><span class="p">)]</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Rejection based on travel times retained </span><span class="si">%i</span><span class="s"> windows.&quot;</span> <span class="o">%</span>
                     <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
 </div>

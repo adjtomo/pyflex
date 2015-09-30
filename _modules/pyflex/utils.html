@@ -64,11 +64,12 @@
                         <span class="n">unicode_literals</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">future.builtins</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c"># NOQA</span>
 <span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
-<span class="k">with</span> <span class="n">standard_library</span><span class="o">.</span><span class="n">hooks</span><span class="p">():</span>
-    <span class="kn">import</span> <span class="nn">itertools</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelextrema</span>
+
+<span class="k">with</span> <span class="n">standard_library</span><span class="o">.</span><span class="n">hooks</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">itertools</span>
 
 
 <div class="viewcode-block" id="find_local_extrema"><a class="viewcode-back" href="../../index.html#pyflex.utils.find_local_extrema">[docs]</a><span class="k">def</span> <span class="nf">find_local_extrema</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>

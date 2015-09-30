@@ -25,8 +25,8 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
   - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose pytest flake8 sphinx lxml sqlalchemy mock ipython-notebook nose future
   - conda install --yes -c obspy obspy
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors sphinx-readable-theme ; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors runipy ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install sphinx-readable-theme ; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install runipy ; fi
   - pip install coveralls
 
 install:

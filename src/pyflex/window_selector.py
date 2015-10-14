@@ -342,7 +342,7 @@ class WindowSelector(object):
         self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:
             if not self.check_data_quality():
-                return
+                return []
 
         # Perform all window selection steps.
         self.initial_window_selection()
@@ -512,18 +512,18 @@ class WindowSelector(object):
 
         if snr_int < self.config.snr_integrate_base:
             msg = ("Whole waveform rejected as the integrated signal to "
-                   "noise ratio (%f) is above the threshold (%f)." %
+                   "noise ratio (%f) is above the threshold (%f). No window "
+                   "will be selected." %
                    (snr_int, self.config.snr_integrate_base))
             logger.warn(msg)
-            warnings.warn(msg, PyflexWarning)
             return False
 
         if snr_amp < self.config.snr_max_base:
             msg = ("Whole waveform rejected as the signal to noise amplitude "
-                   "ratio (%f) is above the threshold (%f)." % (
+                   "ratio (%f) is above the threshold (%f). No window will"
+                   "be selected." % (
                        snr_amp, self.config.snr_max_base))
             logger.warn(msg)
-            warnings.warn(msg, PyflexWarning)
             return False
 
         logger.info("Global SNR checks passed. Integrated SNR: %f, Amplitude "
@@ -765,10 +765,7 @@ class WindowSelector(object):
             time_decay_right = self.config.min_period * self.config.c_4b / dt
             # Find all internal maxima.
             internal_maxima = self.peaks[
-                (self.peaks >= win.left) & (self.peaks <= win.right) &
-                (self.peaks != win.center)]
-            if len(internal_maxima) < 2:
-                return win
+                (self.peaks >= win.left) & (self.peaks <= win.right) ]
             i_left = internal_maxima[0]
             i_right = internal_maxima[-1]
 
@@ -827,12 +824,12 @@ class WindowSelector(object):
             dlnA_max = self.config.dlna_reference + \
                 self.config.dlna_acceptance_level[win.center]
 
-            if not (tshift_min < win.cc_shift *
-                    self.observed.stats.delta < tshift_max):
+            if not (tshift_min <= win.cc_shift *
+                    self.observed.stats.delta <= tshift_max):
                 logger.debug("Window rejected due to time shift:    %6.2f %6.1f %6.1f" %
                              (win.cc_shift, win.relative_starttime, win.relative_endtime))
                 return False
-            if not (dlnA_min < win.dlnA < dlnA_max):
+            if not (dlnA_min <= win.dlnA <= dlnA_max):
                 logger.debug("Window rejected due to amplitude fit: %6.2f %6.1f %6.1f" %
                              (win.dlnA, win.relative_starttime, win.relative_endtime))
                 return False

@@ -29,31 +29,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
 
   </head>
-  <body>
+  <body role="document">
   
   
   <div class="indexwrapper">
   
 
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
-        <li><a href="#">Pyflex 0.1.4 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="#">Pyflex 0.1.4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="pyflex">
 <h1>Pyflex<a class="headerlink" href="#pyflex" title="Permalink to this headline">¶</a></h1>
-<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> is a Python port of the <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm for
+<p><code class="docutils literal"><span class="pre">Pyflex</span></code> is a Python port of the <code class="docutils literal"><span class="pre">FLEXWIN</span></code> algorithm for
 automatically selecting windows for seismic tomography. For the most
-part it mimicks the calculations of the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> package;
+part it mimicks the calculations of the original <code class="docutils literal"><span class="pre">FLEXWIN</span></code> package;
 minor differences and their reasoning are detailed later.</p>
-<p>To give credit where credit is due, the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> program can
+<p>To give credit where credit is due, the original <code class="docutils literal"><span class="pre">FLEXWIN</span></code> program can
 be downloaded <a class="reference external" href="http://geodynamics.org/cig/software/flexwin/">here</a>,
 the corresponding publication is</p>
 <blockquote>
@@ -61,27 +61,27 @@ the corresponding publication is</p>
 automated time-window selection algorithm for seismic tomography.</strong>
 <em>Geophysical Journal International</em>, 178(1), 257–281
 <a class="reference external" href="http://dx.doi.org/10.1111/j.1365-246X.2009.04099.x">doi:10.1111/j.1365-246X.2009.04099.x</a></div></blockquote>
-<p>If you use <tt class="docutils literal"><span class="pre">Pyflex</span></tt>, please also cite the latest released version:
+<p>If you use <code class="docutils literal"><span class="pre">Pyflex</span></code>, please also cite the latest released version:
 <a class="reference external" href="http://dx.doi.org/10.5281/zenodo.31607">http://dx.doi.org/10.5281/zenodo.31607</a></p>
-<p>The source code for <tt class="docutils literal"><span class="pre">Pyflex</span></tt> lives on Github:
+<p>The source code for <code class="docutils literal"><span class="pre">Pyflex</span></code> lives on Github:
 <a class="reference external" href="https://github.com/krischer/pyflex">https://github.com/krischer/pyflex</a>. If you encounter any problems with
 it please open an issue or submit a pull request.</p>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilizes <a class="reference external" href="http://obspy.org">ObsPy</a> (and some of its
+<p><code class="docutils literal"><span class="pre">Pyflex</span></code> utilizes <a class="reference external" href="http://obspy.org">ObsPy</a> (and some of its
 dependencies) for the processing and data handling. As a first step,
 please follow the <a class="reference external" href="https://github.com/obspy/obspy/wiki#installation">installation instructions of
 ObsPy</a> for your
 given platform (we recommend the installation with
 <a class="reference external" href="https://github.com/obspy/obspy/wiki/Installation-via-Anaconda">Anaconda</a>
 as it will most likely result in the least amount of problems).
-<tt class="docutils literal"><span class="pre">Pyflex</span></tt> should work with Python versions 2.7, 3.3, and 3.4 (mainly
-depends on the used ObsPy version). To install it, best use <tt class="docutils literal"><span class="pre">pip</span></tt>:</p>
+<code class="docutils literal"><span class="pre">Pyflex</span></code> should work with Python versions 2.7, 3.3, and 3.4 (mainly
+depends on the used ObsPy version). To install it, best use <code class="docutils literal"><span class="pre">pip</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ pip install pyflex
 </pre></div>
 </div>
 <p>If you want the latest development version, or want to work on the code,
-you will have to install with the help of <tt class="docutils literal"><span class="pre">git</span></tt>.</p>
+you will have to install with the help of <code class="docutils literal"><span class="pre">git</span></code>.</p>
 <div class="highlight-python"><div class="highlight"><pre>$ git clone https://github.com/krischer/pyflex.git
 $ cd pyflex
 $ pip install -v -e .
@@ -107,9 +107,9 @@ import pyflex
 <div class="highlight-python"><div class="highlight"><pre>Populating the interactive namespace from numpy and matplotlib
 </pre></div>
 </div>
-<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> expects both observed and synthetic data to already be fully
+<p><code class="docutils literal"><span class="pre">Pyflex</span></code> expects both observed and synthetic data to already be fully
 processed. An easy way to accomplish this is to utilize ObsPy. This
-example reproduces what the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> package does when it is
+example reproduces what the original <code class="docutils literal"><span class="pre">FLEXWIN</span></code> package does when it is
 told to also perform the filtering.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">obs_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../src/pyflex/tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC&quot;</span><span class="p">)</span>
 <span class="n">synth_data</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&quot;../src/pyflex/tests/data/ABKT.II.LHZ.semd.sac&quot;</span><span class="p">)</span>
@@ -129,7 +129,7 @@ told to also perform the filtering.</p>
 II.ABKT..LHZ | 1995-05-02T05:57:53.500006Z - 1995-05-02T08:06:13.500006Z | 1.0 Hz, 7701 samples
 </pre></div>
 </div>
-<p>The configuration is encapsuled within a <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a> object. It thus replaces the need for a PAR_FILE and the user functions. Please refer to the <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a> object&#8217;s documentation for more details.</p>
+<p>The configuration is encapsuled within a <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><code class="xref py py-class docutils literal"><span class="pre">Config</span></code></a> object. It thus replaces the need for a PAR_FILE and the user functions. Please refer to the <a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><code class="xref py py-class docutils literal"><span class="pre">Config</span></code></a> object&#8217;s documentation for more details.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">config</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
     <span class="n">min_period</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">max_period</span><span class="o">=</span><span class="mf">150.0</span><span class="p">,</span>
     <span class="n">stalta_waterlevel</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">tshift_acceptance_level</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span>
@@ -137,7 +137,7 @@ II.ABKT..LHZ | 1995-05-02T05:57:53.500006Z - 1995-05-02T08:06:13.500006Z | 1.0 H
     <span class="n">c_0</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">c_1</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">c_2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">c_3a</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">c_3b</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">c_4a</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">c_4b</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Observed and synthetic waveforms can be passed as either ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Trace</span></tt></a> objects, or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Stream</span></tt></a> objects with one component. The optional <tt class="docutils literal"><span class="pre">plot</span></tt> parameter determines if a plot is produced or not. The <a class="reference internal" href="#pyflex.flexwin.select_windows" title="pyflex.flexwin.select_windows"><tt class="xref py py-func docutils literal"><span class="pre">select_windows()</span></tt></a> function is the high level interface suitable for most users of <tt class="docutils literal"><span class="pre">Pyflex</span></tt>. Please refer to its documentation for further details.</p>
+<p>Observed and synthetic waveforms can be passed as either ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Trace</span></code></a> objects, or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Stream</span></code></a> objects with one component. The optional <code class="docutils literal"><span class="pre">plot</span></code> parameter determines if a plot is produced or not. The <a class="reference internal" href="#pyflex.flexwin.select_windows" title="pyflex.flexwin.select_windows"><code class="xref py py-func docutils literal"><span class="pre">select_windows()</span></code></a> function is the high level interface suitable for most users of <code class="docutils literal"><span class="pre">Pyflex</span></code>. Please refer to its documentation for further details.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -145,7 +145,7 @@ II.ABKT..LHZ | 1995-05-02T05:57:53.500006Z - 1995-05-02T08:06:13.500006Z | 1.0 H
 </div>
 <div class="section" id="windows">
 <h2>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h2>
-<p>It returns a sorted list of <a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><tt class="xref py py-class docutils literal"><span class="pre">Window</span></tt></a> objects which can then be used in further applications.</p>
+<p>It returns a sorted list of <a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><code class="xref py py-class docutils literal"><span class="pre">Window</span></code></a> objects which can then be used in further applications.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pprint</span>
 <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">windows</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
 </pre></div>
@@ -156,11 +156,11 @@ II.ABKT..LHZ | 1995-05-02T05:57:53.500006Z - 1995-05-02T08:06:13.500006Z | 1.0 H
 </pre></div>
 </div>
 <p>Each window contains a number of properties that can be used to
-calculate absolute and relative times for the specific window. <tt class="docutils literal"><span class="pre">left</span></tt>
-and <tt class="docutils literal"><span class="pre">right</span></tt> specify the boundary indices of a window,
-<tt class="docutils literal"><span class="pre">absolute_starttime</span></tt> and <tt class="docutils literal"><span class="pre">absolute_endtime</span></tt> are the absolute times
+calculate absolute and relative times for the specific window. <code class="docutils literal"><span class="pre">left</span></code>
+and <code class="docutils literal"><span class="pre">right</span></code> specify the boundary indices of a window,
+<code class="docutils literal"><span class="pre">absolute_starttime</span></code> and <code class="docutils literal"><span class="pre">absolute_endtime</span></code> are the absolute times
 of a window&#8217;s bounds as ObsPy UTCDateTime objects, and
-<tt class="docutils literal"><span class="pre">relative_starttime</span></tt> and <tt class="docutils literal"><span class="pre">relative_endtime</span></tt> are the bounds of a
+<code class="docutils literal"><span class="pre">relative_starttime</span></code> and <code class="docutils literal"><span class="pre">relative_endtime</span></code> are the bounds of a
 window in seconds since the first sample of the data arrays (not
 necessarily identical to the event origin time!).</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">win</span> <span class="o">=</span> <span class="n">windows</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
@@ -194,12 +194,12 @@ the event origin.</p>
 </div>
 <div class="section" id="event-and-station-information">
 <h2>Event and Station Information<a class="headerlink" href="#event-and-station-information" title="Permalink to this headline">¶</a></h2>
-<p>While <tt class="docutils literal"><span class="pre">Pyflex</span></tt> can also operate without any event and station
+<p>While <code class="docutils literal"><span class="pre">Pyflex</span></code> can also operate without any event and station
 information, it needs some information to work at full efficiency. In
 case the waveform traces originate from SAC files, they might contain
-the necessary information. <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is able to extract that
+the necessary information. <code class="docutils literal"><span class="pre">Pyflex</span></code> is able to extract that
 information but this should really be seen as a last resort.</p>
-<p>The easiest way to pass the necessary information to <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is to
+<p>The easiest way to pass the necessary information to <code class="docutils literal"><span class="pre">Pyflex</span></code> is to
 use its very bare bones event and station objects.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">latitude</span><span class="o">=-</span><span class="mf">3.77</span><span class="p">,</span> <span class="n">longitude</span><span class="o">=-</span><span class="mf">77.07</span><span class="p">,</span> <span class="n">depth_in_m</span><span class="o">=</span><span class="mi">112800</span><span class="p">,</span>
                      <span class="n">origin_time</span><span class="o">=</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="mi">1995</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">13</span><span class="p">))</span>
@@ -209,7 +209,7 @@ use its very bare bones event and station objects.</p>
                                 <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Catalog</span></tt></a> or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> objects. Station information on the other hand can be passed as an <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Inventory</span></tt></a> object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.</p>
+<p>A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Catalog</span></code></a> or <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Event</span></code></a> objects. Station information on the other hand can be passed as an <a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Inventory</span></code></a> object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">event</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">readEvents</span><span class="p">(</span><span class="s">&quot;../events/event_1.xml&quot;</span><span class="p">)</span>
 <span class="n">station</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="s">&quot;../stations/II_ABKT.xml&quot;</span><span class="p">)</span>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
@@ -220,14 +220,14 @@ use its very bare bones event and station objects.</p>
 <div class="section" id="de-serializing-windows">
 <h2>(De)Serializing Windows<a class="headerlink" href="#de-serializing-windows" title="Permalink to this headline">¶</a></h2>
 <p>In case necessary, windows can also be written to and read from disc.
-<tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilizes a simple JSON representation of the windows. The
-<tt class="docutils literal"><span class="pre">windows_filename</span></tt> parameter determines the filename if given.</p>
+<code class="docutils literal"><span class="pre">Pyflex</span></code> utilizes a simple JSON representation of the windows. The
+<code class="docutils literal"><span class="pre">windows_filename</span></code> parameter determines the filename if given.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
                                 <span class="n">windows_filename</span><span class="o">=</span><span class="s">&quot;windows.json&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The resulting JSON file will have a list of Window objects under the
-<tt class="docutils literal"><span class="pre">&quot;windows&quot;</span></tt> key.</p>
+<code class="docutils literal"><span class="pre">&quot;windows&quot;</span></code> key.</p>
 <div class="highlight-JSON"><div class="highlight"><pre><span class="p">{</span>
     <span class="nt">&quot;windows&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
@@ -250,7 +250,7 @@ use its very bare bones event and station objects.</p>
                     <span class="nt">&quot;time&quot;</span><span class="p">:</span> <span class="mf">1130.1885258957911</span>
 </pre></div>
 </div>
-<p>To read the windows again you will have to utilize the lower level <a class="reference internal" href="#pyflex.window_selector.WindowSelector" title="pyflex.window_selector.WindowSelector"><tt class="xref py py-class docutils literal"><span class="pre">WindowSelector</span></tt></a> class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.</p>
+<p>To read the windows again you will have to utilize the lower level <a class="reference internal" href="#pyflex.window_selector.WindowSelector" title="pyflex.window_selector.WindowSelector"><code class="xref py py-class docutils literal"><span class="pre">WindowSelector</span></code></a> class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">ws2</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">WindowSelector</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="s">&quot;Windows before loading: </span><span class="si">%i</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ws2</span><span class="o">.</span><span class="n">windows</span><span class="p">))</span>
 <span class="n">ws2</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&quot;windows.json&quot;</span><span class="p">)</span>
@@ -264,25 +264,25 @@ Windows after loading: 9
 </div>
 <div class="section" id="difference-to-the-original-flexwin-algorithm">
 <h2>Difference to the original FLEXWIN algorithm<a class="headerlink" href="#difference-to-the-original-flexwin-algorithm" title="Permalink to this headline">¶</a></h2>
-<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> largely follows the original <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm. The major
+<p><code class="docutils literal"><span class="pre">Pyflex</span></code> largely follows the original <code class="docutils literal"><span class="pre">FLEXWIN</span></code> algorithm. The major
 differences are outlined here.</p>
 <ul class="simple">
 <li>The found local extrema of the STA/LTA functional might differ a bit.
-In case of a &#8220;flat&#8221; extrema, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> will always find the leftmost
+In case of a &#8220;flat&#8221; extrema, <code class="docutils literal"><span class="pre">Pyflex</span></code> will always find the leftmost
 index.</li>
 <li>The order of rejection stages has been changed a bit to assure
 cheaper eliminations are run first. This results in a significant
 speed boost.</li>
 <li>The water/acceptance level of the data fit criteria is now evaluated
 at the center of each windows and not at the central peak.</li>
-<li>The Config object has a <tt class="docutils literal"><span class="pre">min_surface_wave_velocity</span></tt> parameter which
+<li>The Config object has a <code class="docutils literal"><span class="pre">min_surface_wave_velocity</span></code> parameter which
 can be used to easily discard windows for late arriving surface/coda
 waves.</li>
 </ul>
 <div class="section" id="overlap-resolution-strategy">
 <h3>Overlap Resolution Strategy<a class="headerlink" href="#overlap-resolution-strategy" title="Permalink to this headline">¶</a></h3>
 <p>Instead of using the overlap resolution strategy outlined in section
-<strong>2.5 Stage E</strong> in the <tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> paper, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilizes weighted
+<strong>2.5 Stage E</strong> in the <code class="docutils literal"><span class="pre">FLEXWIN</span></code> paper, <code class="docutils literal"><span class="pre">Pyflex</span></code> utilizes weighted
 interval scheduling which is a classical IT problem. The weighted
 interval scheduling algorithm finds the best possible subset of
 non-overlapping windows by maximizing the cumulative weight of all
@@ -290,8 +290,8 @@ chosen windows. By default the weight of each window is its length in
 terms of minimum period of the data times the maximum cross correlation
 coefficient. The weighting function can be overwritten with the help of
 the Config object. This results in similar windows to the original
-<tt class="docutils literal"><span class="pre">FLEXWIN</span></tt> algorithm but is easier to reason about.</p>
-<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> furthermore offers the option to merge all good candidate
+<code class="docutils literal"><span class="pre">FLEXWIN</span></code> algorithm but is easier to reason about.</p>
+<p><code class="docutils literal"><span class="pre">Pyflex</span></code> furthermore offers the option to merge all good candidate
 windows. This is useful for some misfit measurements.</p>
 <div class="code python highlight-python"><div class="highlight"><pre><span class="n">config</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
     <span class="n">min_period</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">max_period</span><span class="o">=</span><span class="mf">150.0</span><span class="p">,</span>
@@ -307,8 +307,8 @@ windows. This is useful for some misfit measurements.</p>
 </div>
 <div class="section" id="logging">
 <h2>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h2>
-<p>By default, <tt class="docutils literal"><span class="pre">Pyflex</span></tt> is fairly quiet and will only raise exceptions
-and warnings in case they occur. <tt class="docutils literal"><span class="pre">Pyflex</span></tt> utilizes Python&#8217;s <a class="reference external" href="https://docs.python.org/2/library/logging.html">logging
+<p>By default, <code class="docutils literal"><span class="pre">Pyflex</span></code> is fairly quiet and will only raise exceptions
+and warnings in case they occur. <code class="docutils literal"><span class="pre">Pyflex</span></code> utilizes Python&#8217;s <a class="reference external" href="https://docs.python.org/2/library/logging.html">logging
 facilities</a> so if you
 want more information you can hook into them. This approach is very
 flexible as it allows you to install custom logging handlers and
@@ -320,21 +320,21 @@ channels.</p>
 <span class="n">windows</span> <span class="o">=</span> <span class="n">pyflex</span><span class="o">.</span><span class="n">select_windows</span><span class="p">(</span><span class="n">obs_data</span><span class="p">,</span> <span class="n">synth_data</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-python"><div class="highlight"><pre>[2015-09-30 09:55:53,644] - pyflex - INFO: Extracted station information from observed SAC file.
-[2015-09-30 09:55:53,645] - pyflex - INFO: Extracted event information from observed SAC file.
-[2015-09-30 09:55:53,743] - pyflex - INFO: Calculated travel times.
-[2015-09-30 09:55:53,744] - pyflex - INFO: Calculating envelope of synthetics.
-[2015-09-30 09:55:53,746] - pyflex - INFO: Calculating STA/LTA.
-[2015-09-30 09:55:53,815] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
-[2015-09-30 09:55:53,823] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
-[2015-09-30 09:55:53,849] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
-[2015-09-30 09:55:53,927] - pyflex - INFO: Water level rejection retained 36 windows
-[2015-09-30 09:55:53,931] - pyflex - INFO: Single phase group rejection retained 14 windows
-[2015-09-30 09:55:53,933] - pyflex - INFO: Removing duplicates retains 14 windows.
-[2015-09-30 09:55:53,934] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
-[2015-09-30 09:55:53,935] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
-[2015-09-30 09:55:53,941] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
-[2015-09-30 09:55:53,950] - pyflex - INFO: Merging windows resulted in 4 windows.
+<div class="highlight-python"><div class="highlight"><pre>[2015-10-20 15:18:38,966] - pyflex - INFO: Extracted station information from observed SAC file.
+[2015-10-20 15:18:38,967] - pyflex - INFO: Extracted event information from observed SAC file.
+[2015-10-20 15:18:39,042] - pyflex - INFO: Calculated travel times.
+[2015-10-20 15:18:39,043] - pyflex - INFO: Calculating envelope of synthetics.
+[2015-10-20 15:18:39,044] - pyflex - INFO: Calculating STA/LTA.
+[2015-10-20 15:18:39,096] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
+[2015-10-20 15:18:39,101] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
+[2015-10-20 15:18:39,119] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
+[2015-10-20 15:18:39,175] - pyflex - INFO: Water level rejection retained 36 windows
+[2015-10-20 15:18:39,178] - pyflex - INFO: Single phase group rejection retained 14 windows
+[2015-10-20 15:18:39,179] - pyflex - INFO: Removing duplicates retains 14 windows.
+[2015-10-20 15:18:39,179] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+[2015-10-20 15:18:39,180] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+[2015-10-20 15:18:39,185] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+[2015-10-20 15:18:39,192] - pyflex - INFO: Merging windows resulted in 4 windows.
 </pre></div>
 </div>
 </div>
@@ -347,7 +347,7 @@ details you can always have a look at the code.</p>
 <h2>Config Object<a class="headerlink" href="#config-object" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyflex.config.Config">
-<em class="property">class </em><tt class="descclassname">pyflex.config.</tt><tt class="descname">Config</tt><big>(</big><em>min_period</em>, <em>max_period</em>, <em>stalta_waterlevel=0.07</em>, <em>tshift_acceptance_level=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_acceptance_level=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_acceptance_level=0.7</em>, <em>s2n_limit=1.5</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>max_time_before_first_arrival=50.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em>, <em>check_global_data_quality=False</em>, <em>snr_integrate_base=3.5</em>, <em>snr_max_base=3.0</em>, <em>noise_start_index=0</em>, <em>noise_end_index=None</em>, <em>signal_start_index=None</em>, <em>signal_end_index=-1</em>, <em>window_weight_fct=None</em>, <em>window_signal_to_noise_type=u'amplitude'</em>, <em>resolution_strategy=u'interval_scheduling'</em><big>)</big><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyflex.config.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>min_period</em>, <em>max_period</em>, <em>stalta_waterlevel=0.07</em>, <em>tshift_acceptance_level=10.0</em>, <em>tshift_reference=0.0</em>, <em>dlna_acceptance_level=1.3</em>, <em>dlna_reference=0.0</em>, <em>cc_acceptance_level=0.7</em>, <em>s2n_limit=1.5</em>, <em>earth_model=u'ak135'</em>, <em>min_surface_wave_velocity=3.0</em>, <em>max_time_before_first_arrival=50.0</em>, <em>c_0=1.0</em>, <em>c_1=1.5</em>, <em>c_2=0.0</em>, <em>c_3a=4.0</em>, <em>c_3b=2.5</em>, <em>c_4a=2.0</em>, <em>c_4b=6.0</em>, <em>check_global_data_quality=False</em>, <em>snr_integrate_base=3.5</em>, <em>snr_max_base=3.0</em>, <em>noise_start_index=0</em>, <em>noise_end_index=None</em>, <em>signal_start_index=None</em>, <em>signal_end_index=-1</em>, <em>window_weight_fct=None</em>, <em>window_signal_to_noise_type=u'amplitude'</em>, <em>resolution_strategy=u'interval_scheduling'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.config.Config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Central configuration object for Pyflex.</p>
 <p>This replaces the old PAR_FILEs and user functions. It has sensible
 defaults for most values but you will probably want to adjust them
@@ -390,28 +390,28 @@ arbitrarily complex.</p>
 seconds.</li>
 <li><strong>max_period</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Maximum period of the filtered input data in
 seconds.</li>
-<li><strong>stalta_waterlevel</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><tt class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></tt></a>) &#8211; Water level on the STA/LTA functional. Can
+<li><strong>stalta_waterlevel</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code></a>) &#8211; Water level on the STA/LTA functional. Can
 be either a single value or an array with the same number of
 samples as the data.</li>
-<li><strong>tshift_acceptance_level</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><tt class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></tt></a>) &#8211; Maximum allowable cross correlation
+<li><strong>tshift_acceptance_level</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code></a>) &#8211; Maximum allowable cross correlation
 time shift/lag relative to the reference. Can be either a single
 value or an array with the same number of samples as the data.</li>
 <li><strong>tshift_reference</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Allows a systematic shift of the cross
 correlation time lag.</li>
-<li><strong>dlna_acceptance_level</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><tt class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></tt></a>) &#8211; Maximum allowable amplitude ratio
+<li><strong>dlna_acceptance_level</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code></a>) &#8211; Maximum allowable amplitude ratio
 relative to the reference. Can be either a single value or an
 array with the same number of samples as the data.</li>
 <li><strong>dlna_reference</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Reference DLNA level. Allows a systematic shift.</li>
-<li><strong>cc_acceptance_level</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><tt class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></tt></a>) &#8211; Limit on the normalized cross correlation
+<li><strong>cc_acceptance_level</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code></a>) &#8211; Limit on the normalized cross correlation
 per window. Can be either a single value or an array with the
 same number of samples as the data.</li>
-<li><strong>s2n_limit</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><tt class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></tt></a>) &#8211; Limit of the signal to noise ratio per window. If
+<li><strong>s2n_limit</strong> (float or <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.9)"><code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code></a>) &#8211; Limit of the signal to noise ratio per window. If
 the maximum amplitude of the window over the maximum amplitude
 of the global noise of the waveforms is smaller than this
 window, then it will be rejected. Can be either a single value
 or an array with the same number of samples as the data.</li>
 <li><strong>earth_model</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The earth model used for the traveltime
-calculations. Either <tt class="docutils literal"><span class="pre">&quot;ak135&quot;</span></tt> or <tt class="docutils literal"><span class="pre">&quot;iasp91&quot;</span></tt>.</li>
+calculations. Either <code class="docutils literal"><span class="pre">&quot;ak135&quot;</span></code> or <code class="docutils literal"><span class="pre">&quot;iasp91&quot;</span></code>.</li>
 <li><strong>min_surface_wave_velocity</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The minimum surface wave velocity
 in km/s. All windows containing data later then this velocity
 will be rejected. Only used if station and event information is
@@ -447,11 +447,11 @@ is above the thresholds.</li>
 the signal normalized by its length over the squared sum of the
 noise normalized by its length is smaller then this value,
 no windows will be chosen for the waveforms. Only used if
-<tt class="docutils literal"><span class="pre">check_global_data_quality</span></tt> is <tt class="docutils literal"><span class="pre">True</span></tt>.</li>
+<code class="docutils literal"><span class="pre">check_global_data_quality</span></code> is <code class="docutils literal"><span class="pre">True</span></code>.</li>
 <li><strong>snr_max_base</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Minimal amplitude SNR ratio. If the maximum
 amplitude of the signal over the maximum amplitude of the noise
 is smaller than this value no windows will be chosen for the
-waveforms. Only used if  <tt class="docutils literal"><span class="pre">check_global_data_quality</span></tt> is <tt class="docutils literal"><span class="pre">True</span></tt>.</li>
+waveforms. Only used if  <code class="docutils literal"><span class="pre">check_global_data_quality</span></code> is <code class="docutils literal"><span class="pre">True</span></code>.</li>
 <li><strong>noise_start_index</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index in the observed data where noise
 starts for the signal to noise calculations.</li>
 <li><strong>noise_end_index</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index in the observed data where noise
@@ -465,16 +465,16 @@ not given.</li>
 to noise calculations.</li>
 <li><strong>window_weight_fct</strong> (<em>function</em>) &#8211; A function returning the weight for a
 specific window as a single number. Directly passed to the
-<a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><tt class="xref py py-class docutils literal"><span class="pre">Window</span></tt></a> &#8216;s initialization function.</li>
+<a class="reference internal" href="#pyflex.window.Window" title="pyflex.window.Window"><code class="xref py py-class docutils literal"><span class="pre">Window</span></code></a> &#8216;s initialization function.</li>
 <li><strong>window_signal_to_noise_type</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The type of signal to noise
-ratio used to reject windows. If <tt class="docutils literal"><span class="pre">&quot;amplitude&quot;</span></tt>, then the
+ratio used to reject windows. If <code class="docutils literal"><span class="pre">&quot;amplitude&quot;</span></code>, then the
 largest amplitude before the arrival is the noise amplitude and
 the largest amplitude in the window is the signal amplitude. If
-<tt class="docutils literal"><span class="pre">&quot;energy&quot;</span></tt> the time normalized energy is used in both cases.
+<code class="docutils literal"><span class="pre">&quot;energy&quot;</span></code> the time normalized energy is used in both cases.
 The later one is a bit more stable when having random wiggles
 before the first arrival.</li>
 <li><strong>resolution_strategy</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Strategy used to resolve overlaps.
-Possibilities are <tt class="docutils literal"><span class="pre">&quot;interval_scheduling&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;merge&quot;</span></tt>.
+Possibilities are <code class="docutils literal"><span class="pre">&quot;interval_scheduling&quot;</span></code> and <code class="docutils literal"><span class="pre">&quot;merge&quot;</span></code>.
 Interval scheduling will chose the optimal subset of
 non-overlapping windows. Merging will simply merge overlapping
 windows.</li>
@@ -490,25 +490,25 @@ windows.</li>
 <h2>Main select_windows() function<a class="headerlink" href="#main-select-windows-function" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="pyflex.flexwin.select_windows">
-<tt class="descclassname">pyflex.flexwin.</tt><tt class="descname">select_windows</tt><big>(</big><em>observed</em>, <em>synthetic</em>, <em>config</em>, <em>event=None</em>, <em>station=None</em>, <em>plot=False</em>, <em>plot_filename=None</em>, <em>windows_filename=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/flexwin.html#select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.flexwin.select_windows" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyflex.flexwin.</code><code class="descname">select_windows</code><span class="sig-paren">(</span><em>observed</em>, <em>synthetic</em>, <em>config</em>, <em>event=None</em>, <em>station=None</em>, <em>plot=False</em>, <em>plot_filename=None</em>, <em>windows_filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/flexwin.html#select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.flexwin.select_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience function for selecting (and plotting) windows.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>observed</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Trace</span></tt></a> or single component
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Stream</span></tt></a>) &#8211; The preprocessed, observed waveform.</li>
+<li><strong>observed</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Trace</span></code></a> or single component
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Stream</span></code></a>) &#8211; The preprocessed, observed waveform.</li>
 <li><strong>observed</strong> &#8211; The preprocessed, synthetic waveform.</li>
-<li><strong>config</strong> (<a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a>) &#8211; Configuration object.</li>
-<li><strong>event</strong> (A Pyflex <a class="reference internal" href="#pyflex.Event" title="pyflex.Event"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> object,  an ObsPy
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Catalog</span></tt></a> object, or an ObsPy
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> object) &#8211; The event information. Either a Pyflex Event object,
+<li><strong>config</strong> (<a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><code class="xref py py-class docutils literal"><span class="pre">Config</span></code></a>) &#8211; Configuration object.</li>
+<li><strong>event</strong> (A Pyflex <a class="reference internal" href="#pyflex.Event" title="pyflex.Event"><code class="xref py py-class docutils literal"><span class="pre">Event</span></code></a> object,  an ObsPy
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Catalog</span></code></a> object, or an ObsPy
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Event</span></code></a> object) &#8211; The event information. Either a Pyflex Event object,
 or an ObsPy Catalog or Event object. If not given this information
 will be extracted from the data traces if either originates from a
 SAC file.</li>
-<li><strong>station</strong> (A Pyflex <a class="reference internal" href="#pyflex.Station" title="pyflex.Station"><tt class="xref py py-class docutils literal"><span class="pre">Station</span></tt></a> object or an ObsPy
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Inventory</span></tt></a> object) &#8211; The station information. Either a Pyflex Station object,
+<li><strong>station</strong> (A Pyflex <a class="reference internal" href="#pyflex.Station" title="pyflex.Station"><code class="xref py py-class docutils literal"><span class="pre">Station</span></code></a> object or an ObsPy
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Inventory</span></code></a> object) &#8211; The station information. Either a Pyflex Station object,
 or an ObsPy Inventory. If not given this information will be
 extracted from the data traces if either originates from a SAC file.</li>
 <li><strong>plot</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Plot the resulting windows.</li>
@@ -528,13 +528,13 @@ file-like object. Pyflex utilizes a custom JSON format for that.</li>
 </div>
 <div class="section" id="the-window-object">
 <h2>The Window Object<a class="headerlink" href="#the-window-object" title="Permalink to this headline">¶</a></h2>
-<p><tt class="docutils literal"><span class="pre">Pyflex</span></tt> internally utilizes a window class for candidates and final
-windows, the <tt class="docutils literal"><span class="pre">select_windows()</span></tt> function will return a list of these.</p>
+<p><code class="docutils literal"><span class="pre">Pyflex</span></code> internally utilizes a window class for candidates and final
+windows, the <code class="docutils literal"><span class="pre">select_windows()</span></code> function will return a list of these.</p>
 <dl class="class">
 <dt id="pyflex.window.Window">
-<em class="property">class </em><tt class="descclassname">pyflex.window.</tt><tt class="descname">Window</tt><big>(</big><em>left</em>, <em>right</em>, <em>center</em>, <em>time_of_first_sample</em>, <em>dt</em>, <em>min_period</em>, <em>channel_id</em>, <em>weight_function=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/window.html#Window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyflex.window.</code><code class="descname">Window</code><span class="sig-paren">(</span><em>left</em>, <em>right</em>, <em>center</em>, <em>time_of_first_sample</em>, <em>dt</em>, <em>min_period</em>, <em>channel_id</em>, <em>weight_function=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window.html#Window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class representing window candidates and final windows.</p>
-<p>The optional <tt class="docutils literal"><span class="pre">weight_function</span></tt> parameter can be used to customize
+<p>The optional <code class="docutils literal"><span class="pre">weight_function</span></code> parameter can be used to customize
 the weight of the window. Its single parameter is an instance of the
 window. The following example will create a window function that
 does exactly the same as the default weighting function.</p>
@@ -551,7 +551,7 @@ does exactly the same as the default weighting function.</p>
 <li><strong>left</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The array index of the left bound of the window.</li>
 <li><strong>right</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The array index of the right bound of the window.</li>
 <li><strong>center</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The array index of the central maximum of the window.</li>
-<li><strong>time_of_first_sample</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.utcdatetime.UTCDateTime.html#obspy.core.utcdatetime.UTCDateTime" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">UTCDateTime</span></tt></a>) &#8211; The absolute time of the first sample
+<li><strong>time_of_first_sample</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.utcdatetime.UTCDateTime.html#obspy.core.utcdatetime.UTCDateTime" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">UTCDateTime</span></code></a>) &#8211; The absolute time of the first sample
 in the array. Needed for the absolute time calculations.</li>
 <li><strong>dt</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The sample interval in seconds.</li>
 <li><strong>min_period</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The minimum period in seconds.</li>
@@ -566,33 +566,33 @@ only argument of the function is a window instance.</li>
 </table>
 <dl class="attribute">
 <dt id="pyflex.window.Window.absolute_endtime">
-<tt class="descname">absolute_endtime</tt><a class="reference internal" href="_modules/pyflex/window.html#Window.absolute_endtime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window.absolute_endtime" title="Permalink to this definition">¶</a></dt>
+<code class="descname">absolute_endtime</code><a class="headerlink" href="#pyflex.window.Window.absolute_endtime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Absolute time of the right border of this window.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyflex.window.Window.absolute_starttime">
-<tt class="descname">absolute_starttime</tt><a class="reference internal" href="_modules/pyflex/window.html#Window.absolute_starttime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window.absolute_starttime" title="Permalink to this definition">¶</a></dt>
+<code class="descname">absolute_starttime</code><a class="headerlink" href="#pyflex.window.Window.absolute_starttime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Absolute time of the left border of this window.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyflex.window.Window.relative_endtime">
-<tt class="descname">relative_endtime</tt><a class="reference internal" href="_modules/pyflex/window.html#Window.relative_endtime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window.relative_endtime" title="Permalink to this definition">¶</a></dt>
+<code class="descname">relative_endtime</code><a class="headerlink" href="#pyflex.window.Window.relative_endtime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Relative time of the right border in seconds to the first sample in
 the array.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyflex.window.Window.relative_starttime">
-<tt class="descname">relative_starttime</tt><a class="reference internal" href="_modules/pyflex/window.html#Window.relative_starttime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window.relative_starttime" title="Permalink to this definition">¶</a></dt>
+<code class="descname">relative_starttime</code><a class="headerlink" href="#pyflex.window.Window.relative_starttime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Relative time of the left border in seconds to the first sample in
 the array.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyflex.window.Window.weight">
-<tt class="descname">weight</tt><a class="reference internal" href="_modules/pyflex/window.html#Window.weight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window.Window.weight" title="Permalink to this definition">¶</a></dt>
+<code class="descname">weight</code><a class="headerlink" href="#pyflex.window.Window.weight" title="Permalink to this definition">¶</a></dt>
 <dd><p>The weight of the window used for the weighted interval scheduling.
 Either calls a potentially passed window weight function or defaults
 to the window length in number of minimum periods times the cross
@@ -610,15 +610,13 @@ ObsPy objects (altough this is also supported and likely results in a
 cleaner workflow).</p>
 <dl class="class">
 <dt id="pyflex.Event">
-<em class="property">class </em><tt class="descclassname">pyflex.</tt><tt class="descname">Event</tt><a class="headerlink" href="#pyflex.Event" title="Permalink to this definition">¶</a></dt>
-<dd><p>Event(latitude, longitude, depth_in_m, origin_time)</p>
-</dd></dl>
+<em class="property">class </em><code class="descclassname">pyflex.</code><code class="descname">Event</code><span class="sig-paren">(</span><em>latitude</em>, <em>longitude</em>, <em>depth_in_m</em>, <em>origin_time</em><span class="sig-paren">)</span><a class="headerlink" href="#pyflex.Event" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="class">
 <dt id="pyflex.Station">
-<em class="property">class </em><tt class="descclassname">pyflex.</tt><tt class="descname">Station</tt><a class="headerlink" href="#pyflex.Station" title="Permalink to this definition">¶</a></dt>
-<dd><p>Station(latitude, longitude)</p>
-</dd></dl>
+<em class="property">class </em><code class="descclassname">pyflex.</code><code class="descname">Station</code><span class="sig-paren">(</span><em>latitude</em>, <em>longitude</em><span class="sig-paren">)</span><a class="headerlink" href="#pyflex.Station" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 <div class="section" id="exceptions-and-warnings">
@@ -626,7 +624,7 @@ cleaner workflow).</p>
 <p>Right now error handling is very simple and handled by these two types.</p>
 <dl class="class">
 <dt id="pyflex.PyflexError">
-<em class="property">class </em><tt class="descclassname">pyflex.</tt><tt class="descname">PyflexError</tt><a class="reference internal" href="_modules/pyflex.html#PyflexError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.PyflexError" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyflex.</code><code class="descname">PyflexError</code><a class="reference internal" href="_modules/pyflex.html#PyflexError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.PyflexError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for all Pyflex exceptions. Will probably be used for all
 exceptions to not overcomplicate things as the whole package is pretty
 small.</p>
@@ -634,36 +632,36 @@ small.</p>
 
 <dl class="class">
 <dt id="pyflex.PyflexWarning">
-<em class="property">class </em><tt class="descclassname">pyflex.</tt><tt class="descname">PyflexWarning</tt><a class="reference internal" href="_modules/pyflex.html#PyflexWarning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.PyflexWarning" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyflex.</code><code class="descname">PyflexWarning</code><a class="reference internal" href="_modules/pyflex.html#PyflexWarning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.PyflexWarning" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for all Pyflex warnings.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="low-level-windowselector-class">
 <h2>Low-level WindowSelector Class<a class="headerlink" href="#low-level-windowselector-class" title="Permalink to this headline">¶</a></h2>
-<p>For most purposes, the <a class="reference internal" href="#pyflex.flexwin.select_windows" title="pyflex.flexwin.select_windows"><tt class="xref py py-func docutils literal"><span class="pre">select_windows()</span></tt></a> function it the better choice, but this might be useful in some more advanced cases.</p>
+<p>For most purposes, the <a class="reference internal" href="#pyflex.flexwin.select_windows" title="pyflex.flexwin.select_windows"><code class="xref py py-func docutils literal"><span class="pre">select_windows()</span></code></a> function it the better choice, but this might be useful in some more advanced cases.</p>
 <dl class="class">
 <dt id="pyflex.window_selector.WindowSelector">
-<em class="property">class </em><tt class="descclassname">pyflex.window_selector.</tt><tt class="descname">WindowSelector</tt><big>(</big><em>observed</em>, <em>synthetic</em>, <em>config</em>, <em>event=None</em>, <em>station=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyflex.window_selector.</code><code class="descname">WindowSelector</code><span class="sig-paren">(</span><em>observed</em>, <em>synthetic</em>, <em>config</em>, <em>event=None</em>, <em>station=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector" title="Permalink to this definition">¶</a></dt>
 <dd><p>Low level window selector internally used by Pyflex.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>observed</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Trace</span></tt></a> or single component
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Stream</span></tt></a>) &#8211; The preprocessed, observed waveform.</li>
-<li><strong>synthetic</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Trace</span></tt></a> or single component
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Stream</span></tt></a>) &#8211; The preprocessed, synthetic waveform.</li>
-<li><strong>config</strong> (<a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><tt class="xref py py-class docutils literal"><span class="pre">Config</span></tt></a>) &#8211; Configuration object.</li>
-<li><strong>event</strong> (A Pyflex <a class="reference internal" href="#pyflex.Event" title="pyflex.Event"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> object,  an ObsPy
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Catalog</span></tt></a> object, or an ObsPy
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Event</span></tt></a> object) &#8211; The event information. Either a Pyflex Event object,
+<li><strong>observed</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Trace</span></code></a> or single component
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Stream</span></code></a>) &#8211; The preprocessed, observed waveform.</li>
+<li><strong>synthetic</strong> (<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.html#obspy.core.trace.Trace" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Trace</span></code></a> or single component
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.stream.Stream.html#obspy.core.stream.Stream" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Stream</span></code></a>) &#8211; The preprocessed, synthetic waveform.</li>
+<li><strong>config</strong> (<a class="reference internal" href="#pyflex.config.Config" title="pyflex.config.Config"><code class="xref py py-class docutils literal"><span class="pre">Config</span></code></a>) &#8211; Configuration object.</li>
+<li><strong>event</strong> (A Pyflex <a class="reference internal" href="#pyflex.Event" title="pyflex.Event"><code class="xref py py-class docutils literal"><span class="pre">Event</span></code></a> object,  an ObsPy
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Catalog.html#obspy.core.event.Catalog" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Catalog</span></code></a> object, or an ObsPy
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.core.event.Event.html#obspy.core.event.Event" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Event</span></code></a> object) &#8211; The event information. Either a Pyflex Event object,
 or an ObsPy Catalog or Event object. If not given this information
 will be extracted from the data traces if either originates from a
 SAC file.</li>
-<li><strong>station</strong> (A Pyflex <a class="reference internal" href="#pyflex.Station" title="pyflex.Station"><tt class="xref py py-class docutils literal"><span class="pre">Station</span></tt></a> object or an ObsPy
-<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.10.2) v0.10)"><tt class="xref py py-class docutils literal"><span class="pre">Inventory</span></tt></a> object) &#8211; The station information. Either a Pyflex Station
+<li><strong>station</strong> (A Pyflex <a class="reference internal" href="#pyflex.Station" title="pyflex.Station"><code class="xref py py-class docutils literal"><span class="pre">Station</span></code></a> object or an ObsPy
+<a class="reference external" href="http://docs.obspy.org/packages/autogen/obspy.station.inventory.Inventory.html#obspy.station.inventory.Inventory" title="(in ObsPy Documentation (0.10.2) v0.10)"><code class="xref py py-class docutils literal"><span class="pre">Inventory</span></code></a> object) &#8211; The station information. Either a Pyflex Station
 object, or an ObsPy Inventory. If not given this information
 will be extracted from the data traces if either originates from
 a SAC file.</li>
@@ -674,53 +672,53 @@ a SAC file.</li>
 </table>
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.attach_phase_arrivals_to_windows">
-<tt class="descname">attach_phase_arrivals_to_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.attach_phase_arrivals_to_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.attach_phase_arrivals_to_windows" title="Permalink to this definition">¶</a></dt>
+<code class="descname">attach_phase_arrivals_to_windows</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.attach_phase_arrivals_to_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.attach_phase_arrivals_to_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attaches the theoretical phase arrivals to the windows.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.calculate_preliminiaries">
-<tt class="descname">calculate_preliminiaries</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.calculate_preliminiaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.calculate_preliminiaries" title="Permalink to this definition">¶</a></dt>
+<code class="descname">calculate_preliminiaries</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.calculate_preliminiaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.calculate_preliminiaries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the envelope, STA/LTA and the finds the local extrema.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.calculate_ttimes">
-<tt class="descname">calculate_ttimes</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.calculate_ttimes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.calculate_ttimes" title="Permalink to this definition">¶</a></dt>
+<code class="descname">calculate_ttimes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.calculate_ttimes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.calculate_ttimes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate theoretical travel times. Only call if station and event
 information is available!</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.check_data_quality">
-<tt class="descname">check_data_quality</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.check_data_quality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.check_data_quality" title="Permalink to this definition">¶</a></dt>
+<code class="descname">check_data_quality</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.check_data_quality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.check_data_quality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks the data quality by estimating signal to noise ratios.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.curtail_length_of_windows">
-<tt class="descname">curtail_length_of_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.curtail_length_of_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.curtail_length_of_windows" title="Permalink to this definition">¶</a></dt>
+<code class="descname">curtail_length_of_windows</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.curtail_length_of_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.curtail_length_of_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Curtail the window length. Equivalent to a call to
 curtail_window_length() in the original flexwin code.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.determine_signal_and_noise_indices">
-<tt class="descname">determine_signal_and_noise_indices</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.determine_signal_and_noise_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.determine_signal_and_noise_indices" title="Permalink to this definition">¶</a></dt>
+<code class="descname">determine_signal_and_noise_indices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.determine_signal_and_noise_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.determine_signal_and_noise_indices" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the time range of the noise and the signal respectively if
 not yet specified by the user.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.initial_window_selection">
-<tt class="descname">initial_window_selection</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.initial_window_selection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.initial_window_selection" title="Permalink to this definition">¶</a></dt>
+<code class="descname">initial_window_selection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.initial_window_selection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.initial_window_selection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find all possible windows. This is equivalent to the setup_M_L_R()
 function in flexwin.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.load">
-<tt class="descname">load</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.load" title="Permalink to this definition">¶</a></dt>
+<code class="descname">load</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load windows from a JSON file and attach them to the current window
 selector object.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -735,19 +733,19 @@ selector object.</p>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.merge_windows">
-<tt class="descname">merge_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.merge_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.merge_windows" title="Permalink to this definition">¶</a></dt>
+<code class="descname">merge_windows</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.merge_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.merge_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Merge overlapping windows. Will also recalculate the data fit criteria.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyflex.window_selector.WindowSelector.minimum_window_length">
-<tt class="descname">minimum_window_length</tt><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.minimum_window_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.minimum_window_length" title="Permalink to this definition">¶</a></dt>
+<code class="descname">minimum_window_length</code><a class="headerlink" href="#pyflex.window_selector.WindowSelector.minimum_window_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Minimum acceptable window length.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.plot">
-<tt class="descname">plot</tt><big>(</big><em>filename=None</em><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.plot" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot</code><span class="sig-paren">(</span><em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the current state of the windows.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -762,19 +760,19 @@ otherwise the plot will be shown.</td>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_based_on_data_fit_criteria">
-<tt class="descname">reject_based_on_data_fit_criteria</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_based_on_data_fit_criteria"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_based_on_data_fit_criteria" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_based_on_data_fit_criteria</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_based_on_data_fit_criteria"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_based_on_data_fit_criteria" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rejects windows based on similarity between data and synthetics.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_based_on_signal_to_noise_ratio">
-<tt class="descname">reject_based_on_signal_to_noise_ratio</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_based_on_signal_to_noise_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_based_on_signal_to_noise_ratio" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_based_on_signal_to_noise_ratio</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_based_on_signal_to_noise_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_based_on_signal_to_noise_ratio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rejects windows based on their signal to noise amplitude ratio.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_on_minima_water_level">
-<tt class="descname">reject_on_minima_water_level</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_minima_water_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_minima_water_level" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_on_minima_water_level</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_minima_water_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_minima_water_level" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filter function rejecting windows whose internal minima are below the
 water level of the windows peak. This is equivalent to the
 reject_on_water_level() function in flexwin.</p>
@@ -782,20 +780,20 @@ reject_on_water_level() function in flexwin.</p>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_on_phase_separation">
-<tt class="descname">reject_on_phase_separation</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_phase_separation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_phase_separation" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_on_phase_separation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_phase_separation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_phase_separation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reject windows based on phase seperation. Equivalent to
 reject_on_phase_separation() in the original flexwin code.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_on_prominence_of_central_peak">
-<tt class="descname">reject_on_prominence_of_central_peak</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_prominence_of_central_peak"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_prominence_of_central_peak" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_on_prominence_of_central_peak</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_prominence_of_central_peak"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_prominence_of_central_peak" title="Permalink to this definition">¶</a></dt>
 <dd><p>Equivalent to reject_on_prominence() in the original flexwin code.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_on_traveltimes">
-<tt class="descname">reject_on_traveltimes</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_traveltimes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_traveltimes" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_on_traveltimes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_on_traveltimes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_on_traveltimes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reject based on traveltimes. Will reject windows containing only
 data before a minimum period before the first arrival and windows
 only containing data after the minimum allowed surface wave speed.
@@ -804,13 +802,13 @@ Only call if station and event information is available!</p>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.reject_windows_based_on_minimum_length">
-<tt class="descname">reject_windows_based_on_minimum_length</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_windows_based_on_minimum_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_windows_based_on_minimum_length" title="Permalink to this definition">¶</a></dt>
+<code class="descname">reject_windows_based_on_minimum_length</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.reject_windows_based_on_minimum_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.reject_windows_based_on_minimum_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reject windows smaller than the minimal window length.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.remove_duplicates">
-<tt class="descname">remove_duplicates</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.remove_duplicates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.remove_duplicates" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remove_duplicates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.remove_duplicates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.remove_duplicates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filter to remove duplicate windows based on left and right bounds.</p>
 <p>This function will also change the middle to actually be in the
 center of the window. This should result in better results for the
@@ -820,19 +818,19 @@ of a window.</p>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.schedule_weighted_intervals">
-<tt class="descname">schedule_weighted_intervals</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.schedule_weighted_intervals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.schedule_weighted_intervals" title="Permalink to this definition">¶</a></dt>
+<code class="descname">schedule_weighted_intervals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.schedule_weighted_intervals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.schedule_weighted_intervals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the weighted interval scheduling.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.select_windows">
-<tt class="descname">select_windows</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.select_windows" title="Permalink to this definition">¶</a></dt>
+<code class="descname">select_windows</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.select_windows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.select_windows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Launch the window selection.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyflex.window_selector.WindowSelector.write">
-<tt class="descname">write</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.write" title="Permalink to this definition">¶</a></dt>
+<code class="descname">write</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/window_selector.html#WindowSelector.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.window_selector.WindowSelector.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write windows to the specified filename or file like object.</p>
 <p>Will be written as a custom JSON file.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -852,7 +850,7 @@ of a window.</p>
 <h2>Misc Functionality<a class="headerlink" href="#misc-functionality" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="pyflex.interval_scheduling.schedule_weighted_intervals">
-<tt class="descclassname">pyflex.interval_scheduling.</tt><tt class="descname">schedule_weighted_intervals</tt><big>(</big><em>I</em><big>)</big><a class="reference internal" href="_modules/pyflex/interval_scheduling.html#schedule_weighted_intervals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.interval_scheduling.schedule_weighted_intervals" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyflex.interval_scheduling.</code><code class="descname">schedule_weighted_intervals</code><span class="sig-paren">(</span><em>I</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/interval_scheduling.html#schedule_weighted_intervals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.interval_scheduling.schedule_weighted_intervals" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Use dynamic algorithm to schedule weighted intervals</dt>
 <dd>sorting is O(n log n),
@@ -865,7 +863,7 @@ whole operation is dominated by O(n log n)</dd>
 
 <dl class="function">
 <dt id="pyflex.utils.find_local_extrema">
-<tt class="descclassname">pyflex.utils.</tt><tt class="descname">find_local_extrema</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/pyflex/utils.html#find_local_extrema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.utils.find_local_extrema" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyflex.utils.</code><code class="descname">find_local_extrema</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/utils.html#find_local_extrema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.utils.find_local_extrema" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function finding local extrema. It can also deal with flat extrema,
 e.g. a flat top or bottom. In that case the first index of all flat
 values will be returned.</p>
@@ -874,7 +872,7 @@ values will be returned.</p>
 
 <dl class="function">
 <dt id="pyflex.stalta.sta_lta">
-<tt class="descclassname">pyflex.stalta.</tt><tt class="descname">sta_lta</tt><big>(</big><em>data</em>, <em>dt</em>, <em>min_period</em><big>)</big><a class="reference internal" href="_modules/pyflex/stalta.html#sta_lta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.stalta.sta_lta" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pyflex.stalta.</code><code class="descname">sta_lta</code><span class="sig-paren">(</span><em>data</em>, <em>dt</em>, <em>min_period</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyflex/stalta.html#sta_lta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyflex.stalta.sta_lta" title="Permalink to this definition">¶</a></dt>
 <dd><p>STA/LTA as used in SPECFEM.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -898,7 +896,7 @@ values will be returned.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="#">
               <img class="logo" src="_static/logo.svg" alt="Logo"/>
@@ -935,7 +933,7 @@ values will be returned.</p>
   <li><a href="#">Documentation index</a><ul>
   </ul></li>
 </ul>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
       <input type="text" name="q" />
@@ -954,7 +952,7 @@ values will be returned.</p>
     </div>
   <div class="footer">
     &copy; Copyright 2014, Lion Krischer.
-    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
   </div>
   
   </div>

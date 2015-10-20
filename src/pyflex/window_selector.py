@@ -14,6 +14,7 @@ from __future__ import (absolute_import, division, print_function,
 from future.builtins import *  # NOQA
 from future import standard_library
 
+import copy
 import json
 import numpy as np
 import obspy
@@ -75,7 +76,7 @@ class WindowSelector(object):
         self.observed.data = np.ascontiguousarray(self.observed.data)
         self.synthetic.data = np.ascontiguousarray(self.synthetic.data)
 
-        self.config = config
+        self.config = copy.deepcopy(config)
         self.config._convert_to_array(npts=self.observed.stats.npts)
 
         self.ttimes = []

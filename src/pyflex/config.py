@@ -23,8 +23,9 @@ class Config(object):
     def __init__(self, min_period, max_period, stalta_waterlevel=0.07,
                  tshift_acceptance_level=10.0, tshift_reference=0.0,
                  dlna_acceptance_level=1.3, dlna_reference=0.0,
-                 cc_acceptance_level=0.7, s2n_limit=1.5, earth_model="ak135",
-                 min_surface_wave_velocity=3.5,
+                 cc_acceptance_level=0.7, earth_model="ak135",
+                 s2n_limit_energy=2.0, s2n_limit_amplitude=1.5,
+                 min_surface_wave_velocity=3.0,
                  max_surface_wave_velocity=4.2,
                  max_time_before_first_arrival=50.0,
                  c_0=1.0, c_1=1.5, c_2=0.0,
@@ -33,9 +34,9 @@ class Config(object):
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
                  signal_start_index=None, signal_end_index=-1,
                  window_weight_fct=None,
-                 window_signal_to_noise_type="energy",
+                 window_signal_to_noise_type="amplitude",
                  resolution_strategy="interval_scheduling",
-                 select_mode="body_and_surface"):
+                 selection_mode="all_wave"):
         """
         Central configuration object for Pyflex.
 
@@ -110,21 +111,39 @@ class Config(object):
             same number of samples as the data.
         :type cc_acceptance_level: float or :class:`numpy.ndarray`
 
-        :param s2n_limit: Limit of the signal to noise ratio per window. If
-            the maximum amplitude of the window over the maximum amplitude
-            of the global noise of the waveforms is smaller than this
+        :param s2n_limit_amplitude: Limit of the amplitude signal to noise
+            ratio per window. If the maximum amplitude of the window over
+            the maximum amplitude of the global noise of the waveforms is
+            smaller than this window, then it will be rejected. Can be
+            either a single value or an array with the same number of
+            samples as the data.
+        :type s2n_limit_amplitude: float or :class:`numpy.ndarray`
+
+         :param s2n_limit_energy: Limit of the energy signal to noise ratio
+            per window. If the average energy of the window over the average
+            energy of the global noise of the waveforms is smaller than this
             window, then it will be rejected. Can be either a single value
             or an array with the same number of samples as the data.
-        :type s2n_limit: float or :class:`numpy.ndarray`
+        :type s2n_limit_energy: float or :class:`numpy.ndarray`
 
-        :param earth_model: The earth model used for the traveltime
+       :param earth_model: The earth model used for the traveltime
             calculations. Either ``"ak135"`` or ``"iasp91"``.
         :type earth_model: str
 
         :param min_surface_wave_velocity: The minimum surface wave velocity
-            in km/s. All windows containing data later then this velocity
-            will be rejected. Only used if station and event information is
-            available.
+            in km/s. The two values, min_surface_wave_velocity and
+            max_surface_wave_velocity are used to calculate surface wave time
+            region. All windows containing data earlier than the min velocity
+            and later than the max velocity will be treated as surface waves.
+            Only used if station and event information is available.
+        :type min_surface_wave_velocity: float
+
+        :param max_surface_wave_velocity: The maxium surface wave velocity
+            in km/s. The two values, min_surface_wave_velocity and
+            max_surface_wave_velocity are used to calculate surface wave time
+            region. All windows containing data earlier than the min velocity
+            and later than the max velocity will be treated as surface waves.
+            Only used if station and event information is available.
         :type min_surface_wave_velocity: float
 
         :param max_time_before_first_arrival: This is the minimum starttime
@@ -217,6 +236,19 @@ class Config(object):
             non-overlapping windows. Merging will simply merge overlapping
             windows.
         :type resolution_strategy: str
+
+        :param selection_mode: Strategy to select different types of phases.
+            Possibilities are ``"all_wave"``, ``"body_and_surface_wave"``,
+            ``"body_wave"``, ``"surface_wave"``, ``"mantle_wave"``. If
+            ``"all_wave"``, then pyflex will accept all windows in the
+            signal region(after noise_end). If ``"body_wave"``, the pyflex
+            will only accept windows in the body wave region(after first
+            arrival and before surface wave arrival). If ``"surface_wave"``,
+            pyflex will only accept windows in surface wave region(velocity
+            between min_surface_wave_velocity and max_surface_wave_velocity).
+            If ``"body_and_surface_wave"``, then pyflex will only accept
+            windows inside body and surface wave regions. If ``mantle_wave``,
+            pyflex will only accept windows after the surface wave region.
         """
         self.min_period = min_period
         self.max_period = max_period
@@ -227,7 +259,8 @@ class Config(object):
         self.dlna_acceptance_level = dlna_acceptance_level
         self.dlna_reference = dlna_reference
         self.cc_acceptance_level = cc_acceptance_level
-        self.s2n_limit = s2n_limit
+        self.s2n_limit_amplitude = s2n_limit_amplitude
+        self.s2n_limit_energy = s2n_limit_energy
 
         if earth_model.lower() not in ("ak135", "iasp91"):
             raise PyflexError("Earth model must either be 'ak135' or "
@@ -256,9 +289,10 @@ class Config(object):
         self.window_weight_fct = window_weight_fct
 
         snr_type = window_signal_to_noise_type.lower()
-        if snr_type not in ["amplitude", "energy"]:
-            raise PyflexError("The window signal to noise type must be either"
-                              "'amplitude' or 'energy'.")
+        if snr_type not in ["amplitude", "energy", "amplitude_and_energy"]:
+            raise PyflexError(
+                    "The window signal to noise type must be"
+                    "'amplitude', 'energy' or 'amplitude_and_energy'.")
         self.window_signal_to_noise_type = snr_type
 
         if resolution_strategy.lower() not in ["interval_scheduling", "merge"]:
@@ -267,12 +301,14 @@ class Config(object):
                 "'interval_scheduling' or 'merge'.")
         self.resolution_strategy = resolution_strategy.lower()
 
-        if select_mode.lower() not in ["all_wave", "body_and_surface", "body_wave",
+        if selection_mode.lower() not in [
+                "all_wave", "body_and_surface_wave", "body_wave",
                 "surface_wave", "mantle_wave"]:
-            raise PyflexError(
-                    "Invalide select_mode. Choose: 1) all_waves; 2) body_and_surface; "
-                    "3) body_wave; 4) surface_wave; 5) mantle_wave;")
-        self.select_mode = select_mode.lower()
+            raise ValueError(
+                    "Invalide selection_mode. Choose: 1) all_wave;"
+                    "2) body_and_surface_wave; 3) body_wave; "
+                    "4) surface_wave; 5) mantle_wave;")
+        self.selection_mode = selection_mode.lower()
 
     def _convert_to_array(self, npts):
         """
@@ -281,7 +317,7 @@ class Config(object):
         """
         attributes = ("stalta_waterlevel", "tshift_acceptance_level",
                       "dlna_acceptance_level", "cc_acceptance_level",
-                      "s2n_limit", "c_1")
+                      "s2n_limit_amplitude", "s2n_limit_energy", "c_1")
         for name in attributes:
             attr = getattr(self, name)
 
@@ -294,3 +330,27 @@ class Config(object):
                 continue
 
             setattr(self, name, attr * np.ones(npts))
+
+    def _convert_negative_index(self, npts):
+        """
+        Convert negative index into positive. So we can compare and check
+        """
+        if self.noise_start_index < 0:
+            self.noise_start_index += npts
+        if self.noise_end_index < 0:
+            self.noise_end_index += npts
+        if self.noise_start_index >= self.noise_end_index:
+            raise ValueError(
+                "noise_start_index is larger than "
+                "noise_end_idx: %d > %d" % (self.noise_start_index,
+                                            self.noise_end_index))
+
+        if self.signal_start_index < 0:
+            self.signal_start_index += npts
+        if self.signal_end_index < 0:
+            self.signal_end_index += npts
+        if self.signal_start_index >= self.signal_end_index:
+            raise ValueError("singal_start_index is larger than "
+                             "signal_end_index: %d > %d"
+                             % (self.signal_start_index,
+                                self.signal_end_index))

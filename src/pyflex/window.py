@@ -167,6 +167,21 @@ class Window(object):
         return self.dt * self.left
 
     @property
+    def absolute_centertime(self):
+        """
+        Absolute time of the left border of this window.
+        """
+        return self.time_of_first_sample + self.dt * self.center
+
+    @property
+    def relative_centertime(self):
+        """
+        Relative time of the left border in seconds to the first sample in
+        the array.
+        """
+        return self.dt * self.center
+
+    @property
     def absolute_endtime(self):
         """
         Absolute time of the right border of this window.

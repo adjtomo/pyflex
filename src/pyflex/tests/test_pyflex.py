@@ -113,7 +113,7 @@ def test_window_selection():
 
     np.testing.assert_allclose(
         lefties,
-        np.array([1551, 2221, 2709, 2960, 3353, 3609, 3983, 4715, 4962]),
+        np.array([1551, 2327, 2709, 2960, 3353, 3609, 4004, 4720, 4962]),
         atol=3)
     np.testing.assert_allclose(
         righties,
@@ -128,13 +128,13 @@ def test_window_selection():
     assert [_i.cc_shift for _i in windows] == [-3, 0, -5, -5, -6, 4, -9, -1, 7]
     np.testing.assert_allclose(
         np.array([_i.dlnA for _i in windows]),
-        np.array([0.07469, 0.12808, -0.19277, 0.185563, 0.093674, -0.118859,
+        np.array([0.07469, 0.121144, -0.19277, 0.185563, 0.093675, -0.118859,
                   -0.638657, 0.25942, 0.106571]), rtol=1E-2)
 
     # Assert the phases of the first window.
     assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \
-        [u'PKPdf', u'PKSdf', u'PKiKP', u'PP', u'SKPdf', u'SKiKP', u'pPKPdf',
-         u'pPKiKP', u'sPKPdf', u'sPKiKP']
+        [u'PKIKP', u'PKIKS', u'PKiKP', u'PP', u'SKIKP', u'SKiKP', u'pPKIKP',
+         u'pPKiKP', u'sPKIKP', u'sPKiKP']
 
 
 def test_cc_config_setting():
@@ -337,13 +337,16 @@ def test_settings_arrays_as_config_values():
     tshift_acceptance_level = 15.0 * np.ones(npts)
     dlna_acceptance_level = 1.0 * np.ones(npts)
     cc_acceptance_level = 0.80 * np.ones(npts)
-    s2n_limit = 1.5 * np.ones(npts)
+    s2n_limit_energy = 1.5 * np.ones(npts)
+    s2n_limit_amplitude = 1.5 * np.ones(npts)
     config = pyflex.Config(
         min_period=50.0, max_period=150.0,
         stalta_waterlevel=stalta_waterlevel,
         tshift_acceptance_level=tshift_acceptance_level,
         dlna_acceptance_level=dlna_acceptance_level,
-        cc_acceptance_level=cc_acceptance_level, s2n_limit=s2n_limit,
+        cc_acceptance_level=cc_acceptance_level,
+        s2n_limit_amplitude=s2n_limit_amplitude,
+        s2n_limit_energy=s2n_limit_energy,
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
 
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)

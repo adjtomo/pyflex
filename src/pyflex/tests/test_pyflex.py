@@ -133,8 +133,8 @@ def test_window_selection():
 
     # Assert the phases of the first window.
     assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \
-        [u'PKIKP', u'PKIKS', u'PKiKP', u'PP', u'SKIKP', u'SKiKP', u'pPKIKP',
-         u'pPKiKP', u'sPKIKP', u'sPKiKP']
+        ['PKIKP', 'PKIKS', 'PKiKP', 'PP', 'SKIKP', 'SKiKP', 'pPKIKP',
+         'pPKiKP', 'sPKIKP', 'sPKiKP']
 
 
 def test_cc_config_setting():
@@ -175,8 +175,8 @@ def test_custom_weight_function():
     # Not setting it will result in the default value.
     config.window_weight_fct = None
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
-    assert False == \
-        np.all(np.array([_i.max_cc_value for _i in windows]) >= 0.95)
+    assert bool(np.all(np.array([_i.max_cc_value for _i in windows]) >=
+                       0.95)) is False
 
 
 def test_runs_without_event_information(recwarn):

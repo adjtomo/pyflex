@@ -48,7 +48,7 @@ def convert_nb(nbname):
     with io.open(filename, 'r', encoding='utf8') as f:
         nb = current.read(f, 'json')
     nb = clean_for_doc(nb)
-    print "Writing to", filename
+    print("Writing to", filename)
     with io.open(filename, 'w', encoding='utf8') as f:
         current.write(nb, f, 'json')
 
@@ -58,7 +58,7 @@ def convert_nb(nbname):
     with io.open(filename, 'r', encoding='utf8') as f:
         nb = current.read(f, 'json')
     nb = strip_output(nb)
-    print "Writing to", filename
+    print("Writing to", filename)
     with io.open(filename, 'w', encoding='utf8') as f:
         current.write(nb, f, 'json')
 

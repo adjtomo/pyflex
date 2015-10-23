@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+* **Pyflex 0.1.4** *Sep 30th 2015*
+    * Minor change to adapt tests to the latest ObsPy version.
+    * Dropped official support for Python 2.6. It still works with it for now but I don't plan on further supporting it.
+
 * **Pyflex 0.1.3** *Dez 10th 2014*
     * Rejecting windows with very early start or very late end times. Greatly speeds up the algorithm.
     * New config parameter ``max_time_before_first_arrival``.

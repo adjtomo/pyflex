@@ -13,9 +13,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 from future import standard_library
-with standard_library.hooks():
-    import itertools
 
+import copy
 import json
 import numpy as np
 import obspy
@@ -30,6 +29,9 @@ from . import PyflexError, PyflexWarning, utils, logger, Event, Station
 from .stalta import sta_lta
 from .window import Window
 from .interval_scheduling import schedule_weighted_intervals
+
+with standard_library.hooks():
+    import itertools
 
 
 class WindowSelector(object):
@@ -74,7 +76,7 @@ class WindowSelector(object):
         self.observed.data = np.ascontiguousarray(self.observed.data)
         self.synthetic.data = np.ascontiguousarray(self.synthetic.data)
 
-        self.config = config
+        self.config = copy.deepcopy(config)
         self.config._convert_to_array(npts=self.observed.stats.npts)
 
         self.ttimes = []
@@ -619,6 +621,7 @@ class WindowSelector(object):
         # reject windows which has overlap with the noise region
         self.windows = [win for win in self.windows
                         if (win.left > self.config.noise_end_index)]
+
         logger.info("Rejection based on selection mode retained %i windows." %
                     len(self.windows))
 

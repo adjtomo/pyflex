@@ -782,7 +782,7 @@ class WindowSelector(object):
         dt = self.observed.stats.delta
 
         def curtail_window_length(win):
-            status = [0, 0]
+            curtail_status = [0, 0]
             time_decay_left = self.config.min_period * self.config.c_4a / dt
             time_decay_right = self.config.min_period * self.config.c_4b / dt
             # Find all internal maxima.
@@ -797,11 +797,11 @@ class WindowSelector(object):
             # check condition
             if delta_left > time_decay_left:
                 win.left = int(i_left - time_decay_left)
-                status[0] = 1
+                curtail_status[0] = 1
             if delta_right > time_decay_right:
                 win.right = int(i_right + time_decay_right)
-                status[1] = 1
-            return win, status
+                curtail_status[1] = 1
+            return win, curtail_status
 
         winlist = []
         nleft = 0

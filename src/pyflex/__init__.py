@@ -43,7 +43,7 @@ __version__ = "0.1.4"
 
 # Setup the logger.
 logger = logging.getLogger("pyflex")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 # Prevent propagating to higher loggers.
 logger.propagate = 0
 # Console log handler.

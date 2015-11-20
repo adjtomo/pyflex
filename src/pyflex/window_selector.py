@@ -191,8 +191,16 @@ class WindowSelector(object):
 
     def write_text(self, filename):
         """
-        Write plain text file for the window output
+        Write windows to a plain text file. For example, after
+        you selecting windows, you want to write them out and
+        save as text files, you can call:
+        ws.write_text("window.txt")
+
+        :param filename: Name to write to.
+        :type filename: str
         """
+        if not os.path.exists(os.path.dirname(filename)):
+            raise ValueError("Output file directory not exist: %s" % filename)
         with open(filename, 'w') as f:
             f.write("%s\n" % self.observed.id)
             f.write("%s\n" % self.synthetic.id)
@@ -436,7 +444,7 @@ class WindowSelector(object):
                 return
             else:
                 self.config.noise_end_index = \
-                    int(self.ttimes[0]["time"] - 2.*self.config.min_period)
+                    int(self.ttimes[0]["time"] - 2 * self.config.min_period)
         if self.config.signal_start_index is None:
             self.config.signal_start_index = self.config.noise_end_index
 
@@ -444,10 +452,10 @@ class WindowSelector(object):
 
         dt = self.observed.stats.delta
         logger.info("Noise region [%ds, %ds]; signal region [%ds, %ds]" % (
-                    self.config.noise_start_index*dt,
-                    self.config.noise_end_index*dt,
-                    self.config.signal_start_index*dt,
-                    self.config.signal_end_index*dt))
+                    self.config.noise_start_index * dt,
+                    self.config.noise_end_index * dt,
+                    self.config.signal_start_index * dt,
+                    self.config.signal_end_index * dt))
 
     def reject_based_on_signal_to_noise_ratio(self):
         """
@@ -466,14 +474,14 @@ class WindowSelector(object):
         noise_energy = np.sum(noise ** 2) / len(noise)
 
         def filter_window_noise_amplitude(win):
-            win_signal = self.observed.data[win.left: win.right]
+            win_signal = self.observed.data[win.left:win.right]
             win_noise_amp = np.abs(win_signal).max() / noise_amp
             if win_noise_amp < self.config.s2n_limit_amplitude[win.center]:
                 return False
             return True
 
         def filter_window_noise_energy(win):
-            data = self.observed.data[win.left: win.right]
+            data = self.observed.data[win.left:win.right]
             win_energy = np.sum(data ** 2) / len(data)
             win_noise_amp = win_energy / noise_energy
             if win_noise_amp < self.config.s2n_limit_energy[win.center]:
@@ -486,20 +494,13 @@ class WindowSelector(object):
             return True
 
         window_snr_type = self.config.window_signal_to_noise_type
-        if window_snr_type == "amplitude":
+        if window_snr_type in ("amplitude", "amplitude_and_energy"):
             self.windows = list(filter(filter_window_noise_amplitude,
                                        self.windows))
 
-        elif window_snr_type == "energy":
+        elif window_snr_type == ("energy", "amplitude_and_energy"):
             self.windows = list(filter(filter_window_noise_energy,
                                        self.windows))
-
-        elif window_snr_type == "amplitude_and_energy":
-            self.windows = list(filter(filter_window_noise_amplitude,
-                                       self.windows))
-            self.windows = list(filter(filter_window_noise_energy,
-                                       self.windows))
-
         else:
             raise NotImplementedError
 
@@ -579,26 +580,26 @@ class WindowSelector(object):
         select_mode = self.config.selection_mode
         min_period = self.config.min_period
         first_arrival = self.ttimes[0]["time"]
-        if select_mode == "all_wave":
+        if select_mode == "all_waves":
             min_time = first_arrival - 2 * min_period + offset
             max_time = self.observed.stats.endtime \
                 - self.observed.stats.starttime
-        elif select_mode == "body_and_surface_wave":
+        elif select_mode == "body_and_surface_waves":
             min_time = first_arrival - 2 * min_period + offset
             max_time = dist_in_km / self.config.min_surface_wave_velocity \
                 + 2 * min_period + offset
-        elif select_mode == "body_wave":
+        elif select_mode == "body_waves":
             min_time = first_arrival - 2 * min_period + offset
             max_time = \
                 dist_in_km / self.config.max_surface_wave_velocity \
                 + 2 * min_period + offset
-        elif select_mode == "surface_wave":
+        elif select_mode == "surface_waves":
             min_time = \
                 dist_in_km / self.config.max_surface_wave_velocity \
                 - 2 * min_period + offset
             max_time = dist_in_km / self.config.min_surface_wave_velocity \
                 + 2 * min_period + offset
-        elif select_mode == "mantle_wave":
+        elif select_mode == "mantle_waves":
             min_time = dist_in_km / self.config.max_surface_wave_velocity \
                        + offset
             max_time = self.observed.stats.endtime \
@@ -615,8 +616,8 @@ class WindowSelector(object):
                      % (self.config.selection_mode, min_time, max_time))
 
         self.windows = [win for win in self.windows
-                        if (win.relative_endtime >= min_time) and
-                        (win.relative_starttime <= max_time)]
+                        if (win.relative_endtime <= max_time) and
+                        (win.relative_starttime >= min_time)]
 
         # reject windows which has overlap with the noise region
         self.windows = [win for win in self.windows

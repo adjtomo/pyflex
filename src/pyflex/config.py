@@ -36,7 +36,7 @@ class Config(object):
                  window_weight_fct=None,
                  window_signal_to_noise_type="amplitude",
                  resolution_strategy="interval_scheduling",
-                 selection_mode="all_wave"):
+                 selection_mode="all_waves"):
         """
         Central configuration object for Pyflex.
 
@@ -144,7 +144,7 @@ class Config(object):
             region. All windows containing data earlier than the min velocity
             and later than the max velocity will be treated as surface waves.
             Only used if station and event information is available.
-        :type min_surface_wave_velocity: float
+        :type max_surface_wave_velocity: float
 
         :param max_time_before_first_arrival: This is the minimum starttime
             of any window in seconds before the first arrival. No windows will
@@ -227,7 +227,8 @@ class Config(object):
             the largest amplitude in the window is the signal amplitude. If
             ``"energy"`` the time normalized energy is used in both cases.
             The later one is a bit more stable when having random wiggles
-            before the first arrival.
+            before the first arrival. If ``"amplitude_and_energy"``, then
+            both checks are applied to the trace.
         :type window_signal_to_noise_type: str
 
         :param resolution_strategy: Strategy used to resolve overlaps.
@@ -238,17 +239,19 @@ class Config(object):
         :type resolution_strategy: str
 
         :param selection_mode: Strategy to select different types of phases.
-            Possibilities are ``"all_wave"``, ``"body_and_surface_wave"``,
-            ``"body_wave"``, ``"surface_wave"``, ``"mantle_wave"``. If
-            ``"all_wave"``, then pyflex will accept all windows in the
-            signal region(after noise_end). If ``"body_wave"``, the pyflex
-            will only accept windows in the body wave region(after first
-            arrival and before surface wave arrival). If ``"surface_wave"``,
-            pyflex will only accept windows in surface wave region(velocity
-            between min_surface_wave_velocity and max_surface_wave_velocity).
-            If ``"body_and_surface_wave"``, then pyflex will only accept
-            windows inside body and surface wave regions. If ``mantle_wave``,
-            pyflex will only accept windows after the surface wave region.
+            Possibilities are:
+            * ``"all_waves"``: all windows in the signal region(after
+                noise_end).
+            * ``"body_waves"``: windows in the body wave region(after
+                first arrival and before surface wave arrival).
+            * ``"surface_waves"``: windows in surface wave region(velocity
+                between min_surface_wave_velocity and
+                max_surface_wave_velocity).
+            * ``"body_and_surface_wave"``: windows inside body and surface
+                wave regions.
+            * ``mantle_waves``: pyflex will only accept windows after the
+                surface wave region.
+        :type selection_mode: str
         """
         self.min_period = min_period
         self.max_period = max_period
@@ -302,12 +305,12 @@ class Config(object):
         self.resolution_strategy = resolution_strategy.lower()
 
         if selection_mode.lower() not in [
-                "all_wave", "body_and_surface_wave", "body_wave",
-                "surface_wave", "mantle_wave"]:
+                "all_waves", "body_and_surface_waves", "body_waves",
+                "surface_waves", "mantle_waves"]:
             raise ValueError(
-                    "Invalide selection_mode. Choose: 1) all_wave;"
-                    "2) body_and_surface_wave; 3) body_wave; "
-                    "4) surface_wave; 5) mantle_wave;")
+                    "Invalide selection_mode. Choose: 1) all_waves;"
+                    "2) body_and_surface_waves; 3) body_waves; "
+                    "4) surface_waves; 5) mantle_waves;")
         self.selection_mode = selection_mode.lower()
 
     def _convert_to_array(self, npts):

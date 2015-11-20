@@ -169,14 +169,14 @@ class Window(object):
     @property
     def absolute_centertime(self):
         """
-        Absolute time of the left border of this window.
+        Absolute time of the center border of this window.
         """
         return self.time_of_first_sample + self.dt * self.center
 
     @property
     def relative_centertime(self):
         """
-        Relative time of the left border in seconds to the first sample in
+        Relative time of the center in seconds to the first sample in
         the array.
         """
         return self.dt * self.center

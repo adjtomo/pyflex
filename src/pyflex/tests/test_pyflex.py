@@ -338,14 +338,14 @@ def test_settings_arrays_as_config_values():
     dlna_acceptance_level = 1.0 * np.ones(npts)
     cc_acceptance_level = 0.80 * np.ones(npts)
     s2n_limit_energy = 1.5 * np.ones(npts)
-    s2n_limit_amplitude = 1.5 * np.ones(npts)
+    s2n_limit = 1.5 * np.ones(npts)
     config = pyflex.Config(
         min_period=50.0, max_period=150.0,
         stalta_waterlevel=stalta_waterlevel,
         tshift_acceptance_level=tshift_acceptance_level,
         dlna_acceptance_level=dlna_acceptance_level,
         cc_acceptance_level=cc_acceptance_level,
-        s2n_limit_amplitude=s2n_limit_amplitude,
+        s2n_limit=s2n_limit,
         s2n_limit_energy=s2n_limit_energy,
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
 

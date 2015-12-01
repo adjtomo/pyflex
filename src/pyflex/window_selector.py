@@ -476,7 +476,7 @@ class WindowSelector(object):
         def filter_window_noise_amplitude(win):
             win_signal = self.observed.data[win.left:win.right]
             win_noise_amp = np.abs(win_signal).max() / noise_amp
-            if win_noise_amp < self.config.s2n_limit_amplitude[win.center]:
+            if win_noise_amp < self.config.s2n_limit[win.center]:
                 return False
             return True
 
@@ -498,7 +498,7 @@ class WindowSelector(object):
             self.windows = list(filter(filter_window_noise_amplitude,
                                        self.windows))
 
-        elif window_snr_type == ("energy", "amplitude_and_energy"):
+        elif window_snr_type in ("energy", "amplitude_and_energy"):
             self.windows = list(filter(filter_window_noise_energy,
                                        self.windows))
         else:

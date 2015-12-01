@@ -24,7 +24,7 @@ class Config(object):
                  tshift_acceptance_level=10.0, tshift_reference=0.0,
                  dlna_acceptance_level=1.3, dlna_reference=0.0,
                  cc_acceptance_level=0.7, earth_model="ak135",
-                 s2n_limit_energy=2.0, s2n_limit_amplitude=1.5,
+                 s2n_limit=1.5, s2n_limit_energy=1.5,
                  min_surface_wave_velocity=3.0,
                  max_surface_wave_velocity=4.2,
                  max_time_before_first_arrival=50.0,
@@ -111,15 +111,15 @@ class Config(object):
             same number of samples as the data.
         :type cc_acceptance_level: float or :class:`numpy.ndarray`
 
-        :param s2n_limit_amplitude: Limit of the amplitude signal to noise
+        :param s2n_limit: Limit of the amplitude signal-to-noise
             ratio per window. If the maximum amplitude of the window over
             the maximum amplitude of the global noise of the waveforms is
             smaller than this window, then it will be rejected. Can be
             either a single value or an array with the same number of
             samples as the data.
-        :type s2n_limit_amplitude: float or :class:`numpy.ndarray`
+        :type s2n_limit: float or :class:`numpy.ndarray`
 
-         :param s2n_limit_energy: Limit of the energy signal to noise ratio
+         :param s2n_limit_energy: Limit of the energy signal-to-noise ratio
             per window. If the average energy of the window over the average
             energy of the global noise of the waveforms is smaller than this
             window, then it will be rejected. Can be either a single value
@@ -222,13 +222,19 @@ class Config(object):
         :type window_weight_fct: function
 
         :param window_signal_to_noise_type: The type of signal to noise
-            ratio used to reject windows. If ``"amplitude"``, then the
-            largest amplitude before the arrival is the noise amplitude and
-            the largest amplitude in the window is the signal amplitude. If
-            ``"energy"`` the time normalized energy is used in both cases.
-            The later one is a bit more stable when having random wiggles
-            before the first arrival. If ``"amplitude_and_energy"``, then
-            both checks are applied to the trace.
+            ratio used to reject windows
+            Possiblities are:
+            * ``"amplitude"``: then the largest amplitude before the arrival
+                is the noise amplitude and the largest amplitude in the
+                window is the signal amplitude. If the value is smaller than
+                "s2n_limit" then the windows will be kept.
+            * ``"energy"``: the time normalized energy is used. This one is
+                a bit more stable when having random wiggles before the
+                first arrival. If the value is smaller than
+                "s2n_limit_energy", then the window will be kept.
+            * ``"amplitude_and_energy"``: then both checks(amplitude and
+                energy) are applied to the trace. But please remember to
+                assign values for "s2n_limit" and "s2n_limit_energy".
         :type window_signal_to_noise_type: str
 
         :param resolution_strategy: Strategy used to resolve overlaps.
@@ -262,7 +268,7 @@ class Config(object):
         self.dlna_acceptance_level = dlna_acceptance_level
         self.dlna_reference = dlna_reference
         self.cc_acceptance_level = cc_acceptance_level
-        self.s2n_limit_amplitude = s2n_limit_amplitude
+        self.s2n_limit = s2n_limit
         self.s2n_limit_energy = s2n_limit_energy
 
         if earth_model.lower() not in ("ak135", "iasp91"):
@@ -320,7 +326,7 @@ class Config(object):
         """
         attributes = ("stalta_waterlevel", "tshift_acceptance_level",
                       "dlna_acceptance_level", "cc_acceptance_level",
-                      "s2n_limit_amplitude", "s2n_limit_energy", "c_1")
+                      "s2n_limit", "s2n_limit_energy", "c_1")
         for name in attributes:
             attr = getattr(self, name)
 

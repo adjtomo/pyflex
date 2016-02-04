@@ -950,7 +950,7 @@ class WindowSelector(object):
         else:
             offset = 0
 
-        plt.figure(figsize=(15, 5))
+        fig = plt.figure(figsize=(15, 5))
 
         plt.axes([0.025, 0.92, 0.95, 0.07])
 
@@ -1110,3 +1110,4 @@ class WindowSelector(object):
             plt.show()
         else:
             plt.savefig(filename)
+            plt.close(fig)

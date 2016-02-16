@@ -253,7 +253,7 @@ class Config(object):
             * ``"surface_waves"``: windows in surface wave region(velocity
                 between min_surface_wave_velocity and
                 max_surface_wave_velocity).
-            * ``"body_and_surface_wave"``: windows inside body and surface
+            * ``"body_and_surface_waves"``: windows inside body and surface
                 wave regions.
             * ``mantle_waves``: pyflex will only accept windows after the
                 surface wave region.

@@ -1085,7 +1085,8 @@ class WindowSelector(object):
                      verticalalignment='top', transform=ax.transAxes,
                      fontsize=10)
 
-        if self.config.signal_end_index is not None:
+        if self.config.signal_end_index is not None and \
+                self.config.signal_start_index is not None:
             signal_start = \
                 self.config.signal_start_index * self.observed.stats.delta \
                 - offset

@@ -444,7 +444,8 @@ class WindowSelector(object):
                 return
             else:
                 self.config.noise_end_index = \
-                    int(self.ttimes[0]["time"] - 2 * self.config.min_period)
+                    int((self.ttimes[0]["time"] - 2 * self.config.min_period)
+                        * self.observed.stats.sampling_rate)
         if self.config.signal_start_index is None:
             self.config.signal_start_index = self.config.noise_end_index
 
@@ -1085,7 +1086,8 @@ class WindowSelector(object):
                      verticalalignment='top', transform=ax.transAxes,
                      fontsize=10)
 
-        if self.config.signal_end_index is not None:
+        if self.config.signal_end_index is not None and \
+                self.config.signal_start_index is not None:
             signal_start = \
                 self.config.signal_start_index * self.observed.stats.delta \
                 - offset

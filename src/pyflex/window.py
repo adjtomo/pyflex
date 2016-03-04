@@ -93,10 +93,10 @@ class Window(object):
                             _compare_value(_p1[_key_phase], _p2[_key_phase])
                 else:
                     _compare_value(dict1[key], dict2[key])
-        except Exception as err:
+        except:
             return False
         return True
-            
+
     def __ne__(self, other):
         return not self == other
 

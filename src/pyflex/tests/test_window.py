@@ -155,6 +155,7 @@ def test_window_to_dict_and_back(tmpdir):
         "right_index": win.right,
         "center_index": win.center,
         "channel_id": win.channel_id,
+        "channel_id_2": win.channel_id_2,
         "time_of_first_sample": win.time_of_first_sample,
         "max_cc_value": win.max_cc_value,
         "cc_shift_in_samples": win.cc_shift,

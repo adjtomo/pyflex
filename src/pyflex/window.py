@@ -22,7 +22,8 @@ class Window(object):
     Class representing window candidates and final windows.
     """
     def __init__(self, left, right, center, time_of_first_sample, dt,
-                 min_period, channel_id, weight_function=None):
+                 min_period, channel_id, channel_id_2=None,
+                 weight_function=None):
         """
         The optional ``weight_function`` parameter can be used to customize
         the weight of the window. Its single parameter is an instance of the
@@ -49,7 +50,12 @@ class Window(object):
         :param min_period: The minimum period in seconds.
         :type min_period: float
         :param channel_id: The id of the channel of interest. Needed for a
-            useful serialization.
+            useful serialization. Usually we assign it with observed trace
+            id.
+        :type channel_id: str
+        :param channel_id_2: The second id of the channel of interest.
+            Needed for a useful serialization. Usually we assign it
+            with synthetic trace id.
         :type channel_id: str
         :param weight_function: Function determining the window weight. The
             only argument of the function is a window instance.
@@ -65,6 +71,7 @@ class Window(object):
         self.dt = float(dt)
         self.min_period = float(min_period)
         self.channel_id = channel_id
+        self.channel_id_2 = channel_id_2
         self.phase_arrivals = []
         self.weight_function = weight_function
 
@@ -114,6 +121,7 @@ class Window(object):
         """
         necessary_keys = set([
             "left_index", "right_index", "center_index", "channel_id",
+            "channel_id_2",
             "time_of_first_sample", "max_cc_value", "cc_shift_in_samples",
             "cc_shift_in_seconds", "dlnA", "dt", "min_period",
             "phase_arrivals", "absolute_starttime", "absolute_endtime",
@@ -136,6 +144,7 @@ class Window(object):
         new_win.cc_shift = win["cc_shift_in_samples"]
         new_win.dlnA = win["dlnA"]
         new_win.phase_arrivals = win["phase_arrivals"]
+        new_win.channel_id_2 = win["channel_id_2"]
 
         return new_win
 
@@ -149,6 +158,7 @@ class Window(object):
             "right_index": self.right,
             "center_index": self.center,
             "channel_id": self.channel_id,
+            "channel_id_2": self.channel_id_2,
             "time_of_first_sample": self.time_of_first_sample,
             "max_cc_value":  self.max_cc_value,
             "cc_shift_in_samples":  self.cc_shift,

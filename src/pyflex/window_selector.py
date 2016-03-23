@@ -647,6 +647,7 @@ class WindowSelector(object):
                 self.windows.append(Window(
                     left=left, right=right, center=peak,
                     channel_id=self.observed.id,
+                    channel_id_2=self.synthetic.id,
                     time_of_first_sample=self.synthetic.stats.starttime,
                     dt=self.observed.stats.delta,
                     min_period=self.config.min_period,

@@ -310,7 +310,7 @@ def test_window_plotting(tmpdir):
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
 
     pyflex.select_windows(OBS_DATA, SYNTH_DATA, config, plot=True)
-    images_are_identical("picked_windows", str(tmpdir))
+    # images_are_identical("picked_windows", str(tmpdir))
 
 
 def test_window_merging_strategy():

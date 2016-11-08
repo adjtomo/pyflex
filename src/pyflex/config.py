@@ -27,12 +27,13 @@ class Config(object):
                  s2n_limit=1.5, s2n_limit_energy=1.5,
                  min_surface_wave_velocity=3.0,
                  max_surface_wave_velocity=4.2,
-                 max_time_before_first_arrival=50.0,
+                 max_time_before_first_arrival=None,
+                 max_time_after_last_arrival=None,
                  c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
                  check_global_data_quality=False, snr_integrate_base=3.5,
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
-                 signal_start_index=None, signal_end_index=-1,
+                 signal_start_index=None, signal_end_index=None,
                  window_weight_fct=None,
                  window_signal_to_noise_type="amplitude",
                  resolution_strategy="interval_scheduling",
@@ -151,6 +152,11 @@ class Config(object):
             have a starttime smaller than this.
         :type max_time_before_first_arrival: float
 
+        :param max_time_after_last_arrival: This is the max endtime
+            of any window in seconds after the last arrival. No windows will
+            have a endtime larger then this.
+        :type max_time_after_last_arrival: float
+
         :param c_0: Fine tuning constant for the rejection of windows based
             on the height of internal minima. Any windows with internal
             minima lower then this value times the STA/LTA water level at
@@ -245,9 +251,10 @@ class Config(object):
         :type resolution_strategy: str
 
         :param selection_mode: Strategy to select different types of phases.
+            For most cases, event and station information are required to
+            calculate the arrival time information.
             Possibilities are:
-            * ``"all_waves"``: all windows in the signal region(after
-                noise_end).
+            * ``"all_waves"``: all windows after first arrival
             * ``"body_waves"``: windows in the body wave region(after
                 first arrival and before surface wave arrival).
             * ``"surface_waves"``: windows in surface wave region(velocity
@@ -257,6 +264,7 @@ class Config(object):
                 wave regions.
             * ``mantle_waves``: pyflex will only accept windows after the
                 surface wave region.
+            * ``custom``: all windows will pass the check(nothing rejected)
         :type selection_mode: str
         """
         self.min_period = min_period
@@ -277,7 +285,16 @@ class Config(object):
         self.earth_model = earth_model.lower()
         self.min_surface_wave_velocity = min_surface_wave_velocity
         self.max_surface_wave_velocity = max_surface_wave_velocity
-        self.max_time_before_first_arrival = max_time_before_first_arrival
+
+        if max_time_before_first_arrival is None:
+            self.max_time_before_first_arrival = 2 * min_period
+        else:
+            self.max_time_before_first_arrival = max_time_before_first_arrival
+
+        if max_time_after_last_arrival is None:
+            self.max_time_after_last_arrival = max_period
+        else:
+            self.max_time_after_last_arrival = max_time_after_last_arrival
 
         self.c_0 = c_0
         self.c_1 = c_1
@@ -312,11 +329,12 @@ class Config(object):
 
         if selection_mode.lower() not in [
                 "all_waves", "body_and_surface_waves", "body_waves",
-                "surface_waves", "mantle_waves"]:
+                "surface_waves", "mantle_waves", "custom"]:
             raise ValueError(
                     "Invalide selection_mode. Choose: 1) all_waves;"
                     "2) body_and_surface_waves; 3) body_waves; "
-                    "4) surface_waves; 5) mantle_waves;")
+                    "4) surface_waves; 5) mantle_waves; "
+                    "6) custom; ")
         self.selection_mode = selection_mode.lower()
 
     def _convert_to_array(self, npts):
@@ -344,22 +362,36 @@ class Config(object):
         """
         Convert negative index into positive. So we can compare and check
         """
-        if self.noise_start_index < 0:
-            self.noise_start_index += npts
-        if self.noise_end_index < 0:
-            self.noise_end_index += npts
-        if self.noise_start_index >= self.noise_end_index:
-            raise ValueError(
-                "noise_start_index is larger than "
-                "noise_end_idx: %d > %d" % (self.noise_start_index,
-                                            self.noise_end_index))
+        def add_npts(_idx, _npts):
+            if _idx is None:
+                return
+            if _idx < 0:
+                return _idx + _npts
+            else:
+                return _idx
 
-        if self.signal_start_index < 0:
-            self.signal_start_index += npts
-        if self.signal_end_index < 0:
-            self.signal_end_index += npts
-        if self.signal_start_index >= self.signal_end_index:
-            raise ValueError("singal_start_index is larger than "
-                             "signal_end_index: %d > %d"
-                             % (self.signal_start_index,
-                                self.signal_end_index))
+        self.noise_start_index = add_npts(self.noise_start_index, npts)
+        self.noise_end_index = add_npts(self.noise_end_index, npts)
+        self.signal_start_index = add_npts(self.signal_start_index, npts)
+        self.signal_end_index = add_npts(self.signal_end_index, npts)
+
+        if self.noise_start_index and self.noise_end_index:
+            if self.noise_start_index >= self.noise_end_index:
+                raise ValueError(
+                    "noise_start_index is larger than "
+                    "noise_end_idx: %d > %d" % (self.noise_start_index,
+                                                self.noise_end_index))
+
+        if self.signal_start_index and self.signal_end_index:
+            if self.signal_start_index >= self.signal_end_index:
+                raise ValueError("singal_start_index is larger than "
+                                 "signal_end_index: %d > %d"
+                                 % (self.signal_start_index,
+                                    self.signal_end_index))
+
+        if self.noise_end_index and self.signal_start_index:
+            if self.noise_end_index > self.signal_start_index:
+                raise ValueError("noise_end_index is larger than "
+                                 "signal_start_index: %d > %d"
+                                 % (self.noise_end_index,
+                                    self.signal_start_index))

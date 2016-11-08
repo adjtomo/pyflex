@@ -12,6 +12,7 @@ Run with pytest.
     (http://www.gnu.org/copyleft/gpl.html)
 """
 import inspect
+import pytest
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.testing.compare import compare_images as mpl_compare_images
@@ -295,7 +296,9 @@ def test_run_with_data_quality_checks():
         c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
         check_global_data_quality=True)
 
-    windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
+    ws = pyflex.window_selector.WindowSelector(
+        OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
     # The data in this case is so good that nothing should have changed.
     assert len(windows) == 9
 
@@ -351,3 +354,100 @@ def test_settings_arrays_as_config_values():
 
     windows = pyflex.select_windows(OBS_DATA, SYNTH_DATA, config)
     assert len(windows) == 9
+
+
+def test_reject_on_noise_region():
+    npts = OBS_DATA[0].stats.npts
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        noise_end_index=npts-1, signal_start_index=npts-1,
+        signal_end_index=npts,
+        check_global_data_quality=False)
+
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
+    assert len(windows) == 0
+
+    config.signal_start_index = npts - 1
+    config.signal_end_index = npts - 2
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    with pytest.raises(ValueError):
+        windows = ws.select_windows()
+
+    config.noise_end_index = npts - 1
+    config.signal_start_index = npts - 2
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    with pytest.raises(ValueError):
+        windows = ws.select_windows()
+
+
+def test_determine_signal_and_noise_indices():
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        check_global_data_quality=False)
+
+    assert config.max_time_before_first_arrival == 100
+    assert config.max_time_after_last_arrival == 150
+
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    ws.select_windows()
+    assert ws.config.noise_start_index == 0
+    assert ws.config.noise_end_index == 1331
+    assert ws.config.signal_start_index == 1331
+    assert ws.config.signal_end_index == 5352
+
+    config.max_time_before_first_arrival = 200
+    config.max_time_after_last_arrival = 300
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    ws.select_windows()
+    assert ws.config.noise_start_index == 0
+    assert ws.config.noise_end_index == 1231
+    assert ws.config.signal_start_index == 1231
+    assert ws.config.signal_end_index == 5502
+
+
+def test_selection_mode():
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        check_global_data_quality=False)
+
+    config.selection_mode = "custom"
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
+    assert len(windows) == 9
+
+    config.selection_mode = "body_waves"
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
+    assert len(windows) == 6
+
+    config.selection_mode = "surface_waves"
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
+    assert len(windows) == 3
+
+    config.selection_mode = "mantle_waves"
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
+    assert len(windows) == 3
+
+    config.selection_mode = "body_and_surface_waves"
+    ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
+    windows = ws.select_windows()
+    assert len(windows) == 9
+
+
+def test_selection_mode_wrong_spelling():
+    wrong_mode = "body_wvae"
+    with pytest.raises(ValueError):
+        pyflex.Config(min_period=50, max_period=150,
+                      selection_mode=wrong_mode)

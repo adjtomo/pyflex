@@ -298,23 +298,22 @@ class WindowSelector(object):
             return
 
         if self.ttimes:
-            offset = self.event.origin_time - self.observed.stats.starttime
-            min_time = self.ttimes[0]["time"] - \
-                self.config.max_time_before_first_arrival + offset
-            min_idx = int(min_time / self.observed.stats.delta)
-
-            dist_in_km = geodetics.calcVincentyInverse(
-                self.station.latitude, self.station.longitude,
-                self.event.latitude, self.event.longitude)[0] / 1000.0
-            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
-                offset + self.config.max_period
-            max_idx = int(max_time / self.observed.stats.delta)
-
-            # Reject all peaks and troughs before the minimal allowed start
-            # time and after the maximum allowed end time.
+            min_idx = self.config.signal_start_index
+            max_idx = self.config.signal_end_index
             first_trough, last_trough = self.troughs[0], self.troughs[-1]
-            self.troughs = self.troughs[(self.troughs >= min_idx) &
-                                        (self.troughs <= max_idx)]
+            # Reject all peaks not in the signal region. This kind of
+            # rejection will reduce the window counts and spedd up
+            # the processing speed
+            self.peaks = self.peaks[(self.peaks >= min_idx) &
+                                    (self.peaks <= max_idx)]
+            # Reject all troughs before the minimal allowed start
+            # time and after the maximum allowed end time.
+            sampling_rate = self.observed.stats.sampling_rate
+            loose_npts = 2 * self.config.min_period * sampling_rate
+            min_idx_2 = self.config.signal_start_index - loose_npts
+            max_idx_2 = self.config.signal_end_index + loose_npts
+            self.troughs = self.troughs[(self.troughs >= min_idx_2) &
+                                        (self.troughs <= max_idx_2)]
 
             # If troughs have been removed, readd them add the boundaries.
             if len(self.troughs):
@@ -326,10 +325,10 @@ class WindowSelector(object):
                     self.troughs = np.concatenate([
                         self.troughs,
                         np.array([max_idx], dtype=self.troughs.dtype)])
-            # Make sure peaks are inside the troughs!
-            min_trough, max_trough = self.troughs[0], self.troughs[-1]
-            self.peaks = self.peaks[(self.peaks > min_trough) &
-                                    (self.peaks < max_trough)]
+                # Make sure peaks are inside the troughs!
+                min_trough, max_trough = self.troughs[0], self.troughs[-1]
+                self.peaks = self.peaks[(self.peaks > min_trough) &
+                                        (self.peaks < max_trough)]
 
     def __print_remaining_windows(self):
         logger.debug("Remaining windows: %d" % (len(self.windows)))
@@ -349,15 +348,18 @@ class WindowSelector(object):
         if self.event and self.station:
             self.calculate_ttimes()
 
+        self.determine_signal_and_noise_indices()
+
         self.calculate_preliminiaries()
 
-        self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:
             if not self.check_data_quality():
                 return []
 
         # Perform all window selection steps.
         self.initial_window_selection()
+        # Reject windows in the noise region
+        self.reject_on_noise_region()
         # Reject windows based on traveltime if event and station
         # information is given. This will also fill self.ttimes.
         if self.event and self.station:
@@ -430,6 +432,44 @@ class WindowSelector(object):
         logger.info("Merging windows resulted in %i windows." %
                     len(self.windows))
 
+    def calculate_noise_end_index(self):
+        """
+        If self.config.noise_end_index is not given, calculate the noise
+        end index based the first arrival(event and station information
+        required).
+        """
+        offset = self.event.origin_time - self.observed.stats.starttime
+        noise_end_index = int(
+            (self.ttimes[0]["time"] + offset -
+             self.config.max_time_before_first_arrival) *
+            self.observed.stats.sampling_rate)
+        noise_end_index = max(noise_end_index, 0)
+        return noise_end_index
+
+    def calculate_signal_end_index(self):
+        """
+        If self.config.noise_end_index is not given, calculate the noise
+        end index based the first arrival(event and station information
+        required).
+        """
+        offset = self.event.origin_time - self.observed.stats.starttime
+        # signal end index
+        dist_in_km = geodetics.calcVincentyInverse(
+             self.station.latitude, self.station.longitude,
+             self.event.latitude,
+             self.event.longitude)[0] / 1000.0
+        surface_wave_arrival = \
+            dist_in_km / self.config.min_surface_wave_velocity
+        last_arrival = max(self.ttimes[-1]["time"], surface_wave_arrival)
+        signal_end_index = int(
+            (last_arrival + offset +
+             self.config.max_time_after_last_arrival) *
+            self.observed.stats.sampling_rate)
+
+        npts = self.observed.stats.npts
+        signal_end_index = min(signal_end_index, npts)
+        return signal_end_index
+
     def determine_signal_and_noise_indices(self):
         """
         Calculate the time range of the noise and the signal respectively if
@@ -441,22 +481,30 @@ class WindowSelector(object):
                                "event and/or station information is not given "
                                "and thus the theoretical arrival times cannot "
                                "be calculated")
-                return
             else:
-                self.config.noise_end_index = \
-                    int((self.ttimes[0]["time"] - 2 * self.config.min_period) *
-                        self.observed.stats.sampling_rate)
-        if self.config.signal_start_index is None:
+                self.config.noise_end_index = self.calculate_noise_end_index()
+
+        if self.config.signal_start_index is None and \
+                self.config.noise_end_index:
             self.config.signal_start_index = self.config.noise_end_index
+
+        if self.config.signal_end_index is None:
+            if not self.ttimes:
+                logger.warning("Cannot calculate the end of the signal as "
+                               "event and/or station information is not given "
+                               "and thus the theoretical arrival times cannot "
+                               "be calculated")
+            else:
+                self.config.signal_end_index = \
+                    self.calculate_signal_end_index()
 
         self.config._convert_negative_index(npts=self.observed.stats.npts)
 
-        dt = self.observed.stats.delta
-        logger.info("Noise region [%ds, %ds]; signal region [%ds, %ds]" % (
-                    self.config.noise_start_index * dt,
-                    self.config.noise_end_index * dt,
-                    self.config.signal_start_index * dt,
-                    self.config.signal_end_index * dt))
+        logger.info("Noise index [%s, %s]; signal index [%s, %s]" % (
+                    self.config.noise_start_index,
+                    self.config.noise_end_index,
+                    self.config.signal_start_index,
+                    self.config.signal_end_index))
 
     def reject_based_on_signal_to_noise_ratio(self):
         """
@@ -566,19 +614,49 @@ class WindowSelector(object):
         self.ttimes = sorted(tts, key=lambda x: x["time"])
         logger.info("Calculated travel times.")
 
+    def reject_on_noise_region(self):
+        """
+        Reject windows whose center is in the noise region
+        (center > noise_end_index).
+        We also put another check here, to make sure the left boarder
+        is not too far away with the `noise_end_index`.
+        """
+        if self.config.noise_end_index is None:
+            return
+
+        # window.center threshold is the noise_end_index
+        center_threshold = self.config.noise_end_index
+        # window.left threshold is the (noise_end - 2 * min_period)
+        two_min_period_npts = 2 * self.config.min_period * \
+            self.observed.stats.sampling_rate
+        left_threshold = max(
+            self.config.noise_end_index - two_min_period_npts, 0)
+
+        # reject windows which has overlap with the noise region
+        self.windows = \
+            [win for win in self.windows
+             if (win.center > center_threshold) and
+             (win.left > left_threshold)]
+
     def reject_on_selection_mode(self):
         """
-        Reject based on select mode. Will reject windows outside of the
+        Reject based on selection mode.
+        This function will reject windows outside of the
         wave category specified. For example, if config.selection_mode
-        == "body_only", only body wave windows will be selected.
+        == "body_waves", only body wave windows will be selected(after
+        first arrival and before surface wave arrival).
         """
+        select_mode = self.config.selection_mode
+        if select_mode == "custom":
+            # do nothing if "custom"
+            return
+
         dist_in_km = geodetics.calcVincentyInverse(
             self.station.latitude, self.station.longitude, self.event.latitude,
             self.event.longitude)[0] / 1000.0
 
         offset = self.event.origin_time - self.observed.stats.starttime
 
-        select_mode = self.config.selection_mode
         min_period = self.config.min_period
         first_arrival = self.ttimes[0]["time"]
         if select_mode == "all_waves":
@@ -619,10 +697,6 @@ class WindowSelector(object):
         self.windows = [win for win in self.windows
                         if (win.relative_endtime <= max_time) and
                         (win.relative_starttime >= min_time)]
-
-        # reject windows which has overlap with the noise region
-        self.windows = [win for win in self.windows
-                        if (win.left > self.config.noise_end_index)]
 
         logger.info("Rejection based on selection mode retained %i windows." %
                     len(self.windows))

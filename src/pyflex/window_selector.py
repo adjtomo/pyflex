@@ -297,7 +297,9 @@ class WindowSelector(object):
         if not len(self.peaks) and len(self.troughs):
             return
 
-        if self.ttimes:
+        # make sure window.peak stays in the signal region
+        if self.config.signal_start_index is not None and \
+                self.config.signal_end_index is not None:
             min_idx = self.config.signal_start_index
             max_idx = self.config.signal_end_index
             first_trough, last_trough = self.troughs[0], self.troughs[-1]
@@ -485,7 +487,7 @@ class WindowSelector(object):
                 self.config.noise_end_index = self.calculate_noise_end_index()
 
         if self.config.signal_start_index is None and \
-                self.config.noise_end_index:
+                self.config.noise_end_index is not None:
             self.config.signal_start_index = self.config.noise_end_index
 
         if self.config.signal_end_index is None:

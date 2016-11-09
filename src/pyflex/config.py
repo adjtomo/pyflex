@@ -307,6 +307,7 @@ class Config(object):
         self.check_global_data_quality = check_global_data_quality
         self.snr_integrate_base = snr_integrate_base
         self.snr_max_base = snr_max_base
+
         self.noise_start_index = noise_start_index
         self.noise_end_index = noise_end_index
         self.signal_start_index = signal_start_index
@@ -365,6 +366,7 @@ class Config(object):
         def add_npts(_idx, _npts):
             if _idx is None:
                 return
+            _idx = int(_idx)
             if _idx < 0:
                 return _idx + _npts
             else:
@@ -375,21 +377,24 @@ class Config(object):
         self.signal_start_index = add_npts(self.signal_start_index, npts)
         self.signal_end_index = add_npts(self.signal_end_index, npts)
 
-        if self.noise_start_index and self.noise_end_index:
+        if self.noise_start_index is not None and \
+                self.noise_end_index is not None:
             if self.noise_start_index >= self.noise_end_index:
                 raise ValueError(
                     "noise_start_index is larger than "
                     "noise_end_idx: %d > %d" % (self.noise_start_index,
                                                 self.noise_end_index))
 
-        if self.signal_start_index and self.signal_end_index:
+        if self.signal_start_index is not None and \
+                self.signal_end_index is not None:
             if self.signal_start_index >= self.signal_end_index:
                 raise ValueError("singal_start_index is larger than "
                                  "signal_end_index: %d > %d"
                                  % (self.signal_start_index,
                                     self.signal_end_index))
 
-        if self.noise_end_index and self.signal_start_index:
+        if self.noise_end_index is not None and \
+                self.signal_start_index is not None:
             if self.noise_end_index > self.signal_start_index:
                 raise ValueError("noise_end_index is larger than "
                                  "signal_start_index: %d > %d"

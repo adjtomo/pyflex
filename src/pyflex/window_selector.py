@@ -18,8 +18,8 @@ import copy
 import json
 import numpy as np
 import obspy
-import obspy.station
-from obspy.core.util import geodetics
+from obspy.core.inventory import Inventory
+from obspy import geodetics
 from obspy.signal.filter import envelope
 from obspy.taup import getTravelTimes
 import os
@@ -60,7 +60,7 @@ class WindowSelector(object):
             will be extracted from the data traces if either originates from
             a SAC file.
         :type station: A Pyflex :class:`~pyflex.Station` object or an ObsPy
-            :class:`~obspy.station.inventory.Inventory` object
+            :class:`~obspy.core.inventory.Inventory` object
         """
         self.observed = observed
         self.synthetic = synthetic
@@ -234,7 +234,7 @@ class WindowSelector(object):
                 raise PyflexError("Could not parse the event. Unknown type.")
 
         # Parse the station information if it is an obspy inventory object.
-        if isinstance(self.station, obspy.station.Inventory):
+        if isinstance(self.station, Inventory):
             net = self.observed.stats.network
             sta = self.observed.stats.station
             # Workaround for ObsPy 0.9.2 Newer version have a get

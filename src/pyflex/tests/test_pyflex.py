@@ -412,6 +412,32 @@ def test_determine_signal_and_noise_indices():
     assert ws.config.signal_end_index == 5502
 
 
+def test_noise_start_and_end_index():
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        noise_start_index=0, noise_end_index=0)
+    with pytest.raises(ValueError):
+        ws = pyflex.window_selector.WindowSelector(
+            OBS_DATA, SYNTH_DATA, config)
+        ws.select_windows()
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        noise_end_index=100, signal_start_index=50)
+    with pytest.raises(ValueError):
+        ws = pyflex.window_selector.WindowSelector(
+            OBS_DATA, SYNTH_DATA, config)
+        ws.select_windows()
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        signal_start_index=100, signal_end_index=50)
+    with pytest.raises(ValueError):
+        ws = pyflex.window_selector.WindowSelector(
+            OBS_DATA, SYNTH_DATA, config)
+        ws.select_windows()
+
+
 def test_selection_mode():
     config = pyflex.Config(
         min_period=50.0, max_period=150.0,

@@ -297,6 +297,12 @@ class WindowSelector(object):
         if not len(self.peaks) and len(self.troughs):
             return
 
+    def reject_peaks_and_troughs_not_in_signal_region(self):
+        """
+        Reject all the peaks and troughs not in the signal regions.
+        This will save us huge amount of time by rejecting a large
+        number of non-sense peaks and troughs.
+        """
         # make sure window.peak stays in the signal region
         if self.config.signal_start_index is not None and \
                 self.config.signal_end_index is not None:
@@ -353,6 +359,7 @@ class WindowSelector(object):
         self.determine_signal_and_noise_indices()
 
         self.calculate_preliminiaries()
+        self.reject_peaks_and_troughs_not_in_signal_region()
 
         if self.config.check_global_data_quality:
             if not self.check_data_quality():
@@ -445,7 +452,7 @@ class WindowSelector(object):
             (self.ttimes[0]["time"] + offset -
              self.config.max_time_before_first_arrival) *
             self.observed.stats.sampling_rate)
-        noise_end_index = max(noise_end_index, 0)
+        noise_end_index = max(noise_end_index, 1)
         return noise_end_index
 
     def calculate_signal_end_index(self):
@@ -456,12 +463,13 @@ class WindowSelector(object):
         """
         offset = self.event.origin_time - self.observed.stats.starttime
         # signal end index
-        dist_in_km = geodetics.calcVincentyInverse(
+        dist_in_km = geodetics.calc_vincenty_inverse(
              self.station.latitude, self.station.longitude,
              self.event.latitude,
              self.event.longitude)[0] / 1000.0
         surface_wave_arrival = \
             dist_in_km / self.config.min_surface_wave_velocity
+        # max of last arrival and surface wave arrival
         last_arrival = max(self.ttimes[-1]["time"], surface_wave_arrival)
         signal_end_index = int(
             (last_arrival + offset +
@@ -631,8 +639,7 @@ class WindowSelector(object):
         # window.left threshold is the (noise_end - 2 * min_period)
         two_min_period_npts = 2 * self.config.min_period * \
             self.observed.stats.sampling_rate
-        left_threshold = max(
-            self.config.noise_end_index - two_min_period_npts, 0)
+        left_threshold = self.config.noise_end_index - two_min_period_npts
 
         # reject windows which has overlap with the noise region
         self.windows = \
@@ -653,7 +660,7 @@ class WindowSelector(object):
             # do nothing if "custom"
             return
 
-        dist_in_km = geodetics.calcVincentyInverse(
+        dist_in_km = geodetics.calc_vincenty_inverse(
             self.station.latitude, self.station.longitude, self.event.latitude,
             self.event.longitude)[0] / 1000.0
 
@@ -696,9 +703,12 @@ class WindowSelector(object):
         logger.debug("Selection mode <%s> -- time region <%d, %d>"
                      % (self.config.selection_mode, min_time, max_time))
 
+        # self.windows = [win for win in self.windows
+        #                if (win.relative_endtime <= max_time) and
+        #                (win.relative_starttime >= min_time)]
         self.windows = [win for win in self.windows
-                        if (win.relative_endtime <= max_time) and
-                        (win.relative_starttime >= min_time)]
+                        if (win.relative_centertime <= max_time) and
+                        (win.relative_centertime >= min_time)]
 
         logger.info("Rejection based on selection mode retained %i windows." %
                     len(self.windows))
@@ -912,6 +922,12 @@ class WindowSelector(object):
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))
 
+        max_c1 = max(self.config.c_1)
+        min_c1 = min(self.config.c_1)
+        logger.debug("Range of minimum window length: (%.2f, ..., %.2f)"
+                     % (min_c1 * self.config.min_period,
+                        max_c1 * self.config.min_period))
+
     def reject_based_on_data_fit_criteria(self):
         """
         Rejects windows based on similarity between data and synthetics.
@@ -930,12 +946,12 @@ class WindowSelector(object):
             dlnA_max = self.config.dlna_reference + \
                 self.config.dlna_acceptance_level[win.center]
 
-            if not (tshift_min <= win.cc_shift *
-                    self.observed.stats.delta <= tshift_max):
+            if not (tshift_min <= win.cc_shift_in_seconds <= tshift_max):
                 logger.debug("Window [%.1f - %.1f] rejected due to time "
                              "shift does not satisfy:  %.1f < %.1f < %.1f"
                              % (win.relative_starttime, win.relative_endtime,
-                                tshift_min, win.cc_shift, tshift_max))
+                                tshift_min, win.cc_shift_in_seconds,
+                                tshift_max))
                 return False
             if not (dlnA_min <= win.dlnA <= dlnA_max):
                 logger.debug("Window [%.1f - %.1f] rejected due to amplitude"

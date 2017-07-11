@@ -1,0 +1,419 @@
+
+Pyflex
+======
+
+``Pyflex`` is a Python port of the ``FLEXWIN`` algorithm for
+automatically selecting windows for seismic tomography. For the most
+part it mimicks the calculations of the original ``FLEXWIN`` package;
+minor differences and their reasoning are detailed later.
+
+To give credit where credit is due, the original ``FLEXWIN`` program can
+be downloaded `here <http://geodynamics.org/cig/software/flexwin/>`_,
+the corresponding publication is
+
+    Maggi, A., Tape, C., Chen, M., Chao, D., & Tromp, J. (2009). **An
+    automated time-window selection algorithm for seismic tomography.**
+    *Geophysical Journal International*, 178(1), 257–281
+    `doi:10.1111/j.1365-246X.2009.04099.x <http://dx.doi.org/10.1111/j.1365-246X.2009.04099.x>`_
+
+If you use ``Pyflex``, please also cite the latest released version:
+http://dx.doi.org/10.5281/zenodo.31607
+
+The source code for ``Pyflex`` lives on Github:
+https://github.com/krischer/pyflex. If you encounter any problems with
+it please open an issue or submit a pull request.
+
+Installation
+------------
+
+``Pyflex`` utilizes `ObsPy <http://obspy.org>`_ (and some of its
+dependencies) for the processing and data handling. As a first step,
+please follow the `installation instructions of
+ObsPy <https://github.com/obspy/obspy/wiki#installation>`_ for your
+given platform (we recommend the installation with
+`Anaconda <https://github.com/obspy/obspy/wiki/Installation-via-Anaconda>`_
+as it will most likely result in the least amount of problems).
+``Pyflex`` should work with Python versions 2.7, 3.3, and 3.4 (mainly
+depends on the used ObsPy version). To install it, best use ``pip``:
+
+::
+
+    $ pip install pyflex
+
+If you want the latest development version, or want to work on the code,
+you will have to install with the help of ``git``.
+
+::
+
+    $ git clone https://github.com/krischer/pyflex.git
+    $ cd pyflex
+    $ pip install -v -e .
+
+Tests
+-----
+
+To assure the installation is valid and everything works as expected,
+run the tests with
+
+::
+
+    $ python -m pyflex.tests
+
+Usage
+-----
+
+The first step is to import ObsPy and Pyflex.
+
+.. code:: ipython3
+
+    %pylab inline
+    import obspy
+    import pyflex
+
+
+.. parsed-literal::
+
+    Populating the interactive namespace from numpy and matplotlib
+
+
+``Pyflex`` expects both observed and synthetic data to already be fully
+processed. An easy way to accomplish this is to utilize ObsPy. This
+example reproduces what the original ``FLEXWIN`` package does when it is
+told to also perform the filtering.
+
+.. code:: ipython3
+
+    obs_data = obspy.read("../src/pyflex/tests/data/1995.122.05.32.16.0000.II.ABKT.00.LHZ.D.SAC")
+    synth_data = obspy.read("../src/pyflex/tests/data/ABKT.II.LHZ.semd.sac")
+    
+    obs_data.detrend("linear")
+    obs_data.taper(max_percentage=0.05, type="hann")
+    obs_data.filter("bandpass", freqmin=1.0 / 150.0, freqmax=1.0 / 50.0,
+                    corners=4, zerophase=True)
+    
+    synth_data.detrend("linear")
+    synth_data.taper(max_percentage=0.05, type="hann")
+    synth_data.filter("bandpass", freqmin=1.0 / 150.0, freqmax=1.0 / 50.0,
+                      corners=4, zerophase=True)
+
+
+
+
+.. parsed-literal::
+
+    1 Trace(s) in Stream:
+    II.ABKT..LHZ | 1995-05-02T05:57:53.500006Z - 1995-05-02T08:06:13.500006Z | 1.0 Hz, 7701 samples
+
+
+
+
+The configuration is encapsuled within a :class:`~pyflex.config.Config` object. It thus replaces the need for a PAR_FILE and the user functions. Please refer to the :class:`~pyflex.config.Config` object's documentation for more details.
+
+.. code:: ipython3
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0)
+
+
+Observed and synthetic waveforms can be passed as either ObsPy :class:`~obspy.core.trace.Trace` objects, or :class:`~obspy.core.stream.Stream` objects with one component. The optional ``plot`` parameter determines if a plot is produced or not. The :func:`~pyflex.flexwin.select_windows` function is the high level interface suitable for most users of ``Pyflex``. Please refer to its documentation for further details.
+
+.. code:: ipython3
+
+    windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+
+.. image:: index_files/index_7_0.png
+
+
+Windows
+-------
+
+
+It returns a sorted list of :class:`~pyflex.window.Window` objects which can then be used in further applications.
+
+.. code:: ipython3
+
+    import pprint
+    pprint.pprint(windows[:3])
+
+
+.. parsed-literal::
+
+    [Window(left=1551, right=1985, center=1768, channel_id=II.ABKT.00.LHZ, max_cc_value=0.957407008229, cc_shift=-3, dlnA=0.0746904099861),
+     Window(left=2221, right=2709, center=2465, channel_id=II.ABKT.00.LHZ, max_cc_value=0.966468650943, cc_shift=0, dlnA=0.128083046189),
+     Window(left=2709, right=2960, center=2834, channel_id=II.ABKT.00.LHZ, max_cc_value=0.963357158929, cc_shift=-5, dlnA=-0.192769044168)]
+
+
+Each window contains a number of properties that can be used to
+calculate absolute and relative times for the specific window. ``left``
+and ``right`` specify the boundary indices of a window,
+``absolute_starttime`` and ``absolute_endtime`` are the absolute times
+of a window's bounds as ObsPy UTCDateTime objects, and
+``relative_starttime`` and ``relative_endtime`` are the bounds of a
+window in seconds since the first sample of the data arrays (not
+necessarily identical to the event origin time!).
+
+.. code:: ipython3
+
+    win = windows[4]
+    print("Indices: %s - %s" % (win.left, win.right))
+    print("Absolute times: %s - %s" % (win.absolute_starttime, win.absolute_endtime))
+    print("Relative times in seconds: %s - %s" % (win.relative_starttime,
+                                                  win.relative_endtime))
+
+
+.. parsed-literal::
+
+    Indices: 3353 - 3609
+    Absolute times: 1995-05-02T06:53:46.500006Z - 1995-05-02T06:58:02.500006Z
+    Relative times in seconds: 3353.0 - 3609.0
+
+
+A window furthermore contains a list of phases theoretically arriving
+within the window. Take care that the times here are in seconds since
+the event origin.
+
+.. code:: ipython3
+
+    win.phase_arrivals
+
+
+
+
+.. parsed-literal::
+
+    [{u'name': u'SKSSKS', u'time': 3049.8839177900104},
+     {u'name': u'SKIKSSKIKS', u'time': 3091.6546087871261}]
+
+
+
+Event and Station Information
+-----------------------------
+
+While ``Pyflex`` can also operate without any event and station
+information, it needs some information to work at full efficiency. In
+case the waveform traces originate from SAC files, they might contain
+the necessary information. ``Pyflex`` is able to extract that
+information but this should really be seen as a last resort.
+
+The easiest way to pass the necessary information to ``Pyflex`` is to
+use its very bare bones event and station objects.
+
+.. code:: ipython3
+
+    event = pyflex.Event(latitude=-3.77, longitude=-77.07, depth_in_m=112800,
+                         origin_time=obspy.UTCDateTime(1995, 5, 2, 6, 6, 13))
+    station = pyflex.Station(latitude=37.93, longitude=58.12)
+    
+    windows = pyflex.select_windows(obs_data, synth_data, config,
+                                    event=event, station=station)
+
+
+A more powerful approach enabling the construction of cleaner workflows is to pass ObsPy objects. Event information can be passed as ObsPy :class:`~obspy.core.event.Catalog` or :class:`~obspy.core.event.Event` objects. Station information on the other hand can be passed as an :class:`~obspy.station.inventory.Inventory` object. This enables the acquisition of this information directly from web services or QuakeML/StationXML files on dics. Please refer to the ObsPy documentation for more details.
+
+.. code-block:: python
+
+    event = obspy.readEvents("../events/event_1.xml")
+    station = obspy.read_inventory("../stations/II_ABKT.xml")
+    windows = pyflex.select_windows(obs_data, synth_data, config,
+                                    event=event, station=station)
+
+
+(De)Serializing Windows
+-----------------------
+
+In case necessary, windows can also be written to and read from disc.
+``Pyflex`` utilizes a simple JSON representation of the windows. The
+``windows_filename`` parameter determines the filename if given.
+
+.. code:: ipython3
+
+    windows = pyflex.select_windows(obs_data, synth_data, config,
+                                    windows_filename="windows.json")
+
+The resulting JSON file will have a list of Window objects under the
+``"windows"`` key.
+
+
+.. literalinclude:: windows.json
+    :lines: 1-20
+    :language: JSON
+
+To read the windows again you will have to utilize the lower level :class:`~pyflex.window_selector.WindowSelector` class. There is no higher level interface for this as it is likely an edge use case. The window criteria like cross correlation and amplitude misfit will be recalculated upon loading to assure consistency with the data.
+
+.. code:: ipython3
+
+    ws2 = pyflex.WindowSelector(obs_data, synth_data, config)
+    print("Windows before loading: %i" % len(ws2.windows))
+    ws2.load("windows.json")
+    print("Windows after loading: %i" % len(ws2.windows))
+
+
+.. parsed-literal::
+
+    Windows before loading: 0
+    Windows after loading: 9
+
+
+Difference to the original FLEXWIN algorithm
+--------------------------------------------
+
+``Pyflex`` largely follows the original ``FLEXWIN`` algorithm. The major
+differences are outlined here.
+
+-  The found local extrema of the STA/LTA functional might differ a bit.
+   In case of a "flat" extrema, ``Pyflex`` will always find the leftmost
+   index.
+-  The order of rejection stages has been changed a bit to assure
+   cheaper eliminations are run first. This results in a significant
+   speed boost.
+-  The water/acceptance level of the data fit criteria is now evaluated
+   at the center of each windows and not at the central peak.
+-  The Config object has a ``min_surface_wave_velocity`` parameter which
+   can be used to easily discard windows for late arriving surface/coda
+   waves.
+
+Overlap Resolution Strategy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of using the overlap resolution strategy outlined in section
+**2.5 Stage E** in the ``FLEXWIN`` paper, ``Pyflex`` utilizes weighted
+interval scheduling which is a classical IT problem. The weighted
+interval scheduling algorithm finds the best possible subset of
+non-overlapping windows by maximizing the cumulative weight of all
+chosen windows. By default the weight of each window is its length in
+terms of minimum period of the data times the maximum cross correlation
+coefficient. The weighting function can be overwritten with the help of
+the Config object. This results in similar windows to the original
+``FLEXWIN`` algorithm but is easier to reason about.
+
+``Pyflex`` furthermore offers the option to merge all good candidate
+windows. This is useful for some misfit measurements.
+
+.. code:: ipython3
+
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        resolution_strategy="merge")
+    windows = pyflex.select_windows(obs_data, synth_data, config, plot=True)
+
+
+
+.. image:: index_files/index_24_0.png
+
+
+Logging
+-------
+
+By default, ``Pyflex`` is fairly quiet and will only raise exceptions
+and warnings in case they occur. ``Pyflex`` utilizes Python's `logging
+facilities <https://docs.python.org/2/library/logging.html>`_ so if you
+want more information you can hook into them. This approach is very
+flexible as it allows you to install custom logging handlers and
+channels.
+
+.. code:: ipython3
+
+    import logging
+    logger = logging.getLogger("pyflex")
+    logger.setLevel(logging.DEBUG)
+    
+    windows = pyflex.select_windows(obs_data, synth_data, config)
+
+
+.. parsed-literal::
+
+    [2017-07-11 13:15:21,545] - pyflex - INFO: Extracted station information from observed SAC file.
+    [2017-07-11 13:15:21,546] - pyflex - INFO: Extracted event information from observed SAC file.
+    [2017-07-11 13:15:21,941] - pyflex - INFO: Calculated travel times.
+    [2017-07-11 13:15:21,943] - pyflex - INFO: Calculating envelope of synthetics.
+    [2017-07-11 13:15:21,944] - pyflex - INFO: Calculating STA/LTA.
+    [2017-07-11 13:15:21,969] - pyflex - INFO: Initial window selection yielded 1663 possible windows.
+    [2017-07-11 13:15:21,975] - pyflex - INFO: Rejection based on travel times retained 1663 windows.
+    [2017-07-11 13:15:21,994] - pyflex - INFO: Rejection based on minimum window length retained 1653 windows.
+    [2017-07-11 13:15:22,031] - pyflex - INFO: Water level rejection retained 36 windows
+    [2017-07-11 13:15:22,036] - pyflex - INFO: Single phase group rejection retained 14 windows
+    [2017-07-11 13:15:22,037] - pyflex - INFO: Removing duplicates retains 14 windows.
+    [2017-07-11 13:15:22,039] - pyflex - INFO: Rejection based on minimum window length retained 14 windows.
+    [2017-07-11 13:15:22,040] - pyflex - INFO: SN amplitude ratio window rejection retained 14 windows
+    [2017-07-11 13:15:22,042] - pyflex - INFO: Rejection based on data fit criteria retained 14 windows.
+    [2017-07-11 13:15:22,045] - pyflex - INFO: Merging windows resulted in 4 windows.
+
+
+API Documentation
+=================
+
+This section documents the most used functions and classes. For more
+details you can always have a look at the code.
+
+Config Object
+-------------
+
+
+.. autoclass:: pyflex.config.Config
+
+Main select\_windows() function
+-------------------------------
+
+
+.. autofunction:: pyflex.flexwin.select_windows
+
+The Window Object
+-----------------
+
+``Pyflex`` internally utilizes a window class for candidates and final
+windows, the ``select_windows()`` function will return a list of these.
+
+
+.. autoclass:: pyflex.window.Window
+    :members:
+
+
+Helper Objects
+--------------
+
+These are simple helper objects giving the capability of specifying
+event and station information without having to resort to full blown
+ObsPy objects (altough this is also supported and likely results in a
+cleaner workflow).
+
+
+.. autoclass:: pyflex.Event
+
+.. autoclass:: pyflex.Station
+
+Exceptions and Warnings
+-----------------------
+
+Right now error handling is very simple and handled by these two types.
+
+
+.. autoclass:: pyflex.PyflexError
+
+.. autoclass:: pyflex.PyflexWarning
+
+Low-level WindowSelector Class
+------------------------------
+
+
+For most purposes, the :func:`~pyflex.flexwin.select_windows` function it the better choice, but this might be useful in some more advanced cases.
+
+.. autoclass:: pyflex.window_selector.WindowSelector
+    :members:
+
+Misc Functionality
+------------------
+
+
+.. autofunction:: pyflex.interval_scheduling.schedule_weighted_intervals
+
+.. autofunction:: pyflex.utils.find_local_extrema
+
+.. autofunction:: pyflex.stalta.sta_lta

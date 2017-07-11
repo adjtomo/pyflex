@@ -1,6 +1,9 @@
 Changelog
 ---------
 
+* **Pyflex 0.1.5** *Jul 11th 2016*
+    * Make it work with the latest versions of ObsPy, flake8, and matplotlib.
+
 * **Pyflex 0.1.4** *Sep 30th 2015*
     * Minor change to adapt tests to the latest ObsPy version.
     * Dropped official support for Python 2.6. It still works with it for now but I don't plan on further supporting it.

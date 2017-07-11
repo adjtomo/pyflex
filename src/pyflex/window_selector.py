@@ -18,10 +18,9 @@ import copy
 import json
 import numpy as np
 import obspy
-import obspy.station
-from obspy.core.util import geodetics
+import obspy.geodetics
 from obspy.signal.filter import envelope
-from obspy.taup import getTravelTimes
+from obspy.taup import TauPyModel
 import os
 import warnings
 
@@ -60,7 +59,7 @@ class WindowSelector(object):
             will be extracted from the data traces if either originates from
             a SAC file.
         :type station: A Pyflex :class:`~pyflex.Station` object or an ObsPy
-            :class:`~obspy.station.inventory.Inventory` object
+            :class:`~obspy.core.inventory.Inventory` object
         """
         self.observed = observed
         self.synthetic = synthetic
@@ -81,6 +80,8 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+
+        self.taupy_model = TauPyModel(model=self.config.earth_model)
 
     def load(self, filename):
         """
@@ -211,7 +212,7 @@ class WindowSelector(object):
                 raise PyflexError("Could not parse the event. Unknown type.")
 
         # Parse the station information if it is an obspy inventory object.
-        if isinstance(self.station, obspy.station.Inventory):
+        if isinstance(self.station, obspy.core.inventory.Inventory):
             net = self.observed.stats.network
             sta = self.observed.stats.station
             # Workaround for ObsPy 0.9.2 Newer version have a get
@@ -280,7 +281,7 @@ class WindowSelector(object):
                 self.config.max_time_before_first_arrival + offset
             min_idx = int(min_time / self.observed.stats.delta)
 
-            dist_in_km = geodetics.calcVincentyInverse(
+            dist_in_km = obspy.geodetics.calc_vincenty_inverse(
                 self.station.latitude, self.station.longitude,
                 self.event.latitude, self.event.longitude)[0] / 1000.0
             max_time = dist_in_km / self.config.min_surface_wave_velocity + \
@@ -499,12 +500,13 @@ class WindowSelector(object):
         Calculate theoretical travel times. Only call if station and event
         information is available!
         """
-        dist_in_deg = geodetics.locations2degrees(
+        dist_in_deg = obspy.geodetics.locations2degrees(
             self.station.latitude, self.station.longitude,
             self.event.latitude, self.event.longitude)
-        tts = getTravelTimes(dist_in_deg, self.event.depth_in_m / 1000.0,
-                             model=self.config.earth_model)
-        self.ttimes = sorted(tts, key=lambda x: x["time"])
+        tts = self.taupy_model.get_travel_times(
+            source_depth_in_km=self.event.depth_in_m / 1000.0,
+            distance_in_degree=dist_in_deg)
+        self.ttimes = [{"time": _i.time, "name": _i.name} for _i in tts]
         logger.info("Calculated travel times.")
 
     def reject_on_traveltimes(self):
@@ -514,7 +516,7 @@ class WindowSelector(object):
         only containing data after the minimum allowed surface wave speed.
         Only call if station and event information is available!
         """
-        dist_in_km = geodetics.calcVincentyInverse(
+        dist_in_km = obspy.geodetics.calc_vincenty_inverse(
             self.station.latitude, self.station.longitude, self.event.latitude,
             self.event.longitude)[0] / 1000.0
 
@@ -854,14 +856,16 @@ class WindowSelector(object):
         ax.set_yticks([])
         ax.set_xlim(times[0], times[-1])
 
+        ylim = plt.ylim()
         for tt in self.ttimes:
-            if tt["phase_name"].lower().startswith("p"):
+            if tt["name"].lower().startswith("p"):
                 color = "#008c28"
             else:
                 color = "#950000"
             # Don't need an offset as the time axis corresponds to time
             # since event.
-            plt.vlines(tt["time"], plt.ylim()[0], plt.ylim()[1], color=color)
+            plt.vlines(tt["time"], ylim[0], ylim[1], color=color)
+        plt.ylim(*ylim)
 
         plt.text(0.01, 0.92, 'Phase Arrivals', horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)
@@ -926,6 +930,8 @@ class WindowSelector(object):
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
+
+        plt.ylim(0, plt.ylim()[1])
 
         if filename is None:
             plt.show()

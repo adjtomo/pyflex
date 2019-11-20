@@ -133,7 +133,7 @@ def test_window_selection():
                   -0.638657, 0.25942, 0.106571]), rtol=1E-2)
 
     # Assert the phases of the first window.
-    assert sorted([_i["phase_name"] for _i in windows[0].phase_arrivals]) == \
+    assert sorted([_i["name"] for _i in windows[0].phase_arrivals]) == \
         ['PKIKP', 'PKIKS', 'PKiKP', 'PP', 'SKIKP', 'SKiKP', 'pPKIKP',
          'pPKiKP', 'sPKIKP', 'sPKiKP']
 
@@ -241,7 +241,7 @@ def test_event_information_extraction():
 
     # Alternatively, an ObsPy Catalog or Event object can be passed which
     # opens the gate to more complex workflows.
-    cat = obspy.readEvents()
+    cat = obspy.read_events()
     cat.events = cat.events[:1]
     event = cat[0]
 
@@ -263,8 +263,6 @@ def test_station_information_extraction():
     """
     Station information can either be passed or read from sac files.
     """
-    import obspy.station
-
     config = pyflex.Config(min_period=50.0, max_period=150.0)
 
     # If not passed, it is read from sac files, if available.
@@ -273,10 +271,11 @@ def test_station_information_extraction():
     assert abs(ws.station.longitude - 58.1189) < 1E-5
 
     # The other option is an inventory object. Assemble a dummy one.
-    inv = obspy.station.Inventory(networks=[], source="local")
-    net = obspy.station.Network(code=OBS_DATA[0].stats.network)
-    sta = obspy.station.Station(code=OBS_DATA[0].stats.station, latitude=1.0,
-                                longitude=2.0, elevation=3.0)
+    inv = obspy.core.inventory.Inventory(networks=[], source="local")
+    net = obspy.core.inventory.Network(code=OBS_DATA[0].stats.network)
+    sta = obspy.core.inventory.Station(
+        code=OBS_DATA[0].stats.station, latitude=1.0,
+        longitude=2.0, elevation=3.0)
     inv.networks = [net]
     net.stations = [sta]
 

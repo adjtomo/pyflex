@@ -21,7 +21,7 @@ import obspy
 from obspy.core.inventory import Inventory
 from obspy import geodetics
 from obspy.signal.filter import envelope
-from obspy.taup import getTravelTimes
+from obspy.taup import TauPyModel
 import os
 import warnings
 
@@ -81,6 +81,8 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+
+        self.taupy_model = TauPyModel(model=self.config.earth_model)
 
         self.selection_timebox = \
             np.array([0, self.observed.stats.delta * self.observed.stats.npts])
@@ -619,8 +621,11 @@ class WindowSelector(object):
         dist_in_deg = geodetics.locations2degrees(
             self.station.latitude, self.station.longitude,
             self.event.latitude, self.event.longitude)
-        tts = getTravelTimes(dist_in_deg, self.event.depth_in_m / 1000.0,
-                             model=self.config.earth_model)
+
+        tts = self.taupy_model.get_travel_times(
+            source_depth_in_km=self.event.depth_in_m / 1000.0,
+            distance_in_degree=dist_in_deg)
+        tts = [{"time": _i.time, "name": _i.name} for _i in tts]
         self.ttimes = sorted(tts, key=lambda x: x["time"])
         logger.info("Calculated travel times.")
 
@@ -1061,7 +1066,7 @@ class WindowSelector(object):
         ax.set_xlim(times[0], times[-1])
 
         for tt in self.ttimes:
-            if tt["phase_name"].lower().startswith("p"):
+            if tt["name"].lower().startswith("p"):
                 color = "#008c28"
             else:
                 color = "#950000"
@@ -1091,13 +1096,13 @@ class WindowSelector(object):
 
         buf = 0.003 * (plt.xlim()[1] - plt.xlim()[0])
         for win in self.windows:
-            l = win.relative_starttime - offset
-            r = win.relative_endtime - offset
-            re = Rectangle((l, plt.ylim()[0]), r - l,
+            _l = win.relative_starttime - offset
+            _r = win.relative_endtime - offset
+            re = Rectangle((_l, plt.ylim()[0]), _r - _l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
-            plt.text(l + buf, plt.ylim()[1],
+            plt.text(_l + buf, plt.ylim()[1],
                      "CC=%.2f\ndT=%.2f\ndA=%.2f" %
                      (win.max_cc_value,
                       win.cc_shift * self.observed.stats.delta,
@@ -1162,7 +1167,7 @@ class WindowSelector(object):
             dist_in_degree = geodetics.locations2degrees(
                                 self.event.latitude, self.event.longitude,
                                 self.station.latitude, self.station.longitude)
-            text = "Epicenter distance:  %-5.2f$^\circ$   " % dist_in_degree
+            text = r"Epicenter distance:  {}$^\circ$   ".format(dist_in_degree)
             plt.text(0.75, 0.79, text, horizontalalignment='left',
                      verticalalignment='top', transform=ax.transAxes,
                      fontsize=10)
@@ -1194,9 +1199,9 @@ class WindowSelector(object):
                      fontsize=10)
 
         for win in self.windows:
-            l = win.relative_starttime - offset
-            r = win.relative_endtime - offset
-            re = Rectangle((l, plt.ylim()[0]), r - l,
+            _l = win.relative_starttime - offset
+            _r = win.relative_endtime - offset
+            re = Rectangle((_l, plt.ylim()[0]), _r - _l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)

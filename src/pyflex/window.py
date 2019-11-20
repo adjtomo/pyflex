@@ -76,33 +76,7 @@ class Window(object):
         self.weight_function = weight_function
 
     def __eq__(self, other):
-
-        def _compare_value(value1, value2):
-            if isinstance(value1, float) or isinstance(value1, np.float64):
-                np.testing.assert_allclose(value1, value2)
-            elif isinstance(value1, np.float32):
-                np.testing.assert_allclose(value1, value2, rtol=1e-06)
-            else:
-                if value1 != value2:
-                    raise AssertionError
-
-        dict1 = self.__dict__
-        dict2 = other.__dict__
-        try:
-            for key in dict1.keys():
-                if key == "phase_arrivals":
-                    phase1 = dict1[key]
-                    phase2 = dict1[key]
-                    if len(phase1) != len(phase2):
-                        raise AssertionError
-                    for _p1, _p2 in zip(phase1, phase2):
-                        for _key_phase in _p1.keys():
-                            _compare_value(_p1[_key_phase], _p2[_key_phase])
-                else:
-                    _compare_value(dict1[key], dict2[key])
-        except:
-            return False
-        return True
+        return self.__dict__ == other.__dict__
 
     def __ne__(self, other):
         return not self == other

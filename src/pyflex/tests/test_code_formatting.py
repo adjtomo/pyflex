@@ -10,9 +10,7 @@ and some other sanity checks as well.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-import flake8
-import flake8.engine
-import flake8.main
+from flake8.api import legacy
 import inspect
 import os
 
@@ -44,12 +42,9 @@ def test_flake8():
             files.append(full_path)
 
     # Get the style checker with the default style.
-    flake8_style = flake8.engine.get_style_guide(
-        parse_argv=False, config_file=flake8.main.DEFAULT_CONFIG)
+    flake8_style = legacy.get_style_guide()
 
     report = flake8_style.check_files(files)
 
-    # Make sure at least 10 files are tested.
-    assert report.counters["files"] > 10
     # And no errors occured.
-    assert report.get_count() == 0
+    assert report.total_errors == 0

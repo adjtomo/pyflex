@@ -15,12 +15,14 @@ import inspect
 import pytest
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.style
 from matplotlib.testing.compare import compare_images as mpl_compare_images
 import numpy as np
 import obspy
 import os
 
 import pyflex
+
 
 EXAMPLE_ID = "BW.FURT.00.BHZ"
 
@@ -64,6 +66,10 @@ def reset_matplotlib():
         mpl.rcParams['text.hinting_factor'] = 8
     except KeyError:
         pass
+
+    # Force classic style.
+    matplotlib.style.use("classic")
+
     import locale
     locale.setlocale(locale.LC_ALL, str('en_US.UTF-8'))
 
@@ -86,8 +92,9 @@ def images_are_identical(image_name, temp_dir, dpi=None):
     assert os.path.exists(actual)
 
     # Use a reasonably high tolerance to get around difference with different
-    # freetype and possibly agg versions. matplotlib uses a tolerance of 13.
-    result = mpl_compare_images(expected, actual, 5, in_decorator=True)
+    # freetype and possibly agg versions.
+    # 25 is fairly high but this should work on matplotlib 1 and 2.
+    result = mpl_compare_images(expected, actual, 25, in_decorator=True)
     if result is not None:
         print(result)
     assert result is None
@@ -134,8 +141,8 @@ def test_window_selection():
 
     # Assert the phases of the first window.
     assert sorted([_i["name"] for _i in windows[0].phase_arrivals]) == \
-        ['PKIKP', 'PKIKS', 'PKiKP', 'PP', 'SKIKP', 'SKiKP', 'pPKIKP',
-         'pPKiKP', 'sPKIKP', 'sPKiKP']
+        ['PKIKP', 'PKIKS', 'PKiKP', 'PP', 'SKIKP', 'SKiKP', 'pPKIKP', 'pPKiKP',
+         'sPKIKP', 'sPKiKP']
 
 
 def test_cc_config_setting():
@@ -274,8 +281,8 @@ def test_station_information_extraction():
     inv = obspy.core.inventory.Inventory(networks=[], source="local")
     net = obspy.core.inventory.Network(code=OBS_DATA[0].stats.network)
     sta = obspy.core.inventory.Station(
-        code=OBS_DATA[0].stats.station, latitude=1.0,
-        longitude=2.0, elevation=3.0)
+        code=OBS_DATA[0].stats.station,
+        latitude=1.0, longitude=2.0, elevation=3.0)
     inv.networks = [net]
     net.stations = [sta]
 

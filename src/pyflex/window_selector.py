@@ -18,8 +18,7 @@ import copy
 import json
 import numpy as np
 import obspy
-from obspy.core.inventory import Inventory
-from obspy import geodetics
+import obspy.geodetics
 from obspy.signal.filter import envelope
 from obspy.taup import TauPyModel
 import os
@@ -236,7 +235,7 @@ class WindowSelector(object):
                 raise PyflexError("Could not parse the event. Unknown type.")
 
         # Parse the station information if it is an obspy inventory object.
-        if isinstance(self.station, Inventory):
+        if isinstance(self.station, obspy.core.inventory.Inventory):
             net = self.observed.stats.network
             sta = self.observed.stats.station
             # Workaround for ObsPy 0.9.2 Newer version have a get
@@ -305,11 +304,23 @@ class WindowSelector(object):
         This will save us huge amount of time by rejecting a large
         number of non-sense peaks and troughs.
         """
-        # make sure window.peak stays in the signal region
-        if self.config.signal_start_index is not None and \
-                self.config.signal_end_index is not None:
+        if self.ttimes:
+            #offset = self.event.origin_time - self.observed.stats.starttime
+            #min_time = self.ttimes[0]["time"] - \
+            #    self.config.max_time_before_first_arrival + offset
+            #min_idx = int(min_time / self.observed.stats.delta)
             min_idx = self.config.signal_start_index
+
+            #dist_in_km = obspy.geodetics.calc_vincenty_inverse(
+            #    self.station.latitude, self.station.longitude,
+            #    self.event.latitude, self.event.longitude)[0] / 1000.0
+            #max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+            #    offset + self.config.max_period
+            #max_idx = int(max_time / self.observed.stats.delta)
             max_idx = self.config.signal_end_index
+
+            # Reject all peaks and troughs before the minimal allowed start
+            # time and after the maximum allowed end time.
             first_trough, last_trough = self.troughs[0], self.troughs[-1]
             # Reject all peaks not in the signal region. This kind of
             # rejection will reduce the window counts and spedd up
@@ -465,7 +476,7 @@ class WindowSelector(object):
         """
         offset = self.event.origin_time - self.observed.stats.starttime
         # signal end index
-        dist_in_km = geodetics.calc_vincenty_inverse(
+        dist_in_km = obspy.geodetics.calc_vincenty_inverse(
              self.station.latitude, self.station.longitude,
              self.event.latitude,
              self.event.longitude)[0] / 1000.0
@@ -618,15 +629,14 @@ class WindowSelector(object):
         Calculate theoretical travel times. Only call if station and event
         information is available!
         """
-        dist_in_deg = geodetics.locations2degrees(
+        dist_in_deg = obspy.geodetics.locations2degrees(
             self.station.latitude, self.station.longitude,
             self.event.latitude, self.event.longitude)
 
         tts = self.taupy_model.get_travel_times(
             source_depth_in_km=self.event.depth_in_m / 1000.0,
             distance_in_degree=dist_in_deg)
-        tts = [{"time": _i.time, "name": _i.name} for _i in tts]
-        self.ttimes = sorted(tts, key=lambda x: x["time"])
+        self.ttimes = [{"time": _i.time, "name": _i.name} for _i in tts]
         logger.info("Calculated travel times.")
 
     def reject_on_noise_region(self):
@@ -665,7 +675,7 @@ class WindowSelector(object):
             # do nothing if "custom"
             return
 
-        dist_in_km = geodetics.calc_vincenty_inverse(
+        dist_in_km = obspy.geodetics.calc_vincenty_inverse(
             self.station.latitude, self.station.longitude, self.event.latitude,
             self.event.longitude)[0] / 1000.0
 
@@ -1065,6 +1075,7 @@ class WindowSelector(object):
         ax.set_yticks([])
         ax.set_xlim(times[0], times[-1])
 
+        ylim = plt.ylim()
         for tt in self.ttimes:
             if tt["name"].lower().startswith("p"):
                 color = "#008c28"
@@ -1072,7 +1083,8 @@ class WindowSelector(object):
                 color = "#950000"
             # Don't need an offset as the time axis corresponds to time
             # since event.
-            plt.vlines(tt["time"], plt.ylim()[0], plt.ylim()[1], color=color)
+            plt.vlines(tt["time"], ylim[0], ylim[1], color=color)
+        plt.ylim(*ylim)
 
         plt.text(0.01, 0.92, 'Phase Arrivals', horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)
@@ -1164,7 +1176,7 @@ class WindowSelector(object):
                      fontsize=10)
 
         if self.station and self.event:
-            dist_in_degree = geodetics.locations2degrees(
+            dist_in_degree = obspy.geodetics.locations2degrees(
                                 self.event.latitude, self.event.longitude,
                                 self.station.latitude, self.station.longitude)
             text = r"Epicenter distance:  {}$^\circ$   ".format(dist_in_degree)
@@ -1205,6 +1217,8 @@ class WindowSelector(object):
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
+
+        plt.ylim(0, plt.ylim()[1])
 
         if filename is None:
             plt.show()

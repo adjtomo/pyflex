@@ -38,7 +38,7 @@ Event = collections.namedtuple("Event", ["latitude", "longitude",
 Station = collections.namedtuple("Station", ["latitude", "longitude"])
 
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 
 # Setup the logger.

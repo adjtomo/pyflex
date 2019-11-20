@@ -127,7 +127,7 @@ class Config(object):
             or an array with the same number of samples as the data.
         :type s2n_limit_energy: float or :class:`numpy.ndarray`
 
-       :param earth_model: The earth model used for the traveltime
+        :param earth_model: The earth model used for the traveltime
             calculations. Either ``"ak135"`` or ``"iasp91"``.
         :type earth_model: str
 

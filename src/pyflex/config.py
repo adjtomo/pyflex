@@ -328,15 +328,17 @@ class Config(object):
                 "'interval_scheduling' or 'merge'.")
         self.resolution_strategy = resolution_strategy.lower()
 
-        if selection_mode.lower() not in [
+        selection_mode = selection_mode.strip()
+        if selection_mode.split(":")[0].strip().lower() not in [
                 "all_waves", "body_and_surface_waves", "body_waves",
-                "surface_waves", "mantle_waves", "custom"]:
+                "surface_waves", "mantle_waves", "custom", "phase_list",
+                "body_and_mantle_waves"]:
             raise ValueError(
-                    "Invalide selection_mode. Choose: 1) all_waves;"
+                    "Invalide selection_mode({}). Choose: 1) all_waves;"
                     "2) body_and_surface_waves; 3) body_waves; "
                     "4) surface_waves; 5) mantle_waves; "
-                    "6) custom; ")
-        self.selection_mode = selection_mode.lower()
+                    "6) custom; 7) phase_list;".format(selection_mode))
+        self.selection_mode = selection_mode
 
     def _convert_to_array(self, npts):
         """
@@ -346,18 +348,17 @@ class Config(object):
         attributes = ("stalta_waterlevel", "tshift_acceptance_level",
                       "dlna_acceptance_level", "cc_acceptance_level",
                       "s2n_limit", "s2n_limit_energy", "c_1")
+
         for name in attributes:
             attr = getattr(self, name)
-
             if isinstance(attr, collections.Iterable):
                 if len(attr) != npts:
                     raise PyflexError(
                         "Config value '%s' does not have the same number of "
                         "samples as the waveforms." % name)
                 setattr(self, name, np.array(attr))
-                continue
-
-            setattr(self, name, attr * np.ones(npts))
+            else:
+                setattr(self, name, attr * np.ones(npts))
 
     def _convert_negative_index(self, npts):
         """
@@ -365,7 +366,7 @@ class Config(object):
         """
         def add_npts(_idx, _npts):
             if _idx is None:
-                return
+                return None
             _idx = int(_idx)
             if _idx < 0:
                 return _idx + _npts

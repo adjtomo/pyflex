@@ -28,6 +28,7 @@ from . import PyflexError, PyflexWarning, utils, logger, Event, Station
 from .stalta import sta_lta
 from .window import Window
 from .interval_scheduling import schedule_weighted_intervals
+from .utils import get_surface_wave_arrivals
 
 with standard_library.hooks():
     import itertools
@@ -83,8 +84,12 @@ class WindowSelector(object):
 
         self.taupy_model = TauPyModel(model=self.config.earth_model)
 
-        self.selection_timebox = \
-            np.array([0, self.observed.stats.delta * self.observed.stats.npts])
+        # event and station distance
+        self.dist_in_deg = None
+        self.dist_in_km = None
+
+        # used by selection mode to specify the time range could be used
+        self.selection_timebox = None
 
     def load(self, filename):
         """
@@ -367,6 +372,7 @@ class WindowSelector(object):
         """
         # Fill self.ttimes.
         if self.event and self.station:
+            self.calculate_distance()
             self.calculate_ttimes()
 
         self.determine_signal_and_noise_indices()
@@ -418,6 +424,9 @@ class WindowSelector(object):
         if self.ttimes:
             self.attach_phase_arrivals_to_windows()
 
+        if self.event and self.station:
+            self.attach_distance_to_windows()
+
         return self.windows
 
     def attach_phase_arrivals_to_windows(self):
@@ -430,6 +439,10 @@ class WindowSelector(object):
             right = win.relative_endtime - offset
             win.phase_arrivals = [
                 _i for _i in self.ttimes if left <= _i["time"] <= right]
+
+    def attach_distance_to_windows(self):
+        for win in self.windows:
+            win.distance_in_deg = self.dist_in_deg
 
     def merge_windows(self):
         """
@@ -476,13 +489,13 @@ class WindowSelector(object):
         """
         offset = self.event.origin_time - self.observed.stats.starttime
         # signal end index
-        dist_in_km = obspy.geodetics.calc_vincenty_inverse(
-             self.station.latitude, self.station.longitude,
-             self.event.latitude,
-             self.event.longitude)[0] / 1000.0
         surface_wave_arrival = \
-            dist_in_km / self.config.min_surface_wave_velocity
+            self.dist_in_km / self.config.min_surface_wave_velocity
         # max of last arrival and surface wave arrival
+        logger.debug("last ttimess: {}".format(self.ttimes[-1]))
+        logger.debug("surface wave arrival: {}".format(surface_wave_arrival))
+        logger.debug("sampling rate: {}".format(
+            self.observed.stats.sampling_rate))
         last_arrival = max(self.ttimes[-1]["time"], surface_wave_arrival)
         signal_end_index = int(
             (last_arrival + offset +
@@ -498,6 +511,12 @@ class WindowSelector(object):
         Calculate the time range of the noise and the signal respectively if
         not yet specified by the user.
         """
+        logger.debug("obsd and synt trace npts: {}, {}".format(
+            self.observed.stats.npts, self.synthetic.stats.npts))
+
+        if self.config.noise_start_index is None:
+            self.config.noise_start_index = 0
+
         if self.config.noise_end_index is None:
             if not self.ttimes:
                 logger.warning("Cannot calculate the end of the noise as "
@@ -540,44 +559,60 @@ class WindowSelector(object):
                            "range of the noise.")
             return
 
+        # safe guard noise_end_index when event and station are very close
         noise = self.observed.data[self.config.noise_start_index:
-                                   self.config.noise_end_index]
+                                   max(self.config.noise_end_index, 10)]
         noise_amp = np.abs(noise).max()
         noise_energy = np.sum(noise ** 2) / len(noise)
 
         def filter_window_noise_amplitude(win):
             win_signal = self.observed.data[win.left:win.right]
             win_noise_amp = np.abs(win_signal).max() / noise_amp
+            # attach snr information to window
+            win.snr_amplitude = win_noise_amp
+            win.snr_amplitude_threshold = self.config.s2n_limit[win.center]
             if win_noise_amp < self.config.s2n_limit[win.center]:
+                left = win.relative_starttime
+                right = win.relative_endtime
+                logger.debug("Win rejected due to S2N ratio (Amplitude):"
+                             "%3.1f %5.1f %5.1f"
+                             % (win_noise_amp, left, right))
                 return False
             return True
 
         def filter_window_noise_energy(win):
             data = self.observed.data[win.left:win.right]
             win_energy = np.sum(data ** 2) / len(data)
-            win_noise_amp = win_energy / noise_energy
-            if win_noise_amp < self.config.s2n_limit_energy[win.center]:
+            win_noise_energy = win_energy / noise_energy
+            # attach snr information to window
+            win.snr_energy = win_noise_energy
+            win.snr_energy_threshold = self.config.s2n_limit_energy[win.center]
+            if win_noise_energy < self.config.s2n_limit_energy[win.center]:
                 left = win.relative_starttime
                 right = win.relative_endtime
-                logger.debug("Win rejected due to S2N ratio(Amp):"
+                logger.debug("Win rejected due to S2N ratio (Energy):"
                              "%3.1f %5.1f %5.1f"
-                             % (win_noise_amp, left, right))
+                             % (win_noise_energy, left, right))
                 return False
             return True
 
+        n0 = len(self.windows)
         window_snr_type = self.config.window_signal_to_noise_type
         if window_snr_type in ("amplitude", "amplitude_and_energy"):
             self.windows = list(filter(filter_window_noise_amplitude,
                                        self.windows))
+            logger.info("SNR(Amplitude) rejection retained {}/{} "
+                        "windows".format(len(self.windows), n0))
 
-        elif window_snr_type in ("energy", "amplitude_and_energy"):
+        n1 = len(self.windows)
+        if window_snr_type in ("energy", "amplitude_and_energy"):
             self.windows = list(filter(filter_window_noise_energy,
                                        self.windows))
-        else:
-            raise NotImplementedError
+            logger.info("SNR(Energy) rejection retained {}/{} "
+                        "windows".format(len(self.windows), n1))
 
-        logger.info("SN amplitude ratio window rejection retained %i windows" %
-                    len(self.windows))
+        logger.info("Signal-Noise-Ratio({}) rejection retained {}/{} "
+                    "windows".format(window_snr_type, len(self.windows), n0))
 
     def check_data_quality(self):
         """
@@ -590,8 +625,9 @@ class WindowSelector(object):
                 "available so the theoretical arrival times cannot be "
                 "calculated.")
 
+        # safe guard noise_end_index when event and station are very close
         noise = self.observed.data[self.config.noise_start_index:
-                                   self.config.noise_end_index]
+                                   max(self.config.noise_end_index, 10)]
         signal = self.observed.data[self.config.signal_start_index:
                                     self.config.signal_end_index]
 
@@ -620,24 +656,46 @@ class WindowSelector(object):
             logger.warn(msg)
             return False
 
-        logger.info("Global SNR checks passed. Integrated SNR: %f, Amplitude "
-                    "SNR: %f" % (snr_int, snr_amp))
+        logger.info("Global SNR checks passed. Integrated SNR: {:.2f}, "
+                    "Amplitude SNR {:.2f}".format(snr_int, snr_amp))
         return True
+
+    def calculate_distance(self):
+        """
+        Calculate the distance between event and station
+        """
+        self.dist_in_deg = obspy.geodetics.locations2degrees(
+            self.station.latitude, self.station.longitude,
+            self.event.latitude, self.event.longitude)
+        self.dist_in_km = obspy.geodetics.degrees2kilometers(self.dist_in_deg)
+        logger.debug(r"dist_in_deg and dist_in_km: {:.2f}, {:.2f} km".format(
+            self.dist_in_deg, self.dist_in_km))
 
     def calculate_ttimes(self):
         """
         Calculate theoretical travel times. Only call if station and event
         information is available!
         """
-        dist_in_deg = obspy.geodetics.locations2degrees(
-            self.station.latitude, self.station.longitude,
-            self.event.latitude, self.event.longitude)
+        logger.debug("event lat, lon: {}, {}".format(
+            self.event.latitude, self.event.longitude))
+        logger.debug("station lat, lon: {}, {}".format(
+            self.station.latitude, self.station.longitude))
 
         tts = self.taupy_model.get_travel_times(
             source_depth_in_km=self.event.depth_in_m / 1000.0,
-            distance_in_degree=dist_in_deg)
+            distance_in_degree=self.dist_in_deg)
+        logger.debug("source depth: {:.2f} km".format(
+            self.event.depth_in_m / 1000.0))
         self.ttimes = [{"time": _i.time, "name": _i.name} for _i in tts]
         logger.info("Calculated travel times.")
+        #logger.debug("{}".format(self.ttimes))
+
+        #tts2 = self.taupy_model.get_travel_times(
+        #    source_depth_in_km=self.event.depth_in_m / 1000.0,
+        #    distance_in_degree=self.dist_in_deg,
+        #    phase_list=["ScS", "sScS", "ScSScS", "sScSScS"]
+        #)
+        #logger.debug("ScS arrivals: {}".format(tts2))
 
     def reject_on_noise_region(self):
         """
@@ -662,6 +720,63 @@ class WindowSelector(object):
              if (win.center > center_threshold) and
              (win.left > left_threshold)]
 
+    def _prepare_min_max_timebox(self, min_time, max_time, srate):
+        logger.debug("selection_timebox min/max time: {:.2f} {:.2f}"
+                     "".format(min_time, max_time))
+
+        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        il = int(min_time * srate)
+        ir = int(max_time * srate)
+        timebox[il:(ir+1)] = 1
+
+        logger.debug("selection_timebox index range: {} - {} / {}".format(
+            il, ir, len(timebox)))
+        self.selection_timebox = timebox
+
+    def _prepare_surface_wave_timebox(self, srate, offset):
+        logger.debug("selection_timebox using surface waves")
+
+        max_vel = self.config.max_surface_wave_velocity
+        min_vel = self.config.min_surface_wave_velocity
+        arrivals = get_surface_wave_arrivals(
+            self.dist_in_deg, min_vel, max_vel, ncircles=1)
+        logger.debug("Number of surface wave arrivals: {}".format(
+            len(arrivals)))
+
+        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        for arr in arrivals:
+            il = int((arr[0] + offset) * srate)
+            ir = int((arr[1] + offset + self.config.min_period) * srate)
+            timebox[il:(ir+1)] = 1
+
+        logger.debug("Selectable region percentage: {}/{}".format(
+            timebox.sum(), len(timebox)))
+        self.selection_timebox = timebox
+
+    def _prepare_phase_timebox(self, phase_list, srate, buffer_time, offset):
+        logger.debug("Selection_timebox using phases: {}".format(phase_list))
+
+        source_depth = self.event.depth_in_m / 1000.0
+        logger.debug("event depth: {:.2f} km".format(source_depth))
+        logger.debug("distance in deg: {:.2f}".format(self.dist_in_deg))
+        tts = self.taupy_model.get_travel_times(
+            source_depth_in_km=source_depth,
+            distance_in_degree=self.dist_in_deg,
+            phase_list=phase_list
+        )
+
+        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        for t in tts:
+            t_left = t.time - buffer_time + offset
+            il = int(t_left * srate)
+            t_right = t.time + buffer_time + offset
+            ir = int(t_right * srate)
+            timebox[il:(ir+1)] = 1
+
+        logger.debug("Selectable region percentage: {}/{}".format(
+            timebox.sum(), len(timebox)))
+        self.selection_timebox = timebox
+
     def reject_on_selection_mode(self):
         """
         Reject based on selection mode.
@@ -671,62 +786,64 @@ class WindowSelector(object):
         first arrival and before surface wave arrival).
         """
         select_mode = self.config.selection_mode
-        if select_mode == "custom":
-            # do nothing if "custom"
+        logger.debug("Selection mode <{}>".format((select_mode)))
+        if select_mode in [None, "", "custom"]:
             return
 
-        dist_in_km = obspy.geodetics.calc_vincenty_inverse(
-            self.station.latitude, self.station.longitude, self.event.latitude,
-            self.event.longitude)[0] / 1000.0
-
         offset = self.event.origin_time - self.observed.stats.starttime
+        buffer_time = 2 * self.config.min_period
 
-        min_period = self.config.min_period
+        surface_arrival = \
+            self.dist_in_km / self.config.max_surface_wave_velocity
+        surface_end = \
+            self.dist_in_km / self.config.min_surface_wave_velocity
+
+        stats = self.observed.stats
+        srate = self.observed.stats.sampling_rate
+        tr_timelen = stats.endtime - stats.starttime
+
         first_arrival = self.ttimes[0]["time"]
-        if select_mode == "all_waves":
-            min_time = first_arrival - 2 * min_period + offset
-            max_time = self.observed.stats.endtime \
-                - self.observed.stats.starttime
+
+        if select_mode in ["all_waves", "body_and_mantle_waves"]:
+            min_time = first_arrival - buffer_time + offset
+            max_time = tr_timelen
+            self._prepare_min_max_timebox(min_time, max_time, srate)
         elif select_mode == "body_and_surface_waves":
-            min_time = first_arrival - 2 * min_period + offset
-            max_time = dist_in_km / self.config.min_surface_wave_velocity \
-                + 2 * min_period + offset
+            min_time = first_arrival - buffer_time + offset
+            max_time = surface_end + buffer_time + offset
+            self._prepare_min_max_timebox(min_time, max_time, srate)
         elif select_mode == "body_waves":
-            min_time = first_arrival - 2 * min_period + offset
-            max_time = \
-                dist_in_km / self.config.max_surface_wave_velocity \
-                + 2 * min_period + offset
+            min_time = first_arrival - buffer_time + offset
+            max_time = surface_arrival + buffer_time + offset
+            self._prepare_min_max_timebox(min_time, max_time, srate)
         elif select_mode == "surface_waves":
-            min_time = \
-                dist_in_km / self.config.max_surface_wave_velocity \
-                - 2 * min_period + offset
-            max_time = dist_in_km / self.config.min_surface_wave_velocity \
-                + 2 * min_period + offset
+            # min_time = surface_arrival - buffer_time + offset
+            # max_time = surface_end + buffer_time + offset
+            # self._prepare_min_max_timebox(min_time, max_time, srate)
+            self._prepare_surface_wave_timebox(srate, offset)
         elif select_mode == "mantle_waves":
-            min_time = dist_in_km / self.config.max_surface_wave_velocity \
-                       + offset
-            max_time = self.observed.stats.endtime \
-                - self.observed.stats.starttime
+            min_time = surface_end + offset
+            max_time = tr_timelen
+            self._prepare_min_max_timebox(min_time, max_time, srate)
+        elif select_mode.startswith("phase_list"):
+            phases = select_mode.split(":")[-1].split(",")
+            phases = [p.strip() for p in phases]
+            if len(phases) == 0:
+                raise ValueError("No phase provided for 'phase_list' "
+                                 "selection mode")
+            self._prepare_phase_timebox(
+                phases, srate, buffer_time, offset)
         else:
             raise NotImplementedError
-
-        if min_time >= max_time:
-            raise ValueError("Selection mode time region incorrect: [%d, %d]"
-                             % (min_time, max_time))
-        self.selection_timebox = np.array([min_time, max_time])
-
-        logger.debug("Selection mode <%s> -- time region <%d, %d>"
-                     % (self.config.selection_mode, min_time, max_time))
 
         # self.windows = [win for win in self.windows
         #                if (win.relative_endtime <= max_time) and
         #                (win.relative_starttime >= min_time)]
+        n0 = len(self.windows)
         self.windows = [win for win in self.windows
-                        if (win.relative_centertime <= max_time) and
-                        (win.relative_centertime >= min_time)]
-
-        logger.info("Rejection based on selection mode retained %i windows." %
-                    len(self.windows))
+                        if self.selection_timebox[win.center]]
+        logger.info("Rejection based on selection mode retained {}({})"
+                    "windows.".format(len(self.windows), n0))
 
     def initial_window_selection(self):
         """
@@ -968,12 +1085,14 @@ class WindowSelector(object):
                                 tshift_min, win.cc_shift_in_seconds,
                                 tshift_max))
                 return False
+
             if not (dlnA_min <= win.dlnA <= dlnA_max):
-                logger.debug("Window [%.1f - %.1f] rejected due to amplitude"
+                logger.debug("Window [%.1f - %.1f] rejected due to amplitude "
                              "fit does not satisfy: %.3f < %.3f < %.3f"
                              % (win.relative_starttime, win.relative_endtime,
                                 dlnA_min, win.dlnA, dlnA_max))
                 return False
+
             if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
                 logger.debug("Window [%.1f - %.1f] rejected due to CC value "
                              "does not satisfy: %.3f < %.3f"
@@ -981,6 +1100,7 @@ class WindowSelector(object):
                                 self.config.cc_acceptance_level[win.center],
                                 win.max_cc_value))
                 return False
+
             return True
 
         self.windows = list(filter(reject_based_on_criteria, self.windows))
@@ -1124,17 +1244,17 @@ class WindowSelector(object):
                      size="small", multialignment="right")
 
         # plot the selection_timebox line
-        plt.axes([0.025, 0.50, 0.95, 0.01])
-        ax = plt.gca()
-        ax.spines['right'].set_color('none')
-        ax.spines['left'].set_color('none')
-        ax.spines['top'].set_color('none')
-        ax.spines['bottom'].set_color('none')
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_xlim(times[0], times[-1])
-        plt.plot(self.selection_timebox - offset, [0, 0], 'g-', linewidth=8.0,
-                 alpha=0.8)
+        #plt.axes([0.025, 0.50, 0.95, 0.01])
+        #ax = plt.gca()
+        #ax.spines['right'].set_color('none')
+        #ax.spines['left'].set_color('none')
+        #ax.spines['top'].set_color('none')
+        #ax.spines['bottom'].set_color('none')
+        #ax.set_xticks([])
+        #ax.set_yticks([])
+        #ax.set_xlim(times[0], times[-1])
+        #plt.plot(self.selection_timebox - offset, [0, 0], 'g-', linewidth=8.0,
+        #         alpha=0.8)
 
         plt.axes([0.025, 0.1, 0.95, 0.4])
         plt.plot(times, self.stalta, color="blue")
@@ -1162,12 +1282,12 @@ class WindowSelector(object):
                  verticalalignment='top', transform=ax.transAxes,
                  fontsize=10)
 
-        text = "Selection timebox(s): [%6.1f, %6.1f]" \
-               % (self.selection_timebox[0] - offset,
-                  self.selection_timebox[1] - offset)
-        plt.text(0.75, 0.93, text, horizontalalignment='left',
-                 verticalalignment='top', transform=ax.transAxes,
-                 fontsize=10)
+        #text = "Selection timebox(s): [%6.1f, %6.1f]" \
+        #       % (self.selection_timebox[0] - offset,
+        #          self.selection_timebox[1] - offset)
+        #plt.text(0.75, 0.93, text, horizontalalignment='left',
+        #         verticalalignment='top', transform=ax.transAxes,
+        #         fontsize=10)
 
         if self.event:
             text = "Source depth: %.2f km" % (self.event.depth_in_m/1000.)
@@ -1176,10 +1296,12 @@ class WindowSelector(object):
                      fontsize=10)
 
         if self.station and self.event:
-            dist_in_degree = obspy.geodetics.locations2degrees(
-                                self.event.latitude, self.event.longitude,
-                                self.station.latitude, self.station.longitude)
-            text = r"Epicenter distance:  {}$^\circ$   ".format(dist_in_degree)
+            logger.debug("event lat, lon: {}, {}".format(
+                self.event.latitude, self.event.longitude))
+            logger.debug("station lat, lon: {}, {}".format(
+                self.station.latitude, self.station.longitude))
+            text = r"Epicenter distance:  {}$^\circ$   ".format(
+                self.dist_in_deg)
             plt.text(0.75, 0.79, text, horizontalalignment='left',
                      verticalalignment='top', transform=ax.transAxes,
                      fontsize=10)

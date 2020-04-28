@@ -537,8 +537,9 @@ class WindowSelector(object):
                                "and thus the theoretical arrival times cannot "
                                "be calculated")
             else:
-                self.config.signal_end_index = \
-                    self.calculate_signal_end_index()
+                # self.config.signal_end_index = \
+                #    self.calculate_signal_end_index()
+                self.config.signal_end_index = self.observed.stats.npts
 
         self.config._convert_negative_index(npts=self.observed.stats.npts)
 
@@ -739,13 +740,13 @@ class WindowSelector(object):
         max_vel = self.config.max_surface_wave_velocity
         min_vel = self.config.min_surface_wave_velocity
         arrivals = get_surface_wave_arrivals(
-            self.dist_in_deg, min_vel, max_vel, ncircles=1)
+            self.dist_in_deg, min_vel, max_vel, ncircles=2)
         logger.debug("Number of surface wave arrivals: {}".format(
             len(arrivals)))
 
         timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
         for arr in arrivals:
-            il = int((arr[0] + offset) * srate)
+            il = int((arr[0] + offset - self.config.min_period) * srate)
             ir = int((arr[1] + offset + self.config.min_period) * srate)
             timebox[il:(ir+1)] = 1
 

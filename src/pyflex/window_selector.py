@@ -80,6 +80,7 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+        self.rejects = {}
 
         self.taupy_model = TauPyModel(model=self.config.earth_model)
 
@@ -446,7 +447,9 @@ class WindowSelector(object):
         else:
             raise NotImplementedError
 
-        self.windows = list(filter(filter_window_noise, self.windows))
+        windows = list(filter(filter_window_noise, self.windows))
+        self.separate_rejects(windows, "s2n")
+
         logger.info("SN amplitude ratio window rejection retained %i windows" %
                     len(self.windows))
 
@@ -524,10 +527,11 @@ class WindowSelector(object):
 
         min_time = self.ttimes[0]["time"] - self.config.min_period + offset
         max_time = dist_in_km / self.config.min_surface_wave_velocity + offset
+        windows = [win for win in self.windows
+                   if (win.relative_endtime >= min_time) and
+                   (win.relative_starttime <= max_time)]
 
-        self.windows = [win for win in self.windows
-                        if (win.relative_endtime >= min_time) and
-                        (win.relative_starttime <= max_time)]
+        self.separate_rejects(windows, "traveltimes")
         logger.info("Rejection based on travel times retained %i windows." %
                     len(self.windows))
 
@@ -559,6 +563,38 @@ class WindowSelector(object):
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))
 
+
+    def separate_rejects(self, windows, key):
+        """
+        Separate a new batch of selected windows from the rejected windows.
+
+        Similar to remove_duplicates(), checks left and right bounds to 
+        determine which windows have been rejected by a given function, 
+        reassigns internal windows attribute, and adds rejected windows to 
+        rejects attribute with a given tag specified by calling function
+
+        :type windows: list 
+        :param windows: list of Window objects that have been outputted by
+            a rejection function
+        :type tag: str
+        :param tag: tag based on the function that rejected the windows
+        """
+        # Determine unique tags for the new set of windows
+        new_windows = [(win.left, win.right) for win in windows]
+
+        # Scroll through current windows and sort by accept/reject
+        accepted_windows, rejected_windows = [], []
+        for window in self.windows:
+            tag = (window.left, window.right)
+            if tag in new_windows:
+                accepted_windows.append(window)
+            else:
+                rejected_windows.append(window)
+
+        self.windows = accepted_windows
+        if rejected_windows:
+            self.rejects[key] = rejected_windows
+
     def remove_duplicates(self):
         """
         Filter to remove duplicate windows based on left and right bounds.
@@ -583,8 +619,10 @@ class WindowSelector(object):
         """
         Run the weighted interval scheduling.
         """
-        self.windows = schedule_weighted_intervals(self.windows)
-        logger.info("Weighted interval schedule optimzation retained %i "
+        windows = schedule_weighted_intervals(self.windows)
+        self.separate_rejects(windows, "schedule")
+
+        logger.info("Weighted interval schedule optimization retained %i "
                     "windows." % len(self.windows))
 
     def reject_on_minima_water_level(self):
@@ -600,7 +638,9 @@ class WindowSelector(object):
             return not np.any(self.stalta[internal_minima] <=
                               waterlevel_midpoint)
 
-        self.windows = list(filter(filter_window_minima, self.windows))
+        windows = list(filter(filter_window_minima, self.windows))
+        self.separate_rejects(windows, "water_level")
+
         logger.info("Water level rejection retained %i windows" %
                     len(self.windows))
 
@@ -631,8 +671,10 @@ class WindowSelector(object):
                 return False
             return True
 
-        self.windows = list(filter(filter_windows_maximum_prominence,
+        windows = list(filter(filter_windows_maximum_prominence,
                                    self.windows))
+        self.separate_rejects(windows, "prominence")
+
         logger.info("Prominence of central peak rejection retained "
                     "%i windows." % len(self.windows))
 
@@ -675,8 +717,8 @@ class WindowSelector(object):
                 return True
             return False
 
-        self.windows = list(filter(
-            filter_phase_rejection, self.windows))
+        windows = list(filter(filter_phase_rejection, self.windows))
+        self.separate_rejects(windows, "phase_sep")
         logger.info("Single phase group rejection retained %i windows" %
                     len(self.windows))
 
@@ -711,7 +753,9 @@ class WindowSelector(object):
                 win.right = int(i_right + time_decay_right)
             return win
 
-        self.windows = [curtail_window_length(i) for i in self.windows]
+        windows = [curtail_window_length(i) for i in self.windows]
+        self.separate_rejects(windows, "curtail")
+
 
     @property
     def minimum_window_length(self):
@@ -725,9 +769,10 @@ class WindowSelector(object):
         """
         Reject windows smaller than the minimal window length.
         """
-        self.windows = list(filter(
+        windows = list(filter(
             lambda x: (x.right - x.left) >= self.minimum_window_length,
             self.windows))
+        self.separate_rejects(windows, "min_length")
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))
 
@@ -764,7 +809,9 @@ class WindowSelector(object):
                 return False
             return True
 
-        self.windows = list(filter(reject_based_on_criteria, self.windows))
+        windows = list(filter(reject_based_on_criteria, self.windows))
+        self.separate_rejects(windows, "data_fit")
+
         logger.info("Rejection based on data fit criteria retained %i windows."
                     % len(self.windows))
 

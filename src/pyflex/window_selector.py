@@ -537,9 +537,8 @@ class WindowSelector(object):
                                "and thus the theoretical arrival times cannot "
                                "be calculated")
             else:
-                # self.config.signal_end_index = \
-                #    self.calculate_signal_end_index()
-                self.config.signal_end_index = self.observed.stats.npts
+                self.config.signal_end_index = \
+                    self.calculate_signal_end_index()
 
         self.config._convert_negative_index(npts=self.observed.stats.npts)
 

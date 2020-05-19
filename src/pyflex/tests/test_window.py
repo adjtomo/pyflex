@@ -168,7 +168,11 @@ def test_window_to_dict_and_back(tmpdir):
         "absolute_endtime": win.absolute_endtime,
         "relative_starttime": win.relative_starttime,
         "relative_endtime": win.relative_endtime,
-        "window_weight": win.weight}
+        "window_weight": win.weight,
+        "distance_in_deg": None,
+        "snr_amplitude": None,
+        "snr_amplitude_threshold": None
+    }
 
     assert output == expected
 

@@ -406,7 +406,7 @@ def test_determine_signal_and_noise_indices():
     assert ws.config.noise_start_index == 0
     assert ws.config.noise_end_index == 1331
     assert ws.config.signal_start_index == 1331
-    assert ws.config.signal_end_index == 5352
+    assert ws.config.signal_end_index == 5349
 
     config.max_time_before_first_arrival = 200
     config.max_time_after_last_arrival = 300
@@ -415,7 +415,7 @@ def test_determine_signal_and_noise_indices():
     assert ws.config.noise_start_index == 0
     assert ws.config.noise_end_index == 1231
     assert ws.config.signal_start_index == 1231
-    assert ws.config.signal_end_index == 5502
+    assert ws.config.signal_end_index == 5499
 
 
 def test_noise_start_and_end_index():
@@ -470,7 +470,7 @@ def test_selection_mode():
     config.selection_mode = "mantle_waves"
     ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)
     windows = ws.select_windows()
-    assert len(windows) == 3
+    assert len(windows) == 0
 
     config.selection_mode = "body_and_surface_waves"
     ws = pyflex.window_selector.WindowSelector(OBS_DATA, SYNTH_DATA, config)

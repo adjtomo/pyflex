@@ -74,6 +74,10 @@ class Window(object):
         self.channel_id_2 = channel_id_2
         self.phase_arrivals = []
         self.weight_function = weight_function
+        # extra properties
+        self.snr_amplitude = None
+        self.snr_amplitude_threshold = None
+        self.distance_in_deg = None
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -120,6 +124,11 @@ class Window(object):
         new_win.phase_arrivals = win["phase_arrivals"]
         new_win.channel_id_2 = win["channel_id_2"]
 
+        keys = ["snr_amplitude", "snr_amplitude_threshold", "distance_in_deg"]
+        for k in keys:
+            if k in win:
+                new_win.__dict__[k] = win[k]
+
         return new_win
 
     def _get_json_content(self):
@@ -146,6 +155,10 @@ class Window(object):
             "relative_starttime": self.relative_starttime,
             "relative_endtime": self.relative_endtime,
             "window_weight": self.weight}
+
+        keys = ["snr_amplitude", "snr_amplitude_threshold", "distance_in_deg"]
+        for key in keys:
+            info[key] = self.__dict__[key]
 
         return info
 

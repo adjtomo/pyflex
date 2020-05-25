@@ -619,8 +619,7 @@ class WindowSelector(object):
         """
         Run the weighted interval scheduling.
         """
-        windows = schedule_weighted_intervals(self.windows)
-        self.separate_rejects(windows, "schedule")
+        self.windows = schedule_weighted_intervals(self.windows)
 
         logger.info("Weighted interval schedule optimization retained %i "
                     "windows." % len(self.windows))

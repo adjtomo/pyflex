@@ -784,33 +784,43 @@ class WindowSelector(object):
         for win in self.windows:
             win._calc_criteria(self.observed.data, self.synthetic.data)
 
-        def reject_based_on_criteria(win):
+        def reject_based_on_time_shift(win):
             tshift_min = self.config.tshift_reference - \
                 self.config.tshift_acceptance_level[win.center]
             tshift_max = self.config.tshift_reference + \
                 self.config.tshift_acceptance_level[win.center]
-            dlnA_min = self.config.dlna_reference - \
-                self.config.dlna_acceptance_level[win.center]
-            dlnA_max = self.config.dlna_reference + \
-                self.config.dlna_acceptance_level[win.center]
 
             if not (tshift_min < win.cc_shift *
                     self.observed.stats.delta < tshift_max):
                 logger.debug("Window rejected due to time shift: %f" %
                              win.cc_shift)
                 return False
+            return True
+
+        def reject_based_on_dlna(win):
+            dlnA_min = self.config.dlna_reference - \
+                self.config.dlna_acceptance_level[win.center]
+            dlnA_max = self.config.dlna_reference + \
+                self.config.dlna_acceptance_level[win.center]
+
             if not (dlnA_min < win.dlnA < dlnA_max):
                 logger.debug("Window rejected due to amplitude fit: %f" %
                              win.dlnA)
                 return False
+            return True
+
+        def reject_based_on_cc_value(win):
             if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
                 logger.debug("Window rejected due to CC value: %f" %
                              win.max_cc_value)
                 return False
             return True
 
-        windows = list(filter(reject_based_on_criteria, self.windows))
-        self.separate_rejects(windows, "data_fit")
+        for func, tag in zip([reject_based_on_time_shift, reject_based_on_dlna, 
+                              reject_based_on_cc_value], 
+                             ["tshift", "dlna", "cc"]):
+            windows = list(filter(func, self.windows))
+            self.separate_rejects(windows, tag)
 
         logger.info("Rejection based on data fit criteria retained %i windows."
                     % len(self.windows))

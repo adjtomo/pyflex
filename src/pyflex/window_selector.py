@@ -334,7 +334,10 @@ class WindowSelector(object):
 
         self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:
-            self.check_data_quality()
+            # Global data quality may preclude window selection
+            if not self.check_data_quality():
+                return []
+
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()

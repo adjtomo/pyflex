@@ -731,7 +731,32 @@ class WindowSelector(object):
 
         logger.debug("selection_timebox index range: {} - {} / {}".format(
             il, ir, len(timebox)))
+
         self.selection_timebox = timebox
+        return timebox
+
+    def _prepare_exclude_surface_wave_timebox(self, min_time, max_time,
+                                              srate, offset):
+        logger.debug("selection_timebox exclude surface waves")
+
+        # get the surface windows first
+        self._prepare_surface_wave_timebox(srate, offset)
+
+        # flip the sign to reject surface windoes
+        timebox = self.selection_timebox
+        timebox = ~timebox
+
+        # set the min_time and max_time range to non-selectable
+        i1 = int(min_time * srate)
+        timebox[:i1] = False
+
+        i2 = int(max_time * srate)
+        timebox[i2:] = False
+
+        logger.debug("Selectable region coverage percentage: {}/{}".format(
+            timebox.sum(), len(timebox)))
+        self.selection_timebox = timebox
+        return timebox
 
     def _prepare_surface_wave_timebox(self, srate, offset):
         logger.debug("selection_timebox using surface waves")
@@ -746,12 +771,13 @@ class WindowSelector(object):
         timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
         for arr in arrivals:
             il = int((arr[0] + offset - self.config.min_period) * srate)
-            ir = int((arr[1] + offset + self.config.min_period) * srate)
+            ir = int((arr[1] + offset + 2.5 * self.config.min_period) * srate)
             timebox[il:(ir+1)] = 1
 
-        logger.debug("Selectable region percentage: {}/{}".format(
+        logger.debug("Selectable region coverage percentage: {}/{}".format(
             timebox.sum(), len(timebox)))
         self.selection_timebox = timebox
+        return timebox
 
     def _prepare_phase_timebox(self, phase_list, srate, buffer_time, offset):
         logger.debug("Selection_timebox using phases: {}".format(phase_list))
@@ -776,6 +802,8 @@ class WindowSelector(object):
         logger.debug("Selectable region percentage: {}/{}".format(
             timebox.sum(), len(timebox)))
         self.selection_timebox = timebox
+
+        return timebox
 
     def reject_on_selection_mode(self):
         """
@@ -804,10 +832,15 @@ class WindowSelector(object):
 
         first_arrival = self.ttimes[0]["time"]
 
-        if select_mode in ["all_waves", "body_and_mantle_waves"]:
+        if select_mode == "all_waves":
             min_time = first_arrival - buffer_time + offset
             max_time = tr_timelen
             self._prepare_min_max_timebox(min_time, max_time, srate)
+        elif select_mode == "body_and_mantle_waves":
+            min_time = first_arrival - buffer_time + offset
+            max_time = tr_timelen
+            self._prepare_exclude_surface_wave_timebox(
+                min_time, max_time, srate, offset)
         elif select_mode == "body_and_surface_waves":
             min_time = first_arrival - buffer_time + offset
             max_time = surface_end + buffer_time + offset

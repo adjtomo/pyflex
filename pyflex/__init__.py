@@ -7,9 +7,6 @@
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 import logging
 
@@ -53,6 +50,6 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-from .config import Config  # NOQA
-from .flexwin import select_windows  # NOQA
-from .window_selector import WindowSelector  # NOQA
+from pyflex.config import Config  # NOQA
+from pyflex.flexwin import select_windows  # NOQA
+from pyflex.window_selector import WindowSelector  # NOQA

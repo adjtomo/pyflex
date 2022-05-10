@@ -9,28 +9,22 @@ Class managing the actual window selection process.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-from future import standard_library
-
 import copy
+import itertools
 import json
+import os
+import warnings
+
 import numpy as np
 import obspy
 import obspy.geodetics
 from obspy.signal.filter import envelope
 from obspy.taup import TauPyModel
-import os
-import warnings
 
-from . import PyflexError, PyflexWarning, utils, logger, Event, Station
-from .stalta import sta_lta
-from .window import Window
-from .interval_scheduling import schedule_weighted_intervals
-
-with standard_library.hooks():
-    import itertools
+from pyflex import PyflexError, PyflexWarning, utils, logger, Event, Station
+from pyflex.stalta import sta_lta
+from pyflex.window import Window
+from pyflex.interval_scheduling import schedule_weighted_intervals
 
 
 class WindowSelector(object):

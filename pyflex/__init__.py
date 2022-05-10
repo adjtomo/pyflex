@@ -9,7 +9,6 @@
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-from future.builtins import *  # NOQA
 
 import collections
 import logging
@@ -34,11 +33,10 @@ class PyflexWarning(UserWarning):
 Event = collections.namedtuple("Event", ["latitude", "longitude",
                                          "depth_in_m", "origin_time"])
 
-
 Station = collections.namedtuple("Station", ["latitude", "longitude"])
 
 
-__version__ = "0.1.5"
+__version__ = "0.2.1"
 
 
 # Setup the logger.

@@ -59,7 +59,10 @@ def reset_matplotlib():
     # These settings must be hardcoded for running the comparision tests and
     # are not necessarily the default values.
     mpl.rcParams['font.family'] = 'Bitstream Vera Sans'
-    mpl.rcParams['text.hinting'] = False
+    mpl.rcParams['text.hinting'] = 'none'  # used to be False, invalid
+    # Available: ['default', 'no_autohint', 'force_autohint', 'no_hinting',
+    #             'auto', 'native', 'either', 'none']
+
     # Not available for all matplotlib versions.
     try:
         mpl.rcParams['text.hinting_factor'] = 8
@@ -307,6 +310,9 @@ def test_run_with_data_quality_checks():
 
 
 def test_window_plotting(tmpdir):
+    """
+    Check that the created image matches the baseline
+    """
     reset_matplotlib()
 
     config = pyflex.Config(

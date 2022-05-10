@@ -9,14 +9,10 @@ Configuration object for pyflex.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-
 from collections.abc import Iterable
 import numpy as np
 
-from . import PyflexError
+from pyflex import PyflexError
 
 
 class Config(object):

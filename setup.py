@@ -30,7 +30,7 @@ def read(*names, **kwargs):
 
 setup(
     name="pyflex",
-    version="0.1.5",
+    version="0.2.1",
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Python port of the FLEXWIN package",
     long_description=long_description,
@@ -53,7 +53,6 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",

@@ -421,7 +421,13 @@ class WindowSelector(object):
         noise = self.observed.data[self.config.noise_start_index:
                                    self.config.noise_end_index]
 
-        if self.config.window_signal_to_noise_type == "amplitude":
+        # Very short source-receiver distances can sometimes produce 0 length
+        # noise signals
+        if not noise:
+            logger.warning("pre-arrival noise could not be determined, "
+                           "skipping rejection based on signal-to-noise ratio")
+            return
+        elif self.config.window_signal_to_noise_type == "amplitude":
             noise_amp = np.abs(noise).max()
 
             def filter_window_noise(win):
@@ -430,7 +436,6 @@ class WindowSelector(object):
                 if win_noise_amp < self.config.s2n_limit[win.center]:
                     return False
                 return True
-
         elif self.config.window_signal_to_noise_type == "energy":
             noise_energy = np.sum(noise ** 2) / len(noise)
 

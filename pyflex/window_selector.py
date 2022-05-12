@@ -423,7 +423,7 @@ class WindowSelector(object):
 
         # Very short source-receiver distances can sometimes produce 0 length
         # noise signals
-        if not noise:
+        if noise.size == 0:
             logger.warning("pre-arrival noise could not be determined, "
                            "skipping rejection based on signal-to-noise ratio")
             return

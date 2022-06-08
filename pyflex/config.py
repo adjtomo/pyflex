@@ -9,14 +9,10 @@ Configuration object for pyflex.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-
-import collections
+from collections.abc import Iterable
 import numpy as np
 
-from . import PyflexError
+from pyflex import PyflexError
 
 
 class Config(object):
@@ -275,7 +271,7 @@ class Config(object):
         for name in attributes:
             attr = getattr(self, name)
 
-            if isinstance(attr, collections.Iterable):
+            if isinstance(attr, Iterable):
                 if len(attr) != npts:
                     raise PyflexError(
                         "Config value '%s' does not have the same number of "

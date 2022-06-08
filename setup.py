@@ -8,8 +8,6 @@ import os
 from setuptools import find_packages
 from setuptools import setup
 
-
-
 changelog = os.path.join(os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe()))), "CHANGELOG.md")
 with open(changelog, "rt") as fh:
@@ -28,19 +26,21 @@ def read(*names, **kwargs):
         os.path.join(os.path.dirname(__file__), *names),
         encoding=kwargs.get("encoding", "utf8")).read()
 
+
 setup(
     name="pyflex",
-    version="0.1.5",
+    version="0.2.1",
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Python port of the FLEXWIN package",
     long_description=long_description,
     author="Lion Krischer",
     author_email="krischer@geophysik.uni-muenchen.de",
     url="https://github.com/krischer/pyflex",
-    packages=find_packages("src"),
-    package_dir={"": "src"},
-    py_modules=[os.path.splitext(os.path.basename(i))[0]
-                for i in glob.glob("src/*.py")],
+    packages=find_packages(),
+    # packages=find_packages("pyflex"),
+    # package_dir={"": "pyflex"},
+    # py_modules=[os.path.splitext(os.path.basename(i))[0]
+    #             for i in glob.glob("pyflex/*.py")],
     include_package_data=True,
     zip_safe=False,
     classifiers=[
@@ -53,7 +53,6 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",

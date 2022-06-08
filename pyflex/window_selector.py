@@ -9,28 +9,22 @@ Class managing the actual window selection process.
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-from future import standard_library
-
 import copy
+import itertools
 import json
+import os
+import warnings
+
 import numpy as np
 import obspy
 import obspy.geodetics
 from obspy.signal.filter import envelope
 from obspy.taup import TauPyModel
-import os
-import warnings
 
-from . import PyflexError, PyflexWarning, utils, logger, Event, Station
-from .stalta import sta_lta
-from .window import Window
-from .interval_scheduling import schedule_weighted_intervals
-
-with standard_library.hooks():
-    import itertools
+from pyflex import PyflexError, PyflexWarning, utils, logger, Event, Station
+from pyflex.stalta import sta_lta
+from pyflex.window import Window
+from pyflex.interval_scheduling import schedule_weighted_intervals
 
 
 class WindowSelector(object):
@@ -80,6 +74,7 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+        self.rejects = {}
 
         self.taupy_model = TauPyModel(model=self.config.earth_model)
 
@@ -333,7 +328,10 @@ class WindowSelector(object):
 
         self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:
-            self.check_data_quality()
+            # Global data quality may preclude window selection
+            if not self.check_data_quality():
+                return []
+
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
@@ -423,7 +421,13 @@ class WindowSelector(object):
         noise = self.observed.data[self.config.noise_start_index:
                                    self.config.noise_end_index]
 
-        if self.config.window_signal_to_noise_type == "amplitude":
+        # Very short source-receiver distances can sometimes produce 0 length
+        # noise signals
+        if not noise:
+            logger.warning("pre-arrival noise could not be determined, "
+                           "skipping rejection based on signal-to-noise ratio")
+            return
+        elif self.config.window_signal_to_noise_type == "amplitude":
             noise_amp = np.abs(noise).max()
 
             def filter_window_noise(win):
@@ -432,7 +436,6 @@ class WindowSelector(object):
                 if win_noise_amp < self.config.s2n_limit[win.center]:
                     return False
                 return True
-
         elif self.config.window_signal_to_noise_type == "energy":
             noise_energy = np.sum(noise ** 2) / len(noise)
 
@@ -446,7 +449,9 @@ class WindowSelector(object):
         else:
             raise NotImplementedError
 
-        self.windows = list(filter(filter_window_noise, self.windows))
+        windows = list(filter(filter_window_noise, self.windows))
+        self.separate_rejects(windows, "s2n")
+
         logger.info("SN amplitude ratio window rejection retained %i windows" %
                     len(self.windows))
 
@@ -524,10 +529,11 @@ class WindowSelector(object):
 
         min_time = self.ttimes[0]["time"] - self.config.min_period + offset
         max_time = dist_in_km / self.config.min_surface_wave_velocity + offset
+        windows = [win for win in self.windows
+                   if (win.relative_endtime >= min_time) and
+                   (win.relative_starttime <= max_time)]
 
-        self.windows = [win for win in self.windows
-                        if (win.relative_endtime >= min_time) and
-                        (win.relative_starttime <= max_time)]
+        self.separate_rejects(windows, "traveltimes")
         logger.info("Rejection based on travel times retained %i windows." %
                     len(self.windows))
 
@@ -559,6 +565,38 @@ class WindowSelector(object):
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))
 
+
+    def separate_rejects(self, windows, key):
+        """
+        Separate a new batch of selected windows from the rejected windows.
+
+        Similar to remove_duplicates(), checks left and right bounds to 
+        determine which windows have been rejected by a given function, 
+        reassigns internal windows attribute, and adds rejected windows to 
+        rejects attribute with a given tag specified by calling function
+
+        :type windows: list 
+        :param windows: list of Window objects that have been outputted by
+            a rejection function
+        :type tag: str
+        :param tag: tag based on the function that rejected the windows
+        """
+        # Determine unique tags for the new set of windows
+        new_windows = [(win.left, win.right) for win in windows]
+
+        # Scroll through current windows and sort by accept/reject
+        accepted_windows, rejected_windows = [], []
+        for window in self.windows:
+            tag = (window.left, window.right)
+            if tag in new_windows:
+                accepted_windows.append(window)
+            else:
+                rejected_windows.append(window)
+
+        self.windows = accepted_windows
+        if rejected_windows:
+            self.rejects[key] = rejected_windows
+
     def remove_duplicates(self):
         """
         Filter to remove duplicate windows based on left and right bounds.
@@ -584,7 +622,8 @@ class WindowSelector(object):
         Run the weighted interval scheduling.
         """
         self.windows = schedule_weighted_intervals(self.windows)
-        logger.info("Weighted interval schedule optimzation retained %i "
+
+        logger.info("Weighted interval schedule optimization retained %i "
                     "windows." % len(self.windows))
 
     def reject_on_minima_water_level(self):
@@ -600,7 +639,9 @@ class WindowSelector(object):
             return not np.any(self.stalta[internal_minima] <=
                               waterlevel_midpoint)
 
-        self.windows = list(filter(filter_window_minima, self.windows))
+        windows = list(filter(filter_window_minima, self.windows))
+        self.separate_rejects(windows, "water_level")
+
         logger.info("Water level rejection retained %i windows" %
                     len(self.windows))
 
@@ -631,8 +672,10 @@ class WindowSelector(object):
                 return False
             return True
 
-        self.windows = list(filter(filter_windows_maximum_prominence,
+        windows = list(filter(filter_windows_maximum_prominence,
                                    self.windows))
+        self.separate_rejects(windows, "prominence")
+
         logger.info("Prominence of central peak rejection retained "
                     "%i windows." % len(self.windows))
 
@@ -675,8 +718,8 @@ class WindowSelector(object):
                 return True
             return False
 
-        self.windows = list(filter(
-            filter_phase_rejection, self.windows))
+        windows = list(filter(filter_phase_rejection, self.windows))
+        self.separate_rejects(windows, "phase_sep")
         logger.info("Single phase group rejection retained %i windows" %
                     len(self.windows))
 
@@ -711,7 +754,9 @@ class WindowSelector(object):
                 win.right = int(i_right + time_decay_right)
             return win
 
-        self.windows = [curtail_window_length(i) for i in self.windows]
+        windows = [curtail_window_length(i) for i in self.windows]
+        self.separate_rejects(windows, "curtail")
+
 
     @property
     def minimum_window_length(self):
@@ -725,9 +770,10 @@ class WindowSelector(object):
         """
         Reject windows smaller than the minimal window length.
         """
-        self.windows = list(filter(
+        windows = list(filter(
             lambda x: (x.right - x.left) >= self.minimum_window_length,
             self.windows))
+        self.separate_rejects(windows, "min_length")
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))
 
@@ -739,32 +785,44 @@ class WindowSelector(object):
         for win in self.windows:
             win._calc_criteria(self.observed.data, self.synthetic.data)
 
-        def reject_based_on_criteria(win):
+        def reject_based_on_time_shift(win):
             tshift_min = self.config.tshift_reference - \
                 self.config.tshift_acceptance_level[win.center]
             tshift_max = self.config.tshift_reference + \
                 self.config.tshift_acceptance_level[win.center]
-            dlnA_min = self.config.dlna_reference - \
-                self.config.dlna_acceptance_level[win.center]
-            dlnA_max = self.config.dlna_reference + \
-                self.config.dlna_acceptance_level[win.center]
 
             if not (tshift_min < win.cc_shift *
                     self.observed.stats.delta < tshift_max):
                 logger.debug("Window rejected due to time shift: %f" %
                              win.cc_shift)
                 return False
+            return True
+
+        def reject_based_on_dlna(win):
+            dlnA_min = self.config.dlna_reference - \
+                self.config.dlna_acceptance_level[win.center]
+            dlnA_max = self.config.dlna_reference + \
+                self.config.dlna_acceptance_level[win.center]
+
             if not (dlnA_min < win.dlnA < dlnA_max):
                 logger.debug("Window rejected due to amplitude fit: %f" %
                              win.dlnA)
                 return False
+            return True
+
+        def reject_based_on_cc_value(win):
             if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
                 logger.debug("Window rejected due to CC value: %f" %
                              win.max_cc_value)
                 return False
             return True
 
-        self.windows = list(filter(reject_based_on_criteria, self.windows))
+        for func, tag in zip([reject_based_on_time_shift, reject_based_on_dlna, 
+                              reject_based_on_cc_value], 
+                             ["tshift", "dlna", "cc"]):
+            windows = list(filter(func, self.windows))
+            self.separate_rejects(windows, tag)
+
         logger.info("Rejection based on data fit criteria retained %i windows."
                     % len(self.windows))
 

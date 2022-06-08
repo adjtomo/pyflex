@@ -5,6 +5,7 @@ Class managing the actual window selection process.
 
 :copyright:
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+    adjTomo Dev Team (adjtomo@gmail.com), 2022
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
@@ -423,7 +424,7 @@ class WindowSelector(object):
 
         # Very short source-receiver distances can sometimes produce 0 length
         # noise signals
-        if not noise:
+        if not noise.any():
             logger.warning("pre-arrival noise could not be determined, "
                            "skipping rejection based on signal-to-noise ratio")
             return
@@ -564,7 +565,6 @@ class WindowSelector(object):
 
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))
-
 
     def separate_rejects(self, windows, key):
         """

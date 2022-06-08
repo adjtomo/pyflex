@@ -5,6 +5,7 @@ Configuration object for pyflex.
 
 :copyright:
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+    adjTomo Dev Team (adjtomo@gmail.com), 2022
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
@@ -243,8 +244,8 @@ class Config(object):
         self.snr_max_base = snr_max_base
         self.noise_start_index = noise_start_index
         self.noise_end_index = noise_end_index
-        self.signal_start_index = noise_start_index
-        self.signal_end_index = noise_end_index
+        self.signal_start_index = signal_start_index
+        self.signal_end_index = signal_end_index
 
         self.window_weight_fct = window_weight_fct
 

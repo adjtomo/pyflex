@@ -566,7 +566,6 @@ class WindowSelector(object):
         logger.info("Initial window selection yielded %i possible windows." %
                     len(self.windows))
 
-
     def separate_rejects(self, windows, key):
         """
         Separate a new batch of selected windows from the rejected windows.

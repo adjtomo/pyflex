@@ -14,7 +14,7 @@ with open(changelog, "rt") as fh:
     changelog = fh.read()
 
 long_description = """
-Source code: https://github.com/krischer/pyflex
+Source code: https://github.com/adjtomo/pyflex
 
 Documentation: http://krischer.github.io/pyflex
 
@@ -33,9 +33,9 @@ setup(
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Python port of the FLEXWIN package",
     long_description=long_description,
-    author="Lion Krischer",
-    author_email="krischer@geophysik.uni-muenchen.de",
-    url="https://github.com/krischer/pyflex",
+    author="adjTomo Development Team",
+    author_email="adjtomo@gmail.com",
+    url="https://github.com/adjtomo/pyflex",
     packages=find_packages(),
     # packages=find_packages("pyflex"),
     # package_dir={"": "pyflex"},

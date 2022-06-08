@@ -10,6 +10,7 @@ weighted-interval-scheduling.py
 :copyright:
     Victor Farazdagi, 2013
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+    adjTomo Dev Team (adjtomo@gmail.com), 2022
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)

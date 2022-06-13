@@ -205,3 +205,4 @@ def test_window_to_dict_and_back(tmpdir):
             "time": 1759.0133056640625}]
     assert win == \
         pyflex.window.Window._load_from_json_content(win._get_json_content())
+

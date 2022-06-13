@@ -5,20 +5,14 @@ Utility functionality for pyflex.
 
 :copyright:
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+    adjTomo Dev Team (adjtomo@gmail.com), 2022
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-from future import standard_library
-
+import itertools
 import numpy as np
 from scipy.signal import argrelextrema
-
-with standard_library.hooks():
-    import itertools
 
 
 def find_local_extrema(data):

@@ -7,10 +7,6 @@
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-
 import collections
 import logging
 
@@ -34,11 +30,10 @@ class PyflexWarning(UserWarning):
 Event = collections.namedtuple("Event", ["latitude", "longitude",
                                          "depth_in_m", "origin_time"])
 
-
 Station = collections.namedtuple("Station", ["latitude", "longitude"])
 
 
-__version__ = "0.1.5"
+__version__ = "0.2.1"
 
 
 # Setup the logger.
@@ -55,6 +50,6 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-from .config import Config  # NOQA
-from .flexwin import select_windows  # NOQA
-from .window_selector import WindowSelector  # NOQA
+from pyflex.config import Config  # NOQA
+from pyflex.flexwin import select_windows  # NOQA
+from pyflex.window_selector import WindowSelector  # NOQA

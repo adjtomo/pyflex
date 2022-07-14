@@ -5,6 +5,8 @@ Pyflex
 
 
 
-[Documentation](http://krischer.github.io/pyflex/)
+[Documentation (__Currently not working, we'll be back soon!__)](http://krischer.github.io/pyflex/)
 
-![Logo](http://krischer.github.io/pyflex/_static/logo.svg)
+<p align="center">
+  <img src="doc/logo.svg"/>
+</p>

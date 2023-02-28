@@ -1,6 +1,6 @@
 Changelog
 ---------
-* **Pyflex 0.1.6** WIP
+* **Pyflex 0.2.0** *Jul 14th 2022*
     * Ownership transfered to GitHub organization adjTomo
     * WindowSelector now returns rejected windows
     * Making codebase work with latest ObsPy, fixing tests

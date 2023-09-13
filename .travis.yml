@@ -2,31 +2,32 @@ language: python
 
 python:
   - "2.7"
-  - "3.3"
-  - "3.4"
+  - "3.5"
+  - "3.6"
 
 env:
   global:
     secure: "I7YRXirCGWcerGJi3NDEYvpPrZhSHmnByk7bIh7mcp4mtyQ8pNx8AfdvxH1ZkCpnXRJyN9gtJd9pomlbczdPgam/0TR9kpK7KQK8FQ5zy/GI5Y/WbKozzXWbpVDNxCaVKX0oFLGDUxyWy6FcKxDLrvyrV3N1dfaX9GoZmVJ6yUk="
 
 before_install:
+  # The next two lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
+  # Install pandoc.
   - sudo apt-get install -qq pandoc
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - ./miniconda.sh -b -p $HOME/miniconda
+  - export PATH=$HOME/miniconda/bin:$PATH
   - conda update --yes conda
   - conda create --yes -n condaenv python=$TRAVIS_PYTHON_VERSION
   - conda install --yes -n condaenv pip
   - source activate condaenv
-  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
-  - sudo rm -rf /dev/shm
-  - sudo ln -s /run/shm /dev/shm
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose pytest flake8 sphinx lxml sqlalchemy mock ipython-notebook nose future
-  - conda install --yes -c obspy obspy
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install sphinx-readable-theme ; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install runipy ; fi
-  - pip install coveralls
+  - conda install --yes -c conda-forge obspy pytest mock python=$TRAVIS_PYTHON_VERSION
+  # build doc only on Python 2.7
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then conda install --yes sphinx; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install sphinx-readable-theme runipy ; fi
+  - pip install flake8 coveralls # Make sure this is up-to-date (don't use conda).
 
 install:
   - pip install --no-deps -v -e .

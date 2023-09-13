@@ -9,6 +9,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 
+
 changelog = os.path.join(os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe()))), "CHANGELOG.md")
 with open(changelog, "rt") as fh:
@@ -29,7 +30,7 @@ def read(*names, **kwargs):
 
 setup(
     name="pyflex",
-    version="0.1.4",
+    version="0.1.5",
     license='GNU General Public License, Version 3 (GPLv3)',
     description="Python port of the FLEXWIN package",
     long_description=long_description,
@@ -54,8 +55,8 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Physics",
@@ -65,7 +66,7 @@ setup(
         "seismology", "flexwin", "science", "tomography", "inversion"
     ],
     install_requires=[
-        "obspy", "flake8", "pytest", "nose", "future>=0.14.1"
+        "obspy >= 1.0", "flake8", "pytest", "nose"
     ],
     extras_require={
         "docs": ["sphinx", "ipython", "runipy"]

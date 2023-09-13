@@ -19,7 +19,7 @@ from scipy.signal import lfilter
 
 def sta_lta(data, dt, min_period):
     """
-    STA/LTA as used in SPECFEM.
+    STA/LTA as used in FLEXWIN.
 
     :param data: The data array.
     :param dt: The sample interval of the data.

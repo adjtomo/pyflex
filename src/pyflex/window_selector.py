@@ -18,10 +18,9 @@ import copy
 import json
 import numpy as np
 import obspy
-import obspy.station
-from obspy.core.util import geodetics
+import obspy.geodetics
 from obspy.signal.filter import envelope
-from obspy.taup import getTravelTimes
+from obspy.taup import TauPyModel
 import os
 import warnings
 
@@ -29,6 +28,7 @@ from . import PyflexError, PyflexWarning, utils, logger, Event, Station
 from .stalta import sta_lta
 from .window import Window
 from .interval_scheduling import schedule_weighted_intervals
+from .utils import get_surface_wave_arrivals
 
 with standard_library.hooks():
     import itertools
@@ -60,7 +60,7 @@ class WindowSelector(object):
             will be extracted from the data traces if either originates from
             a SAC file.
         :type station: A Pyflex :class:`~pyflex.Station` object or an ObsPy
-            :class:`~obspy.station.inventory.Inventory` object
+            :class:`~obspy.core.inventory.Inventory` object
         """
         self.observed = observed
         self.synthetic = synthetic
@@ -81,6 +81,15 @@ class WindowSelector(object):
 
         self.ttimes = []
         self.windows = []
+
+        self.taupy_model = TauPyModel(model=self.config.earth_model)
+
+        # event and station distance
+        self.dist_in_deg = None
+        self.dist_in_km = None
+
+        # used by selection mode to specify the time range could be used
+        self.selection_timebox = None
 
     def load(self, filename):
         """
@@ -186,6 +195,26 @@ class WindowSelector(object):
             except TypeError:
                 filename.write(j.encode())
 
+    def write_text(self, filename):
+        """
+        Write windows to a plain text file. For example, after
+        you selecting windows, you want to write them out and
+        save as text files, you can call:
+        ws.write_text("window.txt")
+
+        :param filename: Name to write to.
+        :type filename: str
+        """
+        if not os.path.exists(os.path.dirname(filename)):
+            raise ValueError("Output file directory not exist: %s" % filename)
+        with open(filename, 'w') as f:
+            f.write("%s\n" % self.observed.id)
+            f.write("%s\n" % self.synthetic.id)
+            f.write("%d\n" % len(self.windows))
+            for win in self.windows:
+                f.write("%10.2f %10.2f\n" % (win.relative_starttime,
+                                             win.relative_endtime))
+
     def _parse_event_and_station(self):
         """
         Parse the event and station information.
@@ -211,7 +240,7 @@ class WindowSelector(object):
                 raise PyflexError("Could not parse the event. Unknown type.")
 
         # Parse the station information if it is an obspy inventory object.
-        if isinstance(self.station, obspy.station.Inventory):
+        if isinstance(self.station, obspy.core.inventory.Inventory):
             net = self.observed.stats.network
             sta = self.observed.stats.station
             # Workaround for ObsPy 0.9.2 Newer version have a get
@@ -234,12 +263,12 @@ class WindowSelector(object):
         # Last resort, if either is not set, and the observed or synthetics
         # are sac files, get the information from there.
         if not self.station or not self.event:
-            if hasattr(self.observed.stats, "sac"):
-                tr = self.observed
-                ftype = "observed"
-            elif hasattr(self.synthetic.stats, "sac"):
+            if hasattr(self.synthetic.stats, "sac"):
                 tr = self.synthetic
                 ftype = "synthetic"
+            elif hasattr(self.observed.stats, "sac"):
+                tr = self.observed
+                ftype = "observed"
             else:
                 return
             sac = tr.stats.sac
@@ -255,7 +284,7 @@ class WindowSelector(object):
                 self.event = Event(
                     latitude=values[0], longitude=values[1],
                     depth_in_m=values[2] * 1000.0,
-                    origin_time=self.observed.stats.starttime - values[5])
+                    origin_time=tr.stats.starttime - values[5])
                 logger.info("Extracted event information from %s SAC file." %
                             ftype)
 
@@ -274,24 +303,43 @@ class WindowSelector(object):
         if not len(self.peaks) and len(self.troughs):
             return
 
+    def reject_peaks_and_troughs_not_in_signal_region(self):
+        """
+        Reject all the peaks and troughs not in the signal regions.
+        This will save us huge amount of time by rejecting a large
+        number of non-sense peaks and troughs.
+        """
         if self.ttimes:
-            offset = self.event.origin_time - self.observed.stats.starttime
-            min_time = self.ttimes[0]["time"] - \
-                self.config.max_time_before_first_arrival + offset
-            min_idx = int(min_time / self.observed.stats.delta)
+            #offset = self.event.origin_time - self.observed.stats.starttime
+            #min_time = self.ttimes[0]["time"] - \
+            #    self.config.max_time_before_first_arrival + offset
+            #min_idx = int(min_time / self.observed.stats.delta)
+            min_idx = self.config.signal_start_index
 
-            dist_in_km = geodetics.calcVincentyInverse(
-                self.station.latitude, self.station.longitude,
-                self.event.latitude, self.event.longitude)[0] / 1000.0
-            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
-                offset + self.config.max_period
-            max_idx = int(max_time / self.observed.stats.delta)
+            #dist_in_km = obspy.geodetics.calc_vincenty_inverse(
+            #    self.station.latitude, self.station.longitude,
+            #    self.event.latitude, self.event.longitude)[0] / 1000.0
+            #max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+            #    offset + self.config.max_period
+            #max_idx = int(max_time / self.observed.stats.delta)
+            max_idx = self.config.signal_end_index
 
             # Reject all peaks and troughs before the minimal allowed start
             # time and after the maximum allowed end time.
             first_trough, last_trough = self.troughs[0], self.troughs[-1]
-            self.troughs = self.troughs[(self.troughs >= min_idx) &
-                                        (self.troughs <= max_idx)]
+            # Reject all peaks not in the signal region. This kind of
+            # rejection will reduce the window counts and spedd up
+            # the processing speed
+            self.peaks = self.peaks[(self.peaks >= min_idx) &
+                                    (self.peaks <= max_idx)]
+            # Reject all troughs before the minimal allowed start
+            # time and after the maximum allowed end time.
+            sampling_rate = self.observed.stats.sampling_rate
+            loose_npts = 2 * self.config.min_period * sampling_rate
+            min_idx_2 = self.config.signal_start_index - loose_npts
+            max_idx_2 = self.config.signal_end_index + loose_npts
+            self.troughs = self.troughs[(self.troughs >= min_idx_2) &
+                                        (self.troughs <= max_idx_2)]
 
             # If troughs have been removed, readd them add the boundaries.
             if len(self.troughs):
@@ -303,10 +351,20 @@ class WindowSelector(object):
                     self.troughs = np.concatenate([
                         self.troughs,
                         np.array([max_idx], dtype=self.troughs.dtype)])
-            # Make sure peaks are inside the troughs!
-            min_trough, max_trough = self.troughs[0], self.troughs[-1]
-            self.peaks = self.peaks[(self.peaks > min_trough) &
-                                    (self.peaks < max_trough)]
+                # Make sure peaks are inside the troughs!
+                min_trough, max_trough = self.troughs[0], self.troughs[-1]
+                self.peaks = self.peaks[(self.peaks > min_trough) &
+                                        (self.peaks < max_trough)]
+
+    def __print_remaining_windows(self):
+        logger.debug("Remaining windows: %d" % (len(self.windows)))
+        logger.debug("idx:    left(s)  center(s)   right(s)")
+        for idx, win in enumerate(self.windows):
+            left = win.relative_starttime
+            right = win.relative_endtime
+            center = win.relative_centertime
+            logger.debug("%3d: %10.2f %10.2f %10.2f"
+                         % (idx+1, left, center, right))
 
     def select_windows(self):
         """
@@ -314,36 +372,46 @@ class WindowSelector(object):
         """
         # Fill self.ttimes.
         if self.event and self.station:
+            self.calculate_distance()
             self.calculate_ttimes()
 
+        self.determine_signal_and_noise_indices()
+
         self.calculate_preliminiaries()
+        self.reject_peaks_and_troughs_not_in_signal_region()
+
+        if self.config.check_global_data_quality:
+            if not self.check_data_quality():
+                return []
 
         # Perform all window selection steps.
         self.initial_window_selection()
+        # Reject windows in the noise region
+        self.reject_on_noise_region()
         # Reject windows based on traveltime if event and station
         # information is given. This will also fill self.ttimes.
         if self.event and self.station:
-            self.reject_on_traveltimes()
+            self.reject_on_selection_mode()
         else:
             msg = "No rejection based on traveltime possible. Event and/or " \
                   "station information is not available."
             logger.warning(msg)
             warnings.warn(msg, PyflexWarning)
 
-        self.determine_signal_and_noise_indices()
-        if self.config.check_global_data_quality:
-            self.check_data_quality()
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
         self.reject_on_prominence_of_central_peak()
         self.reject_on_phase_separation()
+        self.__print_remaining_windows()
         self.curtail_length_of_windows()
+        self.__print_remaining_windows()
         self.remove_duplicates()
         # Call once again as curtailing might change the length of some
         # windows. Very cheap so can easily be called more than once.
         self.reject_windows_based_on_minimum_length()
         self.reject_based_on_signal_to_noise_ratio()
         self.reject_based_on_data_fit_criteria()
+        self.__print_remaining_windows()
 
         if self.config.resolution_strategy == "interval_scheduling":
             self.schedule_weighted_intervals()
@@ -351,9 +419,13 @@ class WindowSelector(object):
             self.merge_windows()
         else:
             raise NotImplementedError
+        self.__print_remaining_windows()
 
         if self.ttimes:
             self.attach_phase_arrivals_to_windows()
+
+        if self.event and self.station:
+            self.attach_distance_to_windows()
 
         return self.windows
 
@@ -367,6 +439,10 @@ class WindowSelector(object):
             right = win.relative_endtime - offset
             win.phase_arrivals = [
                 _i for _i in self.ttimes if left <= _i["time"] <= right]
+
+    def attach_distance_to_windows(self):
+        for win in self.windows:
+            win.distance_in_deg = self.dist_in_deg
 
     def merge_windows(self):
         """
@@ -391,11 +467,56 @@ class WindowSelector(object):
         logger.info("Merging windows resulted in %i windows." %
                     len(self.windows))
 
+    def calculate_noise_end_index(self):
+        """
+        If self.config.noise_end_index is not given, calculate the noise
+        end index based the first arrival(event and station information
+        required).
+        """
+        offset = self.event.origin_time - self.observed.stats.starttime
+        noise_end_index = int(
+            (self.ttimes[0]["time"] + offset -
+             self.config.max_time_before_first_arrival) *
+            self.observed.stats.sampling_rate)
+        noise_end_index = max(noise_end_index, 1)
+        return noise_end_index
+
+    def calculate_signal_end_index(self):
+        """
+        If self.config.noise_end_index is not given, calculate the noise
+        end index based the first arrival(event and station information
+        required).
+        """
+        offset = self.event.origin_time - self.observed.stats.starttime
+        # signal end index
+        surface_wave_arrival = \
+            self.dist_in_km / self.config.min_surface_wave_velocity
+        # max of last arrival and surface wave arrival
+        logger.debug("last ttimess: {}".format(self.ttimes[-1]))
+        logger.debug("surface wave arrival: {}".format(surface_wave_arrival))
+        logger.debug("sampling rate: {}".format(
+            self.observed.stats.sampling_rate))
+        last_arrival = max(self.ttimes[-1]["time"], surface_wave_arrival)
+        signal_end_index = int(
+            (last_arrival + offset +
+             self.config.max_time_after_last_arrival) *
+            self.observed.stats.sampling_rate)
+
+        npts = self.observed.stats.npts
+        signal_end_index = min(signal_end_index, npts)
+        return signal_end_index
+
     def determine_signal_and_noise_indices(self):
         """
         Calculate the time range of the noise and the signal respectively if
         not yet specified by the user.
         """
+        logger.debug("obsd and synt trace npts: {}, {}".format(
+            self.observed.stats.npts, self.synthetic.stats.npts))
+
+        if self.config.noise_start_index is None:
+            self.config.noise_start_index = 0
+
         if self.config.noise_end_index is None:
             if not self.ttimes:
                 logger.warning("Cannot calculate the end of the noise as "
@@ -403,10 +524,29 @@ class WindowSelector(object):
                                "and thus the theoretical arrival times cannot "
                                "be calculated")
             else:
-                self.config.noise_end_index = \
-                    int(self.ttimes[0]["time"] - self.config.min_period)
-        if self.config.signal_start_index is None:
+                self.config.noise_end_index = self.calculate_noise_end_index()
+
+        if self.config.signal_start_index is None and \
+                self.config.noise_end_index is not None:
             self.config.signal_start_index = self.config.noise_end_index
+
+        if self.config.signal_end_index is None:
+            if not self.ttimes:
+                logger.warning("Cannot calculate the end of the signal as "
+                               "event and/or station information is not given "
+                               "and thus the theoretical arrival times cannot "
+                               "be calculated")
+            else:
+                self.config.signal_end_index = \
+                    self.calculate_signal_end_index()
+
+        self.config._convert_negative_index(npts=self.observed.stats.npts)
+
+        logger.info("Noise index [%s, %s]; signal index [%s, %s]" % (
+                    self.config.noise_start_index,
+                    self.config.noise_end_index,
+                    self.config.signal_start_index,
+                    self.config.signal_end_index))
 
     def reject_based_on_signal_to_noise_ratio(self):
         """
@@ -419,35 +559,60 @@ class WindowSelector(object):
                            "range of the noise.")
             return
 
+        # safe guard noise_end_index when event and station are very close
         noise = self.observed.data[self.config.noise_start_index:
-                                   self.config.noise_end_index]
+                                   max(self.config.noise_end_index, 10)]
+        noise_amp = np.abs(noise).max()
+        noise_energy = np.sum(noise ** 2) / len(noise)
 
-        if self.config.window_signal_to_noise_type == "amplitude":
-            noise_amp = np.abs(noise).max()
+        def filter_window_noise_amplitude(win):
+            win_signal = self.observed.data[win.left:win.right]
+            win_noise_amp = np.abs(win_signal).max() / noise_amp
+            # attach snr information to window
+            win.snr_amplitude = win_noise_amp
+            win.snr_amplitude_threshold = self.config.s2n_limit[win.center]
+            if win_noise_amp < self.config.s2n_limit[win.center]:
+                left = win.relative_starttime
+                right = win.relative_endtime
+                logger.debug("Win rejected due to S2N ratio (Amplitude):"
+                             "%3.1f %5.1f %5.1f"
+                             % (win_noise_amp, left, right))
+                return False
+            return True
 
-            def filter_window_noise(win):
-                win_signal = self.observed.data[win.left: win.right]
-                win_noise_amp = np.abs(win_signal).max() / noise_amp
-                if win_noise_amp < self.config.s2n_limit[win.center]:
-                    return False
-                return True
+        def filter_window_noise_energy(win):
+            data = self.observed.data[win.left:win.right]
+            win_energy = np.sum(data ** 2) / len(data)
+            win_noise_energy = win_energy / noise_energy
+            # attach snr information to window
+            win.snr_energy = win_noise_energy
+            win.snr_energy_threshold = self.config.s2n_limit_energy[win.center]
+            if win_noise_energy < self.config.s2n_limit_energy[win.center]:
+                left = win.relative_starttime
+                right = win.relative_endtime
+                logger.debug("Win rejected due to S2N ratio (Energy):"
+                             "%3.1f %5.1f %5.1f"
+                             % (win_noise_energy, left, right))
+                return False
+            return True
 
-        elif self.config.window_signal_to_noise_type == "energy":
-            noise_energy = np.sum(noise ** 2) / len(noise)
+        n0 = len(self.windows)
+        window_snr_type = self.config.window_signal_to_noise_type
+        if window_snr_type in ("amplitude", "amplitude_and_energy"):
+            self.windows = list(filter(filter_window_noise_amplitude,
+                                       self.windows))
+            logger.info("SNR(Amplitude) rejection retained {}/{} "
+                        "windows".format(len(self.windows), n0))
 
-            def filter_window_noise(win):
-                data = self.observed.data[win.left: win.right]
-                win_energy = np.sum(data ** 2) / len(data)
-                win_noise_amp = win_energy / noise_energy
-                if win_noise_amp < self.config.s2n_limit[win.center]:
-                    return False
-                return True
-        else:
-            raise NotImplementedError
+        n1 = len(self.windows)
+        if window_snr_type in ("energy", "amplitude_and_energy"):
+            self.windows = list(filter(filter_window_noise_energy,
+                                       self.windows))
+            logger.info("SNR(Energy) rejection retained {}/{} "
+                        "windows".format(len(self.windows), n1))
 
-        self.windows = list(filter(filter_window_noise, self.windows))
-        logger.info("SN amplitude ratio window rejection retained %i windows" %
-                    len(self.windows))
+        logger.info("Signal-Noise-Ratio({}) rejection retained {}/{} "
+                    "windows".format(window_snr_type, len(self.windows), n0))
 
     def check_data_quality(self):
         """
@@ -460,8 +625,9 @@ class WindowSelector(object):
                 "available so the theoretical arrival times cannot be "
                 "calculated.")
 
+        # safe guard noise_end_index when event and station are very close
         noise = self.observed.data[self.config.noise_start_index:
-                                   self.config.noise_end_index]
+                                   max(self.config.noise_end_index, 10)]
         signal = self.observed.data[self.config.signal_start_index:
                                     self.config.signal_end_index]
 
@@ -476,58 +642,241 @@ class WindowSelector(object):
 
         if snr_int < self.config.snr_integrate_base:
             msg = ("Whole waveform rejected as the integrated signal to "
-                   "noise ratio (%f) is above the threshold (%f)." %
+                   "noise ratio (%f) is above the threshold (%f). No window "
+                   "will be selected." %
                    (snr_int, self.config.snr_integrate_base))
             logger.warn(msg)
-            warnings.warn(msg, PyflexWarning)
             return False
 
         if snr_amp < self.config.snr_max_base:
             msg = ("Whole waveform rejected as the signal to noise amplitude "
-                   "ratio (%f) is above the threshold (%f)." % (
+                   "ratio (%f) is above the threshold (%f). No window will"
+                   "be selected." % (
                        snr_amp, self.config.snr_max_base))
             logger.warn(msg)
-            warnings.warn(msg, PyflexWarning)
             return False
 
-        logger.info("Global SNR checks passed. Integrated SNR: %f, Amplitude "
-                    "SNR: %f" % (snr_int, snr_amp))
+        logger.info("Global SNR checks passed. Integrated SNR: {:.2f}, "
+                    "Amplitude SNR {:.2f}".format(snr_int, snr_amp))
         return True
+
+    def calculate_distance(self):
+        """
+        Calculate the distance between event and station
+        """
+        self.dist_in_deg = obspy.geodetics.locations2degrees(
+            self.station.latitude, self.station.longitude,
+            self.event.latitude, self.event.longitude)
+        self.dist_in_km = obspy.geodetics.degrees2kilometers(self.dist_in_deg)
+        logger.debug(r"dist_in_deg and dist_in_km: {:.2f}, {:.2f} km".format(
+            self.dist_in_deg, self.dist_in_km))
 
     def calculate_ttimes(self):
         """
         Calculate theoretical travel times. Only call if station and event
         information is available!
         """
-        dist_in_deg = geodetics.locations2degrees(
-            self.station.latitude, self.station.longitude,
-            self.event.latitude, self.event.longitude)
-        tts = getTravelTimes(dist_in_deg, self.event.depth_in_m / 1000.0,
-                             model=self.config.earth_model)
-        self.ttimes = sorted(tts, key=lambda x: x["time"])
-        logger.info("Calculated travel times.")
+        logger.debug("event lat, lon: {}, {}".format(
+            self.event.latitude, self.event.longitude))
+        logger.debug("station lat, lon: {}, {}".format(
+            self.station.latitude, self.station.longitude))
 
-    def reject_on_traveltimes(self):
+        tts = self.taupy_model.get_travel_times(
+            source_depth_in_km=self.event.depth_in_m / 1000.0,
+            distance_in_degree=self.dist_in_deg)
+        logger.debug("source depth: {:.2f} km".format(
+            self.event.depth_in_m / 1000.0))
+        self.ttimes = [{"time": _i.time, "name": _i.name} for _i in tts]
+        logger.info("Calculated travel times.")
+        #logger.debug("{}".format(self.ttimes))
+
+        #tts2 = self.taupy_model.get_travel_times(
+        #    source_depth_in_km=self.event.depth_in_m / 1000.0,
+        #    distance_in_degree=self.dist_in_deg,
+        #    phase_list=["ScS", "sScS", "ScSScS", "sScSScS"]
+        #)
+        #logger.debug("ScS arrivals: {}".format(tts2))
+
+    def reject_on_noise_region(self):
         """
-        Reject based on traveltimes. Will reject windows containing only
-        data before a minimum period before the first arrival and windows
-        only containing data after the minimum allowed surface wave speed.
-        Only call if station and event information is available!
+        Reject windows whose center is in the noise region
+        (center > noise_end_index).
+        We also put another check here, to make sure the left boarder
+        is not too far away with the `noise_end_index`.
         """
-        dist_in_km = geodetics.calcVincentyInverse(
-            self.station.latitude, self.station.longitude, self.event.latitude,
-            self.event.longitude)[0] / 1000.0
+        if self.config.noise_end_index is None:
+            return
+
+        # window.center threshold is the noise_end_index
+        center_threshold = self.config.noise_end_index
+        # window.left threshold is the (noise_end - 2 * min_period)
+        two_min_period_npts = 2 * self.config.min_period * \
+            self.observed.stats.sampling_rate
+        left_threshold = self.config.noise_end_index - two_min_period_npts
+
+        # reject windows which has overlap with the noise region
+        self.windows = \
+            [win for win in self.windows
+             if (win.center > center_threshold) and
+             (win.left > left_threshold)]
+
+    def _prepare_min_max_timebox(self, min_time, max_time, srate):
+        logger.debug("selection_timebox min/max time: {:.2f} {:.2f}"
+                     "".format(min_time, max_time))
+
+        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        il = int(min_time * srate)
+        ir = int(max_time * srate)
+        timebox[il:(ir+1)] = 1
+
+        logger.debug("selection_timebox index range: {} - {} / {}".format(
+            il, ir, len(timebox)))
+
+        self.selection_timebox = timebox
+        return timebox
+
+    def _prepare_exclude_surface_wave_timebox(self, min_time, max_time,
+                                              srate, offset):
+        logger.debug("selection_timebox exclude surface waves")
+
+        # get the surface windows first
+        self._prepare_surface_wave_timebox(srate, offset)
+
+        # flip the sign to reject surface windoes
+        timebox = self.selection_timebox
+        timebox = ~timebox
+
+        # set the min_time and max_time range to non-selectable
+        i1 = int(min_time * srate)
+        timebox[:i1] = False
+
+        i2 = int(max_time * srate)
+        timebox[i2:] = False
+
+        logger.debug("Selectable region coverage percentage: {}/{}".format(
+            timebox.sum(), len(timebox)))
+        self.selection_timebox = timebox
+        return timebox
+
+    def _prepare_surface_wave_timebox(self, srate, offset):
+        logger.debug("selection_timebox using surface waves")
+
+        max_vel = self.config.max_surface_wave_velocity
+        min_vel = self.config.min_surface_wave_velocity
+        arrivals = get_surface_wave_arrivals(
+            self.dist_in_deg, min_vel, max_vel, ncircles=2)
+        logger.debug("Number of surface wave arrivals: {}".format(
+            len(arrivals)))
+
+        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        for arr in arrivals:
+            il = int((arr[0] + offset - self.config.min_period) * srate)
+            ir = int((arr[1] + offset + 2.5 * self.config.min_period) * srate)
+            timebox[il:(ir+1)] = 1
+
+        logger.debug("Selectable region coverage percentage: {}/{}".format(
+            timebox.sum(), len(timebox)))
+        self.selection_timebox = timebox
+        return timebox
+
+    def _prepare_phase_timebox(self, phase_list, srate, buffer_time, offset):
+        logger.debug("Selection_timebox using phases: {}".format(phase_list))
+
+        source_depth = self.event.depth_in_m / 1000.0
+        logger.debug("event depth: {:.2f} km".format(source_depth))
+        logger.debug("distance in deg: {:.2f}".format(self.dist_in_deg))
+        tts = self.taupy_model.get_travel_times(
+            source_depth_in_km=source_depth,
+            distance_in_degree=self.dist_in_deg,
+            phase_list=phase_list
+        )
+
+        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        for t in tts:
+            t_left = t.time - buffer_time + offset
+            il = int(t_left * srate)
+            t_right = t.time + buffer_time + offset
+            ir = int(t_right * srate)
+            timebox[il:(ir+1)] = 1
+
+        logger.debug("Selectable region percentage: {}/{}".format(
+            timebox.sum(), len(timebox)))
+        self.selection_timebox = timebox
+
+        return timebox
+
+    def reject_on_selection_mode(self):
+        """
+        Reject based on selection mode.
+        This function will reject windows outside of the
+        wave category specified. For example, if config.selection_mode
+        == "body_waves", only body wave windows will be selected(after
+        first arrival and before surface wave arrival).
+        """
+        select_mode = self.config.selection_mode
+        logger.debug("Selection mode <{}>".format((select_mode)))
+        if select_mode in [None, "", "custom"]:
+            return
 
         offset = self.event.origin_time - self.observed.stats.starttime
+        buffer_time = 2 * self.config.min_period
 
-        min_time = self.ttimes[0]["time"] - self.config.min_period + offset
-        max_time = dist_in_km / self.config.min_surface_wave_velocity + offset
+        surface_arrival = \
+            self.dist_in_km / self.config.max_surface_wave_velocity
+        surface_end = \
+            self.dist_in_km / self.config.min_surface_wave_velocity
 
+        stats = self.observed.stats
+        srate = self.observed.stats.sampling_rate
+        tr_timelen = stats.endtime - stats.starttime
+
+        first_arrival = self.ttimes[0]["time"]
+
+        if select_mode == "all_waves":
+            min_time = first_arrival - buffer_time + offset
+            max_time = tr_timelen
+            self._prepare_min_max_timebox(min_time, max_time, srate)
+        elif select_mode == "body_and_mantle_waves":
+            min_time = first_arrival - buffer_time + offset
+            max_time = tr_timelen
+            self._prepare_exclude_surface_wave_timebox(
+                min_time, max_time, srate, offset)
+        elif select_mode == "body_and_surface_waves":
+            min_time = first_arrival - buffer_time + offset
+            max_time = surface_end + buffer_time + offset
+            self._prepare_min_max_timebox(min_time, max_time, srate)
+        elif select_mode == "body_waves":
+            min_time = first_arrival - buffer_time + offset
+            max_time = surface_arrival + buffer_time + offset
+            self._prepare_min_max_timebox(min_time, max_time, srate)
+        elif select_mode == "surface_waves":
+            # min_time = surface_arrival - buffer_time + offset
+            # max_time = surface_end + buffer_time + offset
+            # self._prepare_min_max_timebox(min_time, max_time, srate)
+            self._prepare_surface_wave_timebox(srate, offset)
+        elif select_mode == "mantle_waves":
+            min_time = surface_end + offset
+            max_time = tr_timelen
+            self._prepare_min_max_timebox(min_time, max_time, srate)
+        elif select_mode.startswith("phase_list"):
+            phases = select_mode.split(":")[-1].split(",")
+            phases = [p.strip() for p in phases]
+            if len(phases) == 0:
+                raise ValueError("No phase provided for 'phase_list' "
+                                 "selection mode")
+            self._prepare_phase_timebox(
+                phases, srate, buffer_time, offset)
+        else:
+            raise NotImplementedError
+
+        # self.windows = [win for win in self.windows
+        #                if (win.relative_endtime <= max_time) and
+        #                (win.relative_starttime >= min_time)]
+        n0 = len(self.windows)
         self.windows = [win for win in self.windows
-                        if (win.relative_endtime >= min_time) and
-                        (win.relative_starttime <= max_time)]
-        logger.info("Rejection based on travel times retained %i windows." %
-                    len(self.windows))
+                        if self.selection_timebox[win.center]]
+        logger.info("Rejection based on selection mode retained {}({})"
+                    "windows.".format(len(self.windows), n0))
 
     def initial_window_selection(self):
         """
@@ -549,6 +898,7 @@ class WindowSelector(object):
                 self.windows.append(Window(
                     left=left, right=right, center=peak,
                     channel_id=self.observed.id,
+                    channel_id_2=self.synthetic.id,
                     time_of_first_sample=self.synthetic.stats.starttime,
                     dt=self.observed.stats.delta,
                     min_period=self.config.min_period,
@@ -661,7 +1011,7 @@ class WindowSelector(object):
                 # The paper has a square root in the numinator of the
                 # exponent as well. Not the case here as it is not the case
                 # in the original flexwin code.
-                if (d_time >= self.config.c_3b):
+                if d_time >= self.config.c_3b:
                     f_time = np.exp(-((d_time - self.config.c_3b) /
                                       self.config.c_3b) ** 2)
                 else:
@@ -686,14 +1036,12 @@ class WindowSelector(object):
         dt = self.observed.stats.delta
 
         def curtail_window_length(win):
+            curtail_status = [0, 0]
             time_decay_left = self.config.min_period * self.config.c_4a / dt
             time_decay_right = self.config.min_period * self.config.c_4b / dt
             # Find all internal maxima.
             internal_maxima = self.peaks[
-                (self.peaks >= win.left) & (self.peaks <= win.right) &
-                (self.peaks != win.center)]
-            if len(internal_maxima) < 2:
-                return win
+                (self.peaks >= win.left) & (self.peaks <= win.right)]
             i_left = internal_maxima[0]
             i_right = internal_maxima[-1]
 
@@ -702,32 +1050,48 @@ class WindowSelector(object):
 
             # check condition
             if delta_left > time_decay_left:
-                logger.info("Curtailing left")
                 win.left = int(i_left - time_decay_left)
+                curtail_status[0] = 1
             if delta_right > time_decay_right:
-                logger.info("Curtailing right")
                 win.right = int(i_right + time_decay_right)
-            return win
+                curtail_status[1] = 1
+            return win, curtail_status
 
-        self.windows = [curtail_window_length(i) for i in self.windows]
+        winlist = []
+        nleft = 0
+        nright = 0
+        for win in self.windows:
+            new_win, curtail_status = curtail_window_length(win)
+            nleft += curtail_status[0]
+            nright += curtail_status[1]
+            winlist.append(new_win)
 
-    @property
-    def minimum_window_length(self):
-        """
-        Minimum acceptable window length.
-        """
-        return self.config.c_1 * self.config.min_period / \
-            self.observed.stats.delta
+        self.windows = winlist
+        logger.info(
+            "Curtailing is applied on %d on total %d: <%d(left), %d(right)>"
+            % (nleft + nright, len(self.windows), nleft, nright))
 
     def reject_windows_based_on_minimum_length(self):
         """
         Reject windows smaller than the minimal window length.
         """
-        self.windows = list(filter(
-            lambda x: (x.right - x.left) >= self.minimum_window_length,
-            self.windows))
+        def filter_window_length(win):
+            win_length = (win.right - win.left) * win.dt
+            min_length = self.config.c_1[win.center] * self.config.min_period
+            if win_length < min_length:
+                return False
+            else:
+                return True
+
+        self.windows = list(filter(filter_window_length, self.windows))
         logger.info("Rejection based on minimum window length retained %i "
                     "windows." % len(self.windows))
+
+        max_c1 = max(self.config.c_1)
+        min_c1 = min(self.config.c_1)
+        logger.debug("Range of minimum window length: (%.2f, ..., %.2f)"
+                     % (min_c1 * self.config.min_period,
+                        max_c1 * self.config.min_period))
 
     def reject_based_on_data_fit_criteria(self):
         """
@@ -747,19 +1111,29 @@ class WindowSelector(object):
             dlnA_max = self.config.dlna_reference + \
                 self.config.dlna_acceptance_level[win.center]
 
-            if not (tshift_min < win.cc_shift *
-                    self.observed.stats.delta < tshift_max):
-                logger.debug("Window rejected due to time shift: %f" %
-                             win.cc_shift)
+            if not (tshift_min <= win.cc_shift_in_seconds <= tshift_max):
+                logger.debug("Window [%.1f - %.1f] rejected due to time "
+                             "shift does not satisfy:  %.1f < %.1f < %.1f"
+                             % (win.relative_starttime, win.relative_endtime,
+                                tshift_min, win.cc_shift_in_seconds,
+                                tshift_max))
                 return False
-            if not (dlnA_min < win.dlnA < dlnA_max):
-                logger.debug("Window rejected due to amplitude fit: %f" %
-                             win.dlnA)
+
+            if not (dlnA_min <= win.dlnA <= dlnA_max):
+                logger.debug("Window [%.1f - %.1f] rejected due to amplitude "
+                             "fit does not satisfy: %.3f < %.3f < %.3f"
+                             % (win.relative_starttime, win.relative_endtime,
+                                dlnA_min, win.dlnA, dlnA_max))
                 return False
+
             if win.max_cc_value < self.config.cc_acceptance_level[win.center]:
-                logger.debug("Window rejected due to CC value: %f" %
-                             win.max_cc_value)
+                logger.debug("Window [%.1f - %.1f] rejected due to CC value "
+                             "does not satisfy: %.3f < %.3f"
+                             % (win.relative_starttime, win.relative_endtime,
+                                self.config.cc_acceptance_level[win.center],
+                                win.max_cc_value))
                 return False
+
             return True
 
         self.windows = list(filter(reject_based_on_criteria, self.windows))
@@ -810,7 +1184,7 @@ class WindowSelector(object):
 
         ptp = sorted([self.observed.data.ptp(), self.synthetic.data.ptp()])
         if ptp[1] / ptp[0] >= 5:
-            warnings.warn("The amplitude difference between data and "
+            warnings.warn("The amplitude difference between data and"
                           "synthetic is fairly large.")
 
         # Also check the components of the data to avoid silly mistakes of
@@ -838,7 +1212,7 @@ class WindowSelector(object):
         else:
             offset = 0
 
-        plt.figure(figsize=(15, 5))
+        fig = plt.figure(figsize=(15, 5))
 
         plt.axes([0.025, 0.92, 0.95, 0.07])
 
@@ -854,22 +1228,25 @@ class WindowSelector(object):
         ax.set_yticks([])
         ax.set_xlim(times[0], times[-1])
 
+        ylim = plt.ylim()
         for tt in self.ttimes:
-            if tt["phase_name"].lower().startswith("p"):
+            if tt["name"].lower().startswith("p"):
                 color = "#008c28"
             else:
                 color = "#950000"
             # Don't need an offset as the time axis corresponds to time
             # since event.
-            plt.vlines(tt["time"], plt.ylim()[0], plt.ylim()[1], color=color)
+            plt.vlines(tt["time"], ylim[0], ylim[1], color=color)
+        plt.ylim(*ylim)
 
         plt.text(0.01, 0.92, 'Phase Arrivals', horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)
 
         plt.axes([0.025, 0.51, 0.95, 0.4])
-        plt.plot(times, self.observed.data, color="black")
-        plt.plot(times, self.synthetic.data, color="red")
+        plt.plot(times, self.observed.data, color="black", label="Observed")
+        plt.plot(times, self.synthetic.data, color="red", label="Synthetic")
         plt.xlim(times[0], times[-1])
+        plt.legend(prop={'size': 8})
 
         ax = plt.gca()
         ax.spines['right'].set_color('none')
@@ -884,13 +1261,13 @@ class WindowSelector(object):
 
         buf = 0.003 * (plt.xlim()[1] - plt.xlim()[0])
         for win in self.windows:
-            l = win.relative_starttime - offset
-            r = win.relative_endtime - offset
-            re = Rectangle((l, plt.ylim()[0]), r - l,
+            _l = win.relative_starttime - offset
+            _r = win.relative_endtime - offset
+            re = Rectangle((_l, plt.ylim()[0]), _r - _l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
-            plt.text(l + buf, plt.ylim()[1],
+            plt.text(_l + buf, plt.ylim()[1],
                      "CC=%.2f\ndT=%.2f\ndA=%.2f" %
                      (win.max_cc_value,
                       win.cc_shift * self.observed.stats.delta,
@@ -898,6 +1275,19 @@ class WindowSelector(object):
                      horizontalalignment="left",
                      verticalalignment="top", rotation="vertical",
                      size="small", multialignment="right")
+
+        # plot the selection_timebox line
+        #plt.axes([0.025, 0.50, 0.95, 0.01])
+        #ax = plt.gca()
+        #ax.spines['right'].set_color('none')
+        #ax.spines['left'].set_color('none')
+        #ax.spines['top'].set_color('none')
+        #ax.spines['bottom'].set_color('none')
+        #ax.set_xticks([])
+        #ax.set_yticks([])
+        #ax.set_xlim(times[0], times[-1])
+        #plt.plot(self.selection_timebox - offset, [0, 0], 'g-', linewidth=8.0,
+        #         alpha=0.8)
 
         plt.axes([0.025, 0.1, 0.95, 0.4])
         plt.plot(times, self.stalta, color="blue")
@@ -919,15 +1309,74 @@ class WindowSelector(object):
         plt.text(0.01, 0.99, 'STA/LTA', horizontalalignment='left',
                  verticalalignment='top', transform=ax.transAxes)
 
+        # print more information on the figure
+        text = "Station id: %s  " % self.observed.id
+        plt.text(0.75, 1.00, text, horizontalalignment='left',
+                 verticalalignment='top', transform=ax.transAxes,
+                 fontsize=10)
+
+        #text = "Selection timebox(s): [%6.1f, %6.1f]" \
+        #       % (self.selection_timebox[0] - offset,
+        #          self.selection_timebox[1] - offset)
+        #plt.text(0.75, 0.93, text, horizontalalignment='left',
+        #         verticalalignment='top', transform=ax.transAxes,
+        #         fontsize=10)
+
+        if self.event:
+            text = "Source depth: %.2f km" % (self.event.depth_in_m/1000.)
+            plt.text(0.75, 0.86, text, horizontalalignment='left',
+                     verticalalignment='top', transform=ax.transAxes,
+                     fontsize=10)
+
+        if self.station and self.event:
+            logger.debug("event lat, lon: {}, {}".format(
+                self.event.latitude, self.event.longitude))
+            logger.debug("station lat, lon: {}, {}".format(
+                self.station.latitude, self.station.longitude))
+            text = r"Epicenter distance:  {}$^\circ$   ".format(
+                self.dist_in_deg)
+            plt.text(0.75, 0.79, text, horizontalalignment='left',
+                     verticalalignment='top', transform=ax.transAxes,
+                     fontsize=10)
+
+        if self.config.noise_end_index is not None:
+            noise_start = \
+                self.config.noise_start_index * self.observed.stats.delta \
+                - offset
+            noise_end = \
+                self.config.noise_end_index * self.observed.stats.delta \
+                - offset
+            text = "Noise  Zone(s): [%-6.1f, %6.1f]" % (noise_start, noise_end)
+            plt.text(0.75, 0.72, text, horizontalalignment='left',
+                     verticalalignment='top', transform=ax.transAxes,
+                     fontsize=10)
+
+        if self.config.signal_end_index is not None and \
+                self.config.signal_start_index is not None:
+            signal_start = \
+                self.config.signal_start_index * self.observed.stats.delta \
+                - offset
+            signal_end = \
+                self.config.signal_end_index * self.observed.stats.delta \
+                - offset
+            text = "Signal Zone(s): [%-6.1f, %6.1f]" \
+                   % (signal_start, signal_end)
+            plt.text(0.75, 0.65, text, horizontalalignment='left',
+                     verticalalignment='top', transform=ax.transAxes,
+                     fontsize=10)
+
         for win in self.windows:
-            l = win.relative_starttime - offset
-            r = win.relative_endtime - offset
-            re = Rectangle((l, plt.ylim()[0]), r - l,
+            _l = win.relative_starttime - offset
+            _r = win.relative_endtime - offset
+            re = Rectangle((_l, plt.ylim()[0]), _r - _l,
                            plt.ylim()[1] - plt.ylim()[0], color="blue",
                            alpha=(win.max_cc_value ** 2) * 0.25)
             plt.gca().add_patch(re)
+
+        plt.ylim(0, plt.ylim()[1])
 
         if filename is None:
             plt.show()
         else:
             plt.savefig(filename)
+            plt.close(fig)

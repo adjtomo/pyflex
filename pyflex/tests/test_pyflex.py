@@ -424,6 +424,8 @@ def test_determine_signal_and_noise_indices():
     assert ws.config.signal_end_index == 5499
 
 
+
+
 def test_noise_start_and_end_index():
     config = pyflex.Config(
         min_period=50.0, max_period=150.0,

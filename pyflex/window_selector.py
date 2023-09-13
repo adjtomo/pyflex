@@ -294,7 +294,11 @@ class WindowSelector(object):
         self.stalta = sta_lta(self.synthetic_envelope,
                               self.observed.stats.delta,
                               self.config.min_period)
+
         self.peaks, self.troughs = utils.find_local_extrema(self.stalta)
+
+        logger.debug("Found %i peaks and %i troughs." % (
+            len(self.peaks), len(self.troughs)))
 
         if not len(self.peaks) and len(self.troughs):
             return
@@ -305,37 +309,26 @@ class WindowSelector(object):
         This will save us huge amount of time by rejecting a large
         number of non-sense peaks and troughs.
         """
-        if self.ttimes:
-            #offset = self.event.origin_time - self.observed.stats.starttime
-            #min_time = self.ttimes[0]["time"] - \
-            #    self.config.max_time_before_first_arrival + offset
-            #min_idx = int(min_time / self.observed.stats.delta)
-            min_idx = self.config.signal_start_index
 
-            #dist_in_km = obspy.geodetics.calc_vincenty_inverse(
-            #    self.station.latitude, self.station.longitude,
-            #    self.event.latitude, self.event.longitude)[0] / 1000.0
-            #max_time = dist_in_km / self.config.min_surface_wave_velocity + \
-            #    offset + self.config.max_period
-            #max_idx = int(max_time / self.observed.stats.delta)
-            max_idx = self.config.signal_end_index
+        if self.ttimes:
+
+            offset = self.event.origin_time - self.observed.stats.starttime
+            min_time = self.ttimes[0]["time"] - \
+                self.config.max_time_before_first_arrival + offset
+            min_idx = int(min_time / self.observed.stats.delta)
+
+            dist_in_km = obspy.geodetics.calc_vincenty_inverse(
+                self.station.latitude, self.station.longitude,
+                self.event.latitude, self.event.longitude)[0] / 1000.0
+            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+                offset + self.config.max_period
+            max_idx = int(max_time / self.observed.stats.delta)
 
             # Reject all peaks and troughs before the minimal allowed start
             # time and after the maximum allowed end time.
             first_trough, last_trough = self.troughs[0], self.troughs[-1]
-            # Reject all peaks not in the signal region. This kind of
-            # rejection will reduce the window counts and spedd up
-            # the processing speed
-            self.peaks = self.peaks[(self.peaks >= min_idx) &
-                                    (self.peaks <= max_idx)]
-            # Reject all troughs before the minimal allowed start
-            # time and after the maximum allowed end time.
-            sampling_rate = self.observed.stats.sampling_rate
-            loose_npts = 2 * self.config.min_period * sampling_rate
-            min_idx_2 = self.config.signal_start_index - loose_npts
-            max_idx_2 = self.config.signal_end_index + loose_npts
-            self.troughs = self.troughs[(self.troughs >= min_idx_2) &
-                                        (self.troughs <= max_idx_2)]
+            self.troughs = self.troughs[(self.troughs >= min_idx) &
+                                        (self.troughs <= max_idx)]
 
             # If troughs have been removed, readd them add the boundaries.
             if len(self.troughs):
@@ -347,10 +340,12 @@ class WindowSelector(object):
                     self.troughs = np.concatenate([
                         self.troughs,
                         np.array([max_idx], dtype=self.troughs.dtype)])
-                # Make sure peaks are inside the troughs!
-                min_trough, max_trough = self.troughs[0], self.troughs[-1]
-                self.peaks = self.peaks[(self.peaks > min_trough) &
-                                        (self.peaks < max_trough)]
+
+            # Make sure peaks are inside the troughs!
+            min_trough, max_trough = self.troughs[0], self.troughs[-1]
+            self.peaks = self.peaks[(self.peaks > min_trough) &
+                                    (self.peaks < max_trough)]
+
 
     def __print_remaining_windows(self):
         logger.debug("Remaining windows: %d" % (len(self.windows)))
@@ -374,6 +369,9 @@ class WindowSelector(object):
         # Calculate some preliminaries measurements
         self.calculate_preliminiaries()
 
+        # Reject peaks and troughs not in the signal region
+        self.reject_peaks_and_troughs_not_in_signal_region()
+
         # Perform all window selection steps.
         self.initial_window_selection()
 
@@ -392,15 +390,14 @@ class WindowSelector(object):
             logger.warning(msg)
             warnings.warn(msg, PyflexWarning)
 
-        # self.reject_peaks_and_troughs_not_in_signal_region()
-
+        # Determine SNR indeces
         self.determine_signal_and_noise_indices()
         if self.config.check_global_data_quality:
             if not self.check_data_quality():
                 return []
 
         # Reject windows in the noise region
-        # self.reject_on_noise_region()
+        self.reject_on_noise_region()
 
         self.reject_windows_based_on_minimum_length()
         self.reject_on_minima_water_level()
@@ -543,7 +540,7 @@ class WindowSelector(object):
 
         self.config._convert_negative_index(npts=self.observed.stats.npts)
 
-        logger.info("Noise index [%s, %s]; signal index [%s, %s]" % (
+        logger.debug("Noise index [%s, %s]; signal index [%s, %s]" % (
                     self.config.noise_start_index,
                     self.config.noise_end_index,
                     self.config.signal_start_index,
@@ -705,18 +702,14 @@ class WindowSelector(object):
         tts = self.taupy_model.get_travel_times(
             source_depth_in_km=self.event.depth_in_m / 1000.0,
             distance_in_degree=self.dist_in_deg)
+
         logger.debug("source depth: {:.2f} km".format(
             self.event.depth_in_m / 1000.0))
-        self.ttimes = [{"time": _i.time, "name": _i.name} for _i in tts]
-        logger.info("Calculated travel times.")
-        #logger.debug("{}".format(self.ttimes))
 
-        #tts2 = self.taupy_model.get_travel_times(
-        #    source_depth_in_km=self.event.depth_in_m / 1000.0,
-        #    distance_in_degree=self.dist_in_deg,
-        #    phase_list=["ScS", "sScS", "ScSScS", "sScSScS"]
-        #)
-        #logger.debug("ScS arrivals: {}".format(tts2))
+        self.ttimes = [{"time": _i.time, "name": _i.name} for _i in tts]
+
+        logger.info("Calculated travel times.")
+
 
     def reject_on_noise_region(self):
         """
@@ -922,13 +915,16 @@ class WindowSelector(object):
         Find all possible windows. This is equivalent to the setup_M_L_R()
         function in flexwin.
         """
-        for peak in self.peaks:
+        for _i, peak in enumerate(self.peaks):
+
             # only continue if there are available minima on either side
             if peak <= self.troughs[0] or peak >= self.troughs[-1]:
                 continue
+
             # only continue if this maximum is above the water level
             if self.stalta[peak] <= self.config.stalta_waterlevel[peak]:
                 continue
+
             smaller_troughs = self.troughs[self.troughs < peak]
             larger_troughs = self.troughs[self.troughs > peak]
 

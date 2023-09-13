@@ -5,16 +5,12 @@ Convenience functions.
 
 :copyright:
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+    adjTomo Dev Team (adjtomo@gmail.com), 2022
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-
-
-from .window_selector import WindowSelector
+from pyflex.window_selector import WindowSelector
 
 
 def select_windows(observed, synthetic, config, event=None, station=None,

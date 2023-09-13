@@ -5,18 +5,15 @@ Configuration object for pyflex.
 
 :copyright:
     Lion Krischer (krischer@geophysik.uni-muenchen.de), 2014
+    adjTomo Dev Team (adjtomo@gmail.com), 2022
 :license:
     GNU General Public License, Version 3
     (http://www.gnu.org/copyleft/gpl.html)
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-from future.builtins import *  # NOQA
-
-import collections
+from collections.abc import Iterable
 import numpy as np
 
-from . import PyflexError
+from pyflex import PyflexError
 
 
 class Config(object):
@@ -27,17 +24,17 @@ class Config(object):
                  s2n_limit=1.5, s2n_limit_energy=1.5,
                  min_surface_wave_velocity=3.0,
                  max_surface_wave_velocity=4.2,
-                 max_time_before_first_arrival=None,
+                 max_time_before_first_arrival=50.0,
                  max_time_after_last_arrival=None,
                  c_0=1.0, c_1=1.5, c_2=0.0,
                  c_3a=4.0, c_3b=2.5, c_4a=2.0, c_4b=6.0,
                  check_global_data_quality=False, snr_integrate_base=3.5,
                  snr_max_base=3.0, noise_start_index=0, noise_end_index=None,
-                 signal_start_index=None, signal_end_index=None,
+                 signal_start_index=None, signal_end_index=-1,
                  window_weight_fct=None,
                  window_signal_to_noise_type="amplitude",
                  resolution_strategy="interval_scheduling",
-                 selection_mode="all_waves"):
+                 selection_mode=None):
         """
         Central configuration object for Pyflex.
 
@@ -328,17 +325,24 @@ class Config(object):
                 "'interval_scheduling' or 'merge'.")
         self.resolution_strategy = resolution_strategy.lower()
 
-        selection_mode = selection_mode.strip()
-        if selection_mode.split(":")[0].strip().lower() not in [
-                "all_waves", "body_and_surface_waves", "body_waves",
-                "surface_waves", "mantle_waves", "custom", "phase_list",
-                "body_and_mantle_waves"]:
-            raise ValueError(
-                    "Invalide selection_mode({}). Choose: 1) all_waves;"
-                    "2) body_and_surface_waves; 3) body_waves; "
-                    "4) surface_waves; 5) mantle_waves; "
-                    "6) custom; 7) phase_list;".format(selection_mode))
+        # Add a specific selection mode for different types of phases
+        if selection_mode is not None:
+
+            selection_mode = selection_mode.strip()
+            if selection_mode.split(":")[0].strip().lower() not in [
+                    "all_waves", "body_and_surface_waves", "body_waves",
+                    "surface_waves", "mantle_waves", "custom", "phase_list",
+                    "body_and_mantle_waves"]:
+                raise ValueError(
+                        "Invalide selection_mode({}). Choose: 1) all_waves;"
+                        "2) body_and_surface_waves; 3) body_waves; "
+                        "4) surface_waves; 5) mantle_waves; "
+                        "6) custom; 7) phase_list;".format(selection_mode))
+
         self.selection_mode = selection_mode
+
+
+
 
     def _convert_to_array(self, npts):
         """
@@ -347,11 +351,12 @@ class Config(object):
         """
         attributes = ("stalta_waterlevel", "tshift_acceptance_level",
                       "dlna_acceptance_level", "cc_acceptance_level",
-                      "s2n_limit", "s2n_limit_energy", "c_1")
+                      "s2n_limit", "s2n_limit_energy")
 
         for name in attributes:
             attr = getattr(self, name)
-            if isinstance(attr, collections.Iterable):
+
+            if isinstance(attr, Iterable):
                 if len(attr) != npts:
                     raise PyflexError(
                         "Config value '%s' does not have the same number of "

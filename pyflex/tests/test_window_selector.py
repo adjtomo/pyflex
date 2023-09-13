@@ -95,3 +95,24 @@ def test_reading_and_writing_windows(tmpdir):
         fh.seek(0, 0)
         ws2.load(filename)
     assert ws.windows == ws2.windows
+
+
+def test_return_rejected_windows():
+    """
+    Tests that rejected window return works as expected
+    """
+    config = pyflex.Config(
+        min_period=50.0, max_period=150.0,
+        stalta_waterlevel=0.08, tshift_acceptance_level=15.0,
+        dlna_acceptance_level=1.0, cc_acceptance_level=0.80,
+        c_0=0.7, c_1=4.0, c_2=0.0, c_3a=1.0, c_3b=2.0, c_4a=3.0, c_4b=10.0,
+        selection_mode=None)
+
+    ws = pyflex.WindowSelector(observed=OBS_DATA, synthetic=SYNTH_DATA,
+                               config=config)
+    ws.select_windows()
+    assert len(ws.windows) == False
+    assert len(ws.rejects) > 0
+    assert len(ws.rejects["min_length"]) == 10
+    assert len(ws.rejects["water_level"]) == 1617
+    assert len(ws.rejects["phase_sep"]) == 13

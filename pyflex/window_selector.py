@@ -312,17 +312,31 @@ class WindowSelector(object):
 
         if self.ttimes:
 
-            offset = self.event.origin_time - self.observed.stats.starttime
-            min_time = self.ttimes[0]["time"] - \
-                self.config.max_time_before_first_arrival + offset
-            min_idx = int(min_time / self.observed.stats.delta)
+            if self.config.selection_mode \
+                    and "surface" in self.config.selection_mode:
+                # For the surface wave the selection of troughs will be
+                # taken care of by the surface wave selection box
+                min_time = 0
+                max_time = self.observed.stats.endtime - \
+                    self.observed.stats.starttime
+                min_idx = 0
+                max_idx = self.observed.stats.npts
 
-            dist_in_km = obspy.geodetics.calc_vincenty_inverse(
-                self.station.latitude, self.station.longitude,
-                self.event.latitude, self.event.longitude)[0] / 1000.0
-            max_time = dist_in_km / self.config.min_surface_wave_velocity + \
-                offset + self.config.max_period
-            max_idx = int(max_time / self.observed.stats.delta)
+
+            else:
+
+                offset = self.event.origin_time - self.observed.stats.starttime
+                min_time = self.ttimes[0]["time"] - \
+                    self.config.max_time_before_first_arrival + offset
+                min_idx = int(min_time / self.observed.stats.delta)
+
+                dist_in_km = obspy.geodetics.calc_vincenty_inverse(
+                    self.station.latitude, self.station.longitude,
+                    self.event.latitude, self.event.longitude)[0] / 1000.0
+
+                max_time = dist_in_km / self.config.min_surface_wave_velocity + \
+                    offset + self.config.max_period
+                max_idx = int(max_time / self.observed.stats.delta)
 
             # Reject all peaks and troughs before the minimal allowed start
             # time and after the maximum allowed end time.
@@ -362,6 +376,9 @@ class WindowSelector(object):
         Launch the window selection.
         """
         # Fill self.ttimes.
+        logger.debug(f"======================================================")
+        logger.debug(f"Start selection for {self.observed.id}")
+        logger.debug(f"======================================================")
         if self.event and self.station:
             self.calculate_distance()
             self.calculate_ttimes()
@@ -375,18 +392,20 @@ class WindowSelector(object):
         # Perform all window selection steps.
         self.initial_window_selection()
 
+
         # Reject windows based on traveltime if event and station
         # information is given. This will also fill self.ttimes.
         if self.event and self.station:
             if self.config.selection_mode is not None:
                 # Base on specific selection mode
                 self.reject_on_selection_mode()
+                pass
             else:
                 # Based on basic traveltimes
                 self.reject_on_traveltimes()
         else:
             msg = "No rejection based on traveltime possible. Event and/or " \
-                  "station information is not available."
+                "station information is not available."
             logger.warning(msg)
             warnings.warn(msg, PyflexWarning)
 
@@ -485,6 +504,7 @@ class WindowSelector(object):
         end index based the first arrival(event and station information
         required).
         """
+
         offset = self.event.origin_time - self.observed.stats.starttime
         # signal end index
         surface_wave_arrival = \
@@ -501,7 +521,15 @@ class WindowSelector(object):
             self.observed.stats.sampling_rate)
 
         npts = self.observed.stats.npts
-        signal_end_index = min(signal_end_index, npts)
+
+        if self.config.selection_mode:
+            if "surface" in self.config.selection_mode:
+                # This is ok, because a timebox will be computed anyways
+                # to exclude anything outside specific regions!
+                signal_end_index = npts
+        else:
+            signal_end_index = min(signal_end_index, npts)
+
         return signal_end_index
 
     def determine_signal_and_noise_indices(self):
@@ -783,11 +811,12 @@ class WindowSelector(object):
             len(arrivals)))
 
         timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
-        for arr in arrivals:
+
+        for _i, arr in enumerate(arrivals):
             il = int((arr[0] + offset - self.config.min_period) * srate)
             ir = int((arr[1] + offset + 2.5 * self.config.min_period) * srate)
+            logger.debug(f"Arrival {_i} (min, max): ({il}, {ir})")
             timebox[il:(ir+1)] = 1
-
         logger.debug("Selectable region coverage percentage: {}/{}".format(
             timebox.sum(), len(timebox)))
         self.selection_timebox = timebox
@@ -997,6 +1026,7 @@ class WindowSelector(object):
         """
         Run the weighted interval scheduling.
         """
+
         self.windows = schedule_weighted_intervals(self.windows)
 
         logger.info("Weighted interval schedule optimization retained %i "

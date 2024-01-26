@@ -766,7 +766,7 @@ class WindowSelector(object):
         logger.debug("selection_timebox min/max time: {:.2f} {:.2f}"
                      "".format(min_time, max_time))
 
-        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        timebox = np.zeros(self.observed.stats.npts, dtype=bool)
         il = int(min_time * srate)
         ir = int(max_time * srate)
         timebox[il:(ir+1)] = 1
@@ -810,7 +810,7 @@ class WindowSelector(object):
         logger.debug("Number of surface wave arrivals: {}".format(
             len(arrivals)))
 
-        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        timebox = np.zeros(self.observed.stats.npts, dtype=bool)
 
         for _i, arr in enumerate(arrivals):
             il = int((arr[0] + offset - self.config.min_period) * srate)
@@ -834,7 +834,7 @@ class WindowSelector(object):
             phase_list=phase_list
         )
 
-        timebox = np.zeros(self.observed.stats.npts, dtype=np.bool)
+        timebox = np.zeros(self.observed.stats.npts, dtype=bool)
         for t in tts:
             t_left = t.time - buffer_time + offset
             il = int(t_left * srate)

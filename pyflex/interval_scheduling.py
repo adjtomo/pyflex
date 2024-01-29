@@ -59,18 +59,18 @@ def schedule_weighted_intervals(I):
         OPT[j] = max(I[j].weight + OPT[p[j]], OPT[j - 1])
 
     # given OPT and p, find actual solution intervals in O(n)
-    O = []
+    res = []
 
     def compute_solution(j):
         if j >= 0:  # will halt on OPT[-1]
             if I[j].weight + OPT[p[j]] > OPT[j - 1]:
-                O.append(I[j])
+                res.append(I[j])
                 compute_solution(p[j])
             else:
                 compute_solution(j - 1)
     compute_solution(len(I) - 1)
 
-    # resort, as our O is in reverse order (OPTIONAL)
-    O.sort(key=lambda x: x.right)
+    # resort, as our res is in reverse order (OPTIONAL)
+    res.sort(key=lambda x: x.right)
 
-    return O
+    return res

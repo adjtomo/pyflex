@@ -13,6 +13,7 @@ Utility functionality for pyflex.
 import itertools
 import numpy as np
 from scipy.signal import argrelextrema
+from obspy.geodetics import degrees2kilometers
 
 
 def find_local_extrema(data):
@@ -71,3 +72,40 @@ def find_local_extrema(data):
 
     return np.array(sorted(list(maxs.union(set(maxima)))), dtype="int32"), \
         np.array(sorted(list(mins.union(set(minima)))), dtype="int32")
+
+
+def get_surface_wave_arrivals(dist_in_deg, min_vel, max_vel, ncircles=1):
+    """
+    Calculate the arrival time of surface waves, based on the distance
+    and velocity range (min_vel, max_vel).
+    This function will calculate both minor-arc and major-arc surface
+    waves. It further calcualte the surface orbit multiple times
+    if you set the ncircles > 1.
+
+    Returns the list of surface wave arrivals in time order.
+    """
+    if min_vel > max_vel:
+        min_vel, max_vel = max_vel, min_vel
+
+    earth_circle = degrees2kilometers(360.0)
+    dt1 = earth_circle / max_vel
+    dt2 = earth_circle / min_vel
+
+    # 1st arrival: minor-arc arrival
+    minor_dist_km = degrees2kilometers(dist_in_deg)  # major-arc distance
+    t_minor = [minor_dist_km / max_vel, minor_dist_km/min_vel]
+
+    # 2nd arrival: major-arc arrival
+    major_dist_km = degrees2kilometers(360.0 - dist_in_deg)
+    t_major = [major_dist_km / max_vel, major_dist_km / min_vel]
+
+    # prepare the arrival list
+    arrivals = []
+    for i in range(ncircles):
+        ts = [t_minor[0] + i * dt1, t_minor[1] + i * dt2]
+        arrivals.append(ts)
+
+        ts = [t_major[0] + i * dt1, t_major[1] + i * dt2]
+        arrivals.append(ts)
+
+    return arrivals
